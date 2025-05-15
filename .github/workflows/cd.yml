@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/lib_dist_name
+      url: https://pypi.org/p/tgdb
     needs:
       - build
     steps:

@@ -1,19 +1,30 @@
 [project]
-name = "lib_dist_name"
+name = "tgdb"
 version = "0.1.0"
-description = "lib_description"
+description = "ACID NoSQL РСУБД для хранения данных в телеграме"
 authors = [
     {name = "Alexander Smolin", email = "88573504+emptybutton@users.noreply.github.com"}
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "effectt==0.2.0",
+    "telethon>=1.40.0",
+    "websockets>=15.0",
+    "in-memory-db>=0.3.0",
+]
 
 [project.urls]
-Repository = "https://github.com/emptybutton/lib-kebab-case"
+Repository = "https://github.com/emptybutton/tgdb"
 
 [project.optional-dependencies]
+server = [
+    "typenv>=0.2.0",
+    "dishka>=1.4.2",
+    "fastapi>=0.115.2",
+    "uvicorn[standard]>=0.30.6",
+]
 dev = [
     "mypy[faster-cache]==1.15.0",
     "ruff==0.9.7",
@@ -21,6 +32,9 @@ dev = [
     "pytest-asyncio==0.25.3",
     "pytest-cov==6.0.0",
     "dirty-equals==0.8.0",
+    "httpx==0.27.2",
+    "httpx-ws==0.7.2",
+    "tgdb[server]",
 ]
 
 [build-system]
@@ -28,7 +42,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lib_snake_case"]
+packages = ["src/tgdb"]
 
 [tool.mypy]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/src:$MYPY_CONFIG_FILE_DIR/tests"
@@ -48,16 +62,15 @@ select = [
     "Q", "RET", "SLF", "SLOT", "SIM", "TID252", "TCH", "ARG", "PTH", "ERA", "TRY",
     "PERF", "INP", "I", "S", "FAST", "TID", "TCH", "INT"
 ]
-ignore = [
-    "N818", "RUF009", "UP018", "PLR6301", "PLR0913", "PLW0108", "TC006",
-    "UP049", "UP046", "TC001",
-]
+ignore = ["N818", "RUF009", "UP018", "PLR6301", "PLR0913", "PLW0108", "TC006"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
 
 [tool.ruff.lint.per-file-ignores]
-"src/*" = ["PLR2004"]
+"src/tgdb/entities/*" = ["PLR2004"]
+"src/tgdb/application/*" = ["PLR0917"]
+"src/tgdb/infrastructure/adapters/*" = ["RUF029"]
 "tests/*" = ["S101", "PLR0124", "PLR0917", "S106", "C901"]
 "__init__.py" = ["PLC0414"]
 

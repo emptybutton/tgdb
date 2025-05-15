@@ -174,3 +174,5 @@ cython_debug/
 .python-version
 .ruff_cache
 .uv_cache
+*.session
+x.py
