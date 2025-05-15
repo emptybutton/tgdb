@@ -1,0 +1,18 @@
+name: lib-kebab-case
+
+services:
+  lib-kebab-case:
+    image: lib-kebab-case:dev
+    container_name: lib-kebab-case
+    build:
+      context: ../../
+      dockerfile: deployments/dev/lib_snake_case/Dockerfile
+      tags:
+        - "lib-kebab-case:dev"
+    volumes:
+      - ../..:/app
+      - lib-kebab-case-data:/run/app
+    command: bash
+
+volumes:
+  lib-kebab-case-data: null

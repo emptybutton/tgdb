@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ruff
+        run: docker compose -f deployments/dev/docker-compose.yaml run lib-kebab-case ruff check src tests
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: mypy
+        run: docker compose -f deployments/dev/docker-compose.yaml run lib-kebab-case mypy src tests
+
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: pytest
+        run: docker compose -f deployments/dev/docker-compose.yaml run lib-kebab-case pytest tests
