@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from tgdb.telethon.in_telegram.value import InTelegramValue
-from tgdb.telethon.row import (
+from tgdb.entities.row import (
     Row,
     RowSchema,
     decoded_row,

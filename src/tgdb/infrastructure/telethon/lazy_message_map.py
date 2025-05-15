@@ -5,7 +5,7 @@ from telethon.types import Message
 
 from tgdb.lazy_map import LazyMap
 from tgdb.telethon.client_pool import TelegramClientPool
-from tgdb.telethon.row import Row, query_text
+from tgdb.entities.row import Row, query_text
 
 
 def lazy_message_map(

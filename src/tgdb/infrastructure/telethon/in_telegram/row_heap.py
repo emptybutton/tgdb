@@ -7,10 +7,7 @@ from typing import cast
 from telethon.hints import TotalList
 from telethon.types import Message
 
-from tgdb.lazy_map import LazyMap
-from tgdb.telethon.client_pool import TelegramClientPool
-from tgdb.telethon.lazy_message_map import lazy_message_map
-from tgdb.telethon.row import (
+from tgdb.entities.row import (
     Row,
     RowAttribute,
     RowSchema,
@@ -18,7 +15,10 @@ from tgdb.telethon.row import (
     encoded_row,
     query_text,
 )
-from tgdb.telethon.transaction_operator.row_in_transaction import (
+from tgdb.lazy_map import LazyMap
+from tgdb.telethon.client_pool import TelegramClientPool
+from tgdb.telethon.lazy_message_map import lazy_message_map
+from tgdb.entities.transaction_effect import (
     RowInTransactionEffect,
 )
 

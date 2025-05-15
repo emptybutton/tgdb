@@ -1,0 +1,1 @@
+type LogicTime = int

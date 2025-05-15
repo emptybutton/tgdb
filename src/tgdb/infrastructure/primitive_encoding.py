@@ -4,8 +4,9 @@ from enum import StrEnum
 from urllib import parse
 from uuid import UUID
 
+from tgdb.entities.primitive import Primitive
 
-type Primitive = bool | int | str | datetime | UUID | StrEnum
+
 type DecodedPrimitive[PrimitiveT: Primitive = Primitive] = (
     Callable[[str, type[Primitive]], Primitive]
 )

@@ -3,6 +3,14 @@ from typing import NoReturn, cast
 from uuid import UUID
 
 from tgdb.async_queque import AsyncQueque
+from tgdb.entities.row import (
+    RowSchema,
+    decoded_row,
+    schema_name_of_encoded_row,
+)
+from tgdb.entities.transaction_effect import (
+    schema_of_row_in_transaction,
+)
 from tgdb.telethon.in_telegram.message_queque import (
     InTelegramMessageQueque,
 )
@@ -10,11 +18,6 @@ from tgdb.telethon.in_telegram.primitive import (
     InTelegramPrimitive,
 )
 from tgdb.telethon.in_telegram.row_heap import InTelegramRowHeap
-from tgdb.telethon.row import (
-    RowSchema,
-    decoded_row,
-    schema_name_of_encoded_row,
-)
 from tgdb.telethon.transaction import (
     AsyncTransactionResults,
     Transaction,
@@ -22,9 +25,6 @@ from tgdb.telethon.transaction import (
 )
 from tgdb.telethon.transaction_operator.operator import (
     TransactionOperator,
-)
-from tgdb.telethon.transaction_operator.row_in_transaction import (
-    schema_of_row_in_transaction,
 )
 from tgdb.telethon.transaction_operator.transaction_mark import (
     TransactionState,

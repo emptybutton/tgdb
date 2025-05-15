@@ -1,1 +1,0 @@
-type TransactionOperator = str
