@@ -32,7 +32,7 @@ class DynamicallyReplicateLogToHeap:
 
     async def _recover_after_crash(self, horizon: TransactionHorizon) -> None:
         async for operator in self.log(block=False):
-            result = horizon.consider(operator)
+            result = horizon.take(operator)
 
             match result:
                 case TransactionOkCommit(_, effect) as commit:
@@ -61,7 +61,7 @@ class DynamicallyReplicateLogToHeap:
             applied_operator_ = applied_operator(operator, current_time)
             await self.log.push(applied_operator_)
 
-            result = horizon.consider(applied_operator_)
+            result = horizon.take(applied_operator_)
 
             match result:
                 case TransactionOkCommit(_, effect) as commit:

@@ -28,10 +28,12 @@ class TransactionHorizon:
     def beginning(self) -> LogicTime | None:
         return self._beginning
 
-    def consider(self, action: AppliedOperator) -> TransactionCommit | None:
-        transaction = self._active_transaction_by_id.get(action.transaction_id)
+    def take(self, operator: AppliedOperator) -> TransactionCommit | None:
+        transaction = self._active_transaction_by_id.get(
+            operator.transaction_id
+        )
 
-        match action, transaction:
+        match operator, transaction:
             case AppliedOperator(Effect() as row_effect), Transaction():
                 transaction.consider(row_effect)
 
@@ -52,22 +54,22 @@ class TransactionHorizon:
                 None
             ):
                 new_transaction = Transaction.start(
-                    action.transaction_id,
+                    operator.transaction_id,
                     self._active_transaction_by_id.values(),
-                    action.time,
+                    operator.time,
                 )
-                self._active_transaction_by_id[action.transaction_id] = (
+                self._active_transaction_by_id[operator.transaction_id] = (
                     new_transaction
                 )
 
                 if self._beginning is None:
-                    self._beginning = action.time
+                    self._beginning = operator.time
 
             case (
                 AppliedOperator(TransactionStateMark(TransactionState.rollbacked)),
                 Transaction(),
             ):
-                del self._active_transaction_by_id[action.transaction_id]
+                del self._active_transaction_by_id[operator.transaction_id]
 
                 transaction.rollback()
                 self._refresh_beginning()
@@ -76,7 +78,7 @@ class TransactionHorizon:
                 AppliedOperator(TransactionStateMark(TransactionState.committed)),
                 Transaction(),
             ):
-                del self._active_transaction_by_id[action.transaction_id]
+                del self._active_transaction_by_id[operator.transaction_id]
 
                 commit = transaction.commit()
                 self._refresh_beginning()
