@@ -18,7 +18,7 @@ class Heap(ABC):
     ) -> Row | None: ...
 
     @abstractmethod
-    async def rows(
+    def rows(
         self,
         schema: RowSchema,
         attribute_number: int,

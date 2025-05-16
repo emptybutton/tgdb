@@ -20,9 +20,6 @@ class InTelegramValue[ValueT](ABC):
             self._encoded(value),
         )
 
-    def __await__(self) -> Generator[None, None, ValueT]:
-        return self.get().__await__()
-
     async def get(self) -> ValueT:
         pointer_message = await self._pointer_message()
 
