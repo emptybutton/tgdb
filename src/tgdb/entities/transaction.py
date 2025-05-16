@@ -26,18 +26,13 @@ class TransactionConflict:
 class TransactionOkCommit:
     transaction_id: UUID
     effect: TransactionEffect
-
-    def is_transaction_applied(self) -> bool:
-        return True
+    time: LogicTime
 
 
 @dataclass(frozen=True)
 class TransactionFailedCommit:
     transaction_id: UUID
     conflict: TransactionConflict
-
-    def is_transaction_applied(self) -> bool:
-        return False
 
 
 type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
@@ -84,7 +79,7 @@ class Transaction:
     def rollback(self) -> None:
         self._unlink_all()
 
-    def commit(self) -> TransactionCommit:
+    def commit(self, current_time: LogicTime) -> TransactionCommit:
         conflict = self._conflict()
 
         if conflict is not None:
@@ -100,7 +95,11 @@ class Transaction:
         self._unlink_left()
         self._unlink_subset()
 
-        return TransactionOkCommit(transaction_id=self.id, effect=self._effect)
+        return TransactionOkCommit(
+            transaction_id=self.id,
+            effect=self._effect,
+            time=current_time,
+        )
 
     @classmethod
     def start(

@@ -28,7 +28,7 @@ class TransactionHorizon:
     def beginning(self) -> LogicTime | None:
         return self._beginning
 
-    def take(self, operator: AppliedOperator) -> TransactionCommit | None:
+    def add(self, operator: AppliedOperator) -> TransactionCommit | None:
         transaction = self._active_transaction_by_id.get(
             operator.transaction_id
         )
@@ -80,7 +80,7 @@ class TransactionHorizon:
             ):
                 del self._active_transaction_by_id[operator.transaction_id]
 
-                commit = transaction.commit()
+                commit = transaction.commit(operator.time)
                 self._refresh_beginning()
 
                 return commit

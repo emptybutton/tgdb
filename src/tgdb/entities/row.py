@@ -2,10 +2,10 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Never, overload
+from typing import Any, overload
 from uuid import UUID
 
-from effect import Effect, IdentifiedValue
+from effect import Dead, IdentifiedValue, Mutated, New
 
 
 type RowAttribute = bool | int | str | datetime | UUID | StrEnum
@@ -80,4 +80,4 @@ class Row(IdentifiedValue[RowAttribute], Sequence[RowAttribute]):
         return len(self.body) + 1
 
 
-type RowEffect = Effect[Row, Row, Never, Row, Row]
+type RowEffect = New[Row] | Mutated[Row] | Dead[Row]

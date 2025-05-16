@@ -4,9 +4,9 @@ from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, WebSocket
 
 from tgdb.application.ports.heap import Heap
-from tgdb.application.ports.log import Log
+from tgdb.application.ports.log import LogSlot
 from tgdb.application.ports.logic_clock import LogicClock
-from tgdb.application.ports.queque import Queque
+from tgdb.application.ports.async_queque import AsyncQueque
 from tgdb.entities.operator import Operator, applied_operator
 from tgdb.entities.transaction import (
     TransactionCommit,
@@ -22,16 +22,16 @@ from tgdb.entities.transaction_horizon import (
 transaction_channel_router = APIRouter()
 
 
-input_operators: Queque[Operator]
-output_commits: Queque[TransactionCommit]
+input_operators: AsyncQueque[Operator]
+output_commits: AsyncQueque[TransactionCommit]
 
 
 @transaction_channel_router.websocket("/transactions")
 @inject
 async def transaction_channel_route(
     websocket: WebSocket,
-    input_operators: FromDishka[Queque[Operator]],
-    output_commits: FromDishka[Queque[TransactionCommit]],
+    input_operators: FromDishka[AsyncQueque[Operator]],
+    output_commits: FromDishka[AsyncQueque[TransactionCommit]],
 ) -> None:
     await websocket.accept()
 
