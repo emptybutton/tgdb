@@ -6,9 +6,9 @@ from typing import cast
 
 from effect import dead, mutated, new
 
-from tgdb.application.ports.log import LogSlot
+from tgdb.application.ports.log import Log
 from tgdb.application.ports.logic_clock import LogicClock
-from tgdb.application.ports.queque import Queque
+from tgdb.application.ports.sync_queque import SyncQueque
 from tgdb.entities.operator import Operator, OperatorValue, applied_operator
 from tgdb.entities.transaction import (
     TransactionCommit,
@@ -23,11 +23,11 @@ from tgdb.entities.transaction_mark import (
 @dataclass(frozen=True)
 class OutputCommitsToLog:
     clock: LogicClock
-    log: LogSlot
-    output_commits: Queque[TransactionCommit]
+    log: Log
+    output_commits: SyncQueque[TransactionCommit]
 
     async def __call__(self) -> None:
-        async for commit in self.output_commits.sync():
+        async for commit in self.output_commits:
             if not isinstance(commit, TransactionOkCommit):
                 continue
 

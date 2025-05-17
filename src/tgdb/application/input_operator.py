@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
+from tgdb.application.ports.async_queque import AsyncQueque
 from tgdb.application.ports.logic_clock import LogicClock
 from tgdb.application.ports.operator_serialization import OperatorSerialization
-from tgdb.application.ports.queque import Queque
 from tgdb.entities.operator import AppliedOperator, applied_operator
 
 
@@ -12,7 +12,7 @@ class InvalidInputOperatorError(Exception): ...
 @dataclass(frozen=True)
 class InputOperator[SerializedOperatorT]:
     clock: LogicClock
-    input_operators: Queque[AppliedOperator]
+    input_operators: AsyncQueque[AppliedOperator]
     operator_serialization: OperatorSerialization[SerializedOperatorT]
 
     async def __call__(self, serialized_operator: SerializedOperatorT) -> None:
@@ -30,4 +30,4 @@ class InputOperator[SerializedOperatorT]:
         current_time = await self.clock
         applied_operator_ = applied_operator(input_operator, current_time)
 
-        await self.input_operators.async_push(applied_operator_)
+        await self.input_operators.push(applied_operator_)

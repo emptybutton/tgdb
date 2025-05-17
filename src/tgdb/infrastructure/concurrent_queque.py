@@ -5,14 +5,8 @@ from dataclasses import dataclass, field
 from typing import Any, overload
 
 
-#    |
-#   a
-#    |
-#     |
-
-
 @dataclass(frozen=True, unsafe_hash=False)
-class AsyncQueque[ValueT](Sequence[ValueT]):
+class ConcurrentQueque[ValueT](Sequence[ValueT]):
     _values: deque[ValueT] = field(default_factory=deque)
     _offset_by_event: dict[Event, int] = field(
         default_factory=dict, init=False
@@ -67,7 +61,7 @@ class AsyncQueque[ValueT](Sequence[ValueT]):
             if self._offset_by_event[event] == len(self._values) - 1:
                 event.clear()
 
-    def refresh(self) -> None:
+    def _refresh(self) -> None:
         min_offset = min(self._offset_by_event.values())
 
         if min_offset >= 0:

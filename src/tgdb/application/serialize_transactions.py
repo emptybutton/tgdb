@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.heap import Heap
-from tgdb.application.ports.log import LogSlot
-from tgdb.application.ports.queque import Queque
+from tgdb.application.ports.async_queque import AsyncQueque
+from tgdb.application.ports.log import Log
+from tgdb.application.ports.log_iterator import LogIterator
+from tgdb.application.ports.sync_queque import SyncQueque
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.operator import AppliedOperator
 from tgdb.entities.transaction import TransactionCommit
@@ -14,21 +15,21 @@ from tgdb.entities.transaction_horizon import (
 
 @dataclass(frozen=True)
 class SerializeTransactions:
-    log_slot: LogSlot
-    heap: Heap
-    input_operators: Queque[AppliedOperator]
-    output_commits: Queque[TransactionCommit]
+    log: Log
+    log_iterator: LogIterator
+    input_operators: AsyncQueque[AppliedOperator]
+    output_commits: SyncQueque[TransactionCommit]
 
     async def __call__(self) -> None:
         horizon = create_transaction_horizon()
 
-        async_input_operators = await self.input_operators.async_()
+        input_operator_iter = await self.input_operators.iter()
 
-        async for operator in self.log_slot(block=False):
+        async for operator in self.log_iterator.no_wait():
             await self._output_operator(operator, horizon)
 
-        async for operator in async_input_operators:
-            await self.log_slot.push(operator)
+        async for operator in input_operator_iter:
+            await self.log.push(operator)
             await self._output_operator(operator, horizon)
 
     async def _output_operator(
@@ -37,17 +38,19 @@ class SerializeTransactions:
         transaction_commit = horizon.add(operator)
 
         offset_to_commit = self._safe_offset_to_commit(operator, horizon)
-        need_to_commit_offset = offset_to_commit != await self.log_slot.offset()
+        need_to_commit_offset = (
+            offset_to_commit != await self.log_iterator.offset()
+        )
 
         if transaction_commit and need_to_commit_offset:
             await self.output_commits.sync_push(transaction_commit)
-            await self.log_slot.commit(operator.time)
+            await self.log_iterator.commit(operator.time)
 
         elif transaction_commit and not need_to_commit_offset:
             await self.output_commits.async_push(transaction_commit)
 
         elif not transaction_commit and need_to_commit_offset:
-            await self.log_slot.commit(operator.time)
+            await self.log_iterator.commit(operator.time)
 
     def _safe_offset_to_commit(
         self, operator: AppliedOperator, horizon: TransactionHorizon

@@ -6,7 +6,7 @@ from fastapi import APIRouter, WebSocket
 from tgdb.application.ports.heap import Heap
 from tgdb.application.ports.log import LogSlot
 from tgdb.application.ports.logic_clock import LogicClock
-from tgdb.application.ports.async_queque import AsyncQueque
+from tgdb.application.ports.queque import AsyncQueque
 from tgdb.entities.operator import Operator, applied_operator
 from tgdb.entities.transaction import (
     TransactionCommit,
