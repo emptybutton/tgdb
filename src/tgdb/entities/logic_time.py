@@ -1,7 +1,7 @@
 type LogicTime = int
 
 
-def age(current_time: LogicTime, beginning: LogicTime | None) -> LogicTime:
+def age(beginning: LogicTime | None, current_time: LogicTime) -> LogicTime:
     if beginning is None:
         return 0
 

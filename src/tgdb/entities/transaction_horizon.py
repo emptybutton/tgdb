@@ -122,7 +122,7 @@ class TransactionHorizon:
         transactions_to_remove = list[Transaction]()
 
         for transaction in self._active_transaction_by_id.values():
-            if age(current_time, transaction.beginning()) > self._max_age:
+            if age(transaction.beginning(), current_time) > self._max_age:
                 transactions_to_remove.append(transaction)
             else:
                 break

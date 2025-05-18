@@ -9,21 +9,23 @@ from tgdb.application.ports.sync_queque import SyncQueque
 @dataclass
 class InMemorySyncQueque[ValueT](SyncQueque[ValueT]):
     _values: deque[ValueT]
-    _push_completion_event: Event = field(init=False, default_factory=Event)
+    _is_synced: Event = field(init=False, default_factory=Event)
     _pull_activation_events: list[Event] = field(
         init=False, default_factory=list
     )
 
-    async def async_push(self, value: ValueT) -> None:
+    async def push(self, value: ValueT) -> None:
         self._values.append(value)
 
-    async def sync_push(self, value: ValueT) -> None:
-        self._values.append(value)
+        for is_pull_active in self._pull_activation_events:
+            is_pull_active.set()
 
-        self._push_completion_event.clear()
-        await self._push_completion_event.wait()
+    async def sync(self) -> None:
+        if not self._values:
+            return
 
-        self._values.clear()
+        self._is_synced.clear()
+        await self._is_synced.wait()
 
     async def __aiter__(self) -> AsyncIterator[ValueT]:
         is_pull_active = Event()
@@ -40,14 +42,11 @@ class InMemorySyncQueque[ValueT](SyncQueque[ValueT]):
 
             is_pull_active.clear()
 
-            self._update_push_completion_event()
-
-    def _update_push_completion_event(self) -> None:
-        if self._no_active_pulls():
-            self._push_completion_event.set()
+            if self._no_active_pulls():
+                self._is_synced.set()
 
     def _no_active_pulls(self) -> bool:
         return all(
-            not pull_activation_event.is_set()
-            for pull_activation_event in self._pull_activation_events
+            not is_pull_active.is_set()
+            for is_pull_active in self._pull_activation_events
         )

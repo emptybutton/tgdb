@@ -42,14 +42,11 @@ class SerializeTransactions:
             offset_to_commit != await self.log_iterator.offset()
         )
 
-        if transaction_commit and need_to_commit_offset:
-            await self.output_commits.sync_push(transaction_commit)
-            await self.log_iterator.commit(operator.time)
+        if transaction_commit:
+            await self.output_commits.push(transaction_commit)
 
-        elif transaction_commit and not need_to_commit_offset:
-            await self.output_commits.async_push(transaction_commit)
-
-        elif not transaction_commit and need_to_commit_offset:
+        if need_to_commit_offset:
+            await self.output_commits.sync()
             await self.log_iterator.commit(operator.time)
 
     def _safe_offset_to_commit(
