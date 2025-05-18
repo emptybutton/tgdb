@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from tgdb.application.ports.async_queque import AsyncQueque
-from tgdb.application.ports.log import Log
+from tgdb.application.ports.log import Log, LogOffset
 from tgdb.application.ports.log_iterator import LogIterator
 from tgdb.application.ports.sync_queque import SyncQueque
 from tgdb.entities.logic_time import LogicTime
@@ -20,8 +20,8 @@ class SerializeTransactions:
     input_operators: AsyncQueque[AppliedOperator]
     output_commits: SyncQueque[TransactionCommit]
 
-    async def __call__(self) -> None:
-        horizon = create_transaction_horizon()
+    async def __call__(self, max_transaction_horizon_age: LogicTime) -> None:
+        horizon = create_transaction_horizon(max_transaction_horizon_age)
 
         input_operator_iter = await self.input_operators.iter()
 
@@ -54,7 +54,7 @@ class SerializeTransactions:
 
     def _safe_offset_to_commit(
         self, operator: AppliedOperator, horizon: TransactionHorizon
-    ) -> LogicTime:
+    ) -> LogOffset:
         horizon_beginning = horizon.beginning()
 
         if horizon_beginning is None:

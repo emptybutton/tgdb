@@ -7,7 +7,7 @@ from uuid import UUID
 from effect import Effect, IdentifiedValueSet
 
 from tgdb.entities.logic_time import LogicTime
-from tgdb.entities.row import Row
+from tgdb.entities.row import Row, RowEffect
 from tgdb.entities.transaction_mark import (
     TransactionUniquenessMark,
     TransactionViewedRowMark,
@@ -38,9 +38,6 @@ class TransactionFailedCommit:
 type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
 
 
-class NotStartedTransactionError(Exception): ...
-
-
 @dataclass
 class Transaction:
     id: UUID
@@ -57,7 +54,7 @@ class Transaction:
     def is_readonly(self) -> bool:
         return not any(self._effect) and not self._uniqueness_marks
 
-    def consider(self, effect: TransactionEffect) -> None:
+    def consider(self, effect: RowEffect) -> None:
         self._effect &= effect
 
     def add_uniqueness_mark(
@@ -70,9 +67,9 @@ class Transaction:
     ) -> None:
         self._viewed_row_marks.add(viewed_row_mark)
 
-    def beginning(self) -> LogicTime:
+    def beginning(self) -> LogicTime | None:
         if self._beginning is None:
-            raise NotStartedTransactionError
+            return None
 
         return self._beginning
 

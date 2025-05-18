@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable
 
-from tgdb.entities.logic_time import LogicTime
+from tgdb.application.ports.log import LogOffset
 from tgdb.entities.operator import AppliedOperator
 
 
@@ -10,7 +10,7 @@ class LogIterator(ABC, AsyncIterable[AppliedOperator]):
     def finite(self) -> AsyncIterable[AppliedOperator]: ...
 
     @abstractmethod
-    async def commit(self, offset: LogicTime, /) -> None: ...
+    async def commit(self, offset: LogOffset, /) -> None: ...
 
     @abstractmethod
-    async def offset(self) -> LogicTime | None: ...
+    async def offset(self) -> LogOffset | None: ...
