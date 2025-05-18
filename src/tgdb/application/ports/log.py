@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, AsyncIterator
 
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.operator import AppliedOperator

@@ -25,7 +25,7 @@ class SerializeTransactions:
 
         input_operator_iter = await self.input_operators.iter()
 
-        async for operator in self.log_iterator.no_wait():
+        async for operator in self.log_iterator.finite():
             await self._output_operator(operator, horizon)
 
         async for operator in input_operator_iter:
