@@ -5,6 +5,7 @@ from typing import Any, Never
 from uuid import UUID
 
 from effect import Effect, IdentifiedValueSet
+from effect.state_transition import InvalidStateTransitionError
 
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.row import Row, RowEffect
@@ -32,7 +33,7 @@ class TransactionOkCommit:
 @dataclass(frozen=True)
 class TransactionFailedCommit:
     transaction_id: UUID
-    conflict: TransactionConflict
+    conflict: TransactionConflict | None
 
 
 type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
@@ -55,6 +56,10 @@ class Transaction:
         return not any(self._effect) and not self._uniqueness_marks
 
     def consider(self, effect: RowEffect) -> None:
+        """
+        :raises effect.state_transition.InvalidStateTransitionError:
+        """
+
         self._effect &= effect
 
     def add_uniqueness_mark(
@@ -68,9 +73,6 @@ class Transaction:
         self._viewed_row_marks.add(viewed_row_mark)
 
     def beginning(self) -> LogicTime | None:
-        if self._beginning is None:
-            return None
-
         return self._beginning
 
     def rollback(self) -> None:

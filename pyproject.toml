@@ -62,7 +62,7 @@ select = [
     "Q", "RET", "SLF", "SLOT", "SIM", "TID252", "TCH", "ARG", "PTH", "ERA", "TRY",
     "PERF", "INP", "I", "S", "FAST", "TID", "TCH", "INT"
 ]
-ignore = ["N818", "RUF009", "UP018", "PLR6301", "PLR0913", "PLW0108", "TC006"]
+ignore = ["N818", "RUF009", "UP018", "PLR6301", "PLR0913", "PLW0108", "TC006", "S101"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2
@@ -71,9 +71,8 @@ lines-after-imports = 2
 "src/tgdb/entities/*" = ["PLR2004"]
 "src/tgdb/application/*" = ["PLR0917"]
 "src/tgdb/infrastructure/adapters/*" = ["RUF029"]
-"src/tgdb/infrastructure/*" = ["S101"]
 "src/tgdb/entities/transaction.py" = ["SLF001"]
-"tests/*" = ["S101", "PLR0124", "PLR0917", "S106", "C901"]
+"tests/*" = ["PLR0124", "PLR0917", "S106", "C901", "PLR2004"]
 "__init__.py" = ["PLC0414"]
 
 [tool.pytest.ini_options]

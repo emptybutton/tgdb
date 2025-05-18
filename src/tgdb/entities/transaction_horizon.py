@@ -1,15 +1,16 @@
 from collections import OrderedDict
+from collections.abc import Iterator
 from dataclasses import dataclass
 from uuid import UUID
 
 from effect import Effect
+from effect.state_transition import InvalidStateTransitionError
 
 from tgdb.entities.logic_time import LogicTime, age
 from tgdb.entities.operator import AppliedOperator
 from tgdb.entities.transaction import (
     Transaction,
     TransactionCommit,
-    TransactionConflict,
     TransactionFailedCommit,
 )
 from tgdb.entities.transaction_mark import (
@@ -28,12 +29,21 @@ class NonLinearizedOperatorError(Exception): ...
 
 @dataclass
 class TransactionHorizon:
-    _max_age: LogicTime
+    _max_len: int
     _time: LogicTime | None
     _active_transaction_by_id: OrderedDict[UUID, Transaction]
 
     def __bool__(self) -> bool:
         return self.beginning() is not None
+
+    def __iter__(self) -> Iterator[Transaction]:
+        return iter(self._active_transaction_by_id.values())
+
+    def __len__(self) -> int:
+        return len(self._active_transaction_by_id)
+
+    def time(self) -> LogicTime | None:
+        return self._time
 
     def beginning(self) -> LogicTime | None:
         oldest_transaction = self._oldest_transaction()
@@ -53,11 +63,13 @@ class TransactionHorizon:
             operator.transaction_id
         )
 
-        commit: TransactionCommit | None = None
-
         match operator, transaction:
             case AppliedOperator(Effect() as row_effect), Transaction():
-                transaction.consider(row_effect)
+                try:
+                    transaction.consider(row_effect)
+                except InvalidStateTransitionError:
+                    transaction.rollback()
+                    del self._active_transaction_by_id[transaction.id]
 
             case (
                 AppliedOperator(TransactionUniquenessMark() as mark),
@@ -75,42 +87,52 @@ class TransactionHorizon:
                 AppliedOperator(TransactionStateMark(TransactionState.started)),
                 None
             ):
-                new_transaction = Transaction.start(
-                    operator.transaction_id,
-                    self._active_transaction_by_id.values(),
-                    operator.time,
-                )
-                self._active_transaction_by_id[operator.transaction_id] = (
-                    new_transaction
-                )
+                self._start_transaction(operator.transaction_id)
 
             case (
                 AppliedOperator(TransactionStateMark(TransactionState.rollbacked)),
                 Transaction(),
             ):
-                transaction.rollback()
                 del self._active_transaction_by_id[transaction.id]
+                transaction.rollback()
 
             case (
                 AppliedOperator(TransactionStateMark(TransactionState.committed)),
                 Transaction(),
             ):
-                commit = transaction.commit(operator.time)
                 del self._active_transaction_by_id[transaction.id]
+                return transaction.commit(operator.time)
 
             case (
                 AppliedOperator(TransactionStateMark(TransactionState.committed)),
                 None,
             ):
                 return TransactionFailedCommit(
-                    operator.transaction_id, TransactionConflict(frozenset())
+                    operator.transaction_id, conflict=None
                 )
 
             case _:
                 ...
 
-        self._limit_age(operator.time)
-        return commit
+        return None
+
+    def _start_transaction(self, transaction_id: UUID) -> None:
+        assert self._time is not None
+
+        new_transaction = Transaction.start(
+            transaction_id,
+            self._active_transaction_by_id.values(),
+            self._time,
+        )
+        self._active_transaction_by_id[transaction_id] = new_transaction
+
+        if len(self) <= self._max_len:
+            return
+
+        oldest_transaction = self._oldest_transaction()
+        assert oldest_transaction is not None
+
+        del self._active_transaction_by_id[oldest_transaction.id]
 
     def _oldest_transaction(self) -> Transaction | None:
         try:
@@ -118,22 +140,10 @@ class TransactionHorizon:
         except StopIteration:
             return None
 
-    def _limit_age(self, current_time: LogicTime) -> None:
-        transactions_to_remove = list[Transaction]()
 
-        for transaction in self._active_transaction_by_id.values():
-            if age(transaction.beginning(), current_time) > self._max_age:
-                transactions_to_remove.append(transaction)
-            else:
-                break
-
-        for transaction in transactions_to_remove:
-            del self._active_transaction_by_id[transaction.id]
-
-
-def create_transaction_horizon(max_age: LogicTime) -> TransactionHorizon:
+def create_transaction_horizon(max_len: int) -> TransactionHorizon:
     return TransactionHorizon(
         _time=None,
-        _max_age=max_age,
+        _max_len=max_len,
         _active_transaction_by_id=OrderedDict(),
     )
