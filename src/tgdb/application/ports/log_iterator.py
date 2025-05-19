@@ -5,7 +5,7 @@ from tgdb.application.ports.log import LogOffset
 from tgdb.entities.operator import AppliedOperator
 
 
-class LogIterator(ABC, AsyncIterable[AppliedOperator]):
+class LogIterator(ABC):
     @abstractmethod
     def finite(self) -> AsyncIterable[AppliedOperator]: ...
 

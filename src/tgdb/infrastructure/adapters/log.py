@@ -9,10 +9,11 @@ from tgdb.infrastructure.map_queuqe import MapQueuqe
 
 @dataclass
 class InMemoryLog(Log):
-    _queque: MapQueuqe[LogicTime, AppliedOperator]
+    _queque: MapQueuqe[AppliedOperator]
 
-    async def push(self, operator: AppliedOperator) -> None:
-        self._queque.push(operator.time, operator)
+    async def push(self, *operators: AppliedOperator) -> None:
+        for operator in operators:
+            self._queque.push(operator.time, operator)
 
     @override
     async def truncate(self, offset_to_truncate: LogicTime, /) -> None:

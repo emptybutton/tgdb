@@ -14,8 +14,8 @@ class InMemorySyncQueque[ValueT](SyncQueque[ValueT]):
         init=False, default_factory=list
     )
 
-    async def push(self, value: ValueT) -> None:
-        self._values.append(value)
+    async def push(self, *values: ValueT) -> None:
+        self._values.extend(values)
 
         for is_pull_active in self._pull_activation_events:
             is_pull_active.set()
@@ -36,11 +36,10 @@ class InMemorySyncQueque[ValueT](SyncQueque[ValueT]):
 
         while True:
             await is_pull_active.wait()
-
-            for value in self._values:
-                yield value
-
             is_pull_active.clear()
+
+            for index in range(len(self._values)):
+                yield self._values[index]
 
             if self._no_active_pulls():
                 self._is_synced.set()

@@ -11,8 +11,9 @@ class InMemoryAsyncQueque[ValueT](AsyncQueque[ValueT]):
     _queque: ConcurrentQueque[ValueT]
     _sync_reading_completed: Event = field(init=False, default_factory=Event)
 
-    async def push(self, value: ValueT) -> None:
-        self._queque.push(value)
+    async def push(self, *values: ValueT) -> None:
+        for value in values:
+            self._queque.push(value)
 
     async def iter(self) -> AsyncIterator[ValueT]:
         iter_ = aiter(self._queque)

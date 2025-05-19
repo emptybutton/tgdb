@@ -1,12 +1,16 @@
-from collections.abc import Generator
 from dataclasses import dataclass
+
+from tgdb.application.ports.logic_clock import Chronology, LogicClock
+from tgdb.entities.logic_time import LogicTime
 
 
 @dataclass
-class InMemoryLogicClock:
-    _current_time: int = 0
+class InMemoryLogicClock(LogicClock):
+    _time_counter: int = 0
 
-    def __await__(self) -> Generator[None, None, int]:
-        self._current_time += 1
-        yield
-        return self._current_time
+    async def chronology(self, len_: int, /) -> Chronology:
+        return tuple(self._time() for _ in range(len_))
+
+    def _time(self) -> LogicTime:
+        self._time_counter += 1
+        return self._time_counter
