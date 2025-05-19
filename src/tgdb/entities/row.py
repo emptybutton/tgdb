@@ -5,14 +5,13 @@ from enum import StrEnum
 from typing import Any, overload
 from uuid import UUID
 
-from effect import Dead, IdentifiedValue, Mutated, New
+
+type RowAttribute = None | bool | int | str | datetime | UUID | StrEnum  # noqa: RUF036
 
 
-type RowAttribute = bool | int | str | datetime | UUID | StrEnum
-
-
-@dataclass(frozen=True)
-class Row(IdentifiedValue[RowAttribute], Sequence[RowAttribute]):
+@dataclass(frozen=True, repr=False)
+class Row(Sequence[RowAttribute]):
+    id: RowAttribute
     body: tuple[RowAttribute, ...]
 
     def __iter__(self) -> Iterator[RowAttribute]:
@@ -35,9 +34,9 @@ class Row(IdentifiedValue[RowAttribute], Sequence[RowAttribute]):
     def __len__(self) -> int:
         return len(self.body) + 1
 
+    def __repr__(self) -> str:
+        return f"Row{tuple(self)}"
+
 
 def row(*attrs: RowAttribute) -> Row:
     return Row(attrs[0], attrs[1:])
-
-
-type RowEffect = New[Row] | Mutated[Row] | Dead[Row]

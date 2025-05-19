@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Awaitable, Sequence
 
 from tgdb.entities.logic_time import LogicTime
 
 
-class LogicClock(ABC):
-    @abstractmethod
-    async def times(self, count: int) -> Sequence[LogicTime]: ...
+type Chronology = Sequence[LogicTime]
 
+
+class LogicClock(ABC, Awaitable[LogicTime]):
     @abstractmethod
-    async def time(self) -> LogicTime: ...
+    async def chronology(self, len: int, /) -> Chronology: ...

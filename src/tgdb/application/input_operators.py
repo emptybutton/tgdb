@@ -29,9 +29,9 @@ class InputOperators[SerializedOperatorsT]:
         if input_operators is None:
             raise InputOperatorsError
 
-        times = await self.clock.times(len(input_operators))
+        chronology = await self.clock.chronology(len(input_operators))
 
         await self.input_operators.push(*(
-            applied_operator(input_operator, time)
-            for time, input_operator in zip(times, input_operators, strict=True)
+            applied_operator(operator, time)
+            for time, operator in zip(chronology, input_operators, strict=True)
         ))

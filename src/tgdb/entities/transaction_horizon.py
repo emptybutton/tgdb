@@ -3,21 +3,19 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from uuid import UUID
 
-from effect import Effect
-from effect.state_transition import InvalidStateTransitionError
-
-from tgdb.entities.logic_time import LogicTime, age
-from tgdb.entities.operator import AppliedOperator
+from tgdb.entities.logic_time import LogicTime
+from tgdb.entities.operator import (
+    AppliedOperator,
+    DeletedRow,
+    Mark,
+    MutatedRow,
+    NewRow,
+    TransactionState,
+)
 from tgdb.entities.transaction import (
     Transaction,
     TransactionCommit,
     TransactionFailedCommit,
-)
-from tgdb.entities.transaction_mark import (
-    TransactionState,
-    TransactionStateMark,
-    TransactionUniquenessMark,
-    TransactionViewedRowMark,
 )
 
 
@@ -63,50 +61,22 @@ class TransactionHorizon:
             operator.transaction_id
         )
 
-        match operator, transaction:
-            case AppliedOperator(Effect() as row_effect), Transaction():
-                try:
-                    transaction.consider(row_effect)
-                except InvalidStateTransitionError:
-                    transaction.rollback()
-                    del self._active_transaction_by_id[transaction.id]
+        match operator.effect, transaction:
+            case NewRow() | MutatedRow() | DeletedRow() | Mark(), Transaction():
+                transaction.add_effect(operator.effect)
 
-            case (
-                AppliedOperator(TransactionUniquenessMark() as mark),
-                Transaction()
-            ):
-                transaction.add_uniqueness_mark(mark)
-
-            case (
-                AppliedOperator(TransactionViewedRowMark() as mark),
-                Transaction()
-            ):
-                transaction.add_viewed_row_mark(mark)
-
-            case (
-                AppliedOperator(TransactionStateMark(TransactionState.started)),
-                None
-            ):
+            case TransactionState.started, None:
                 self._start_transaction(operator.transaction_id)
 
-            case (
-                AppliedOperator(TransactionStateMark(TransactionState.rollbacked)),
-                Transaction(),
-            ):
+            case TransactionState.rollbacked, Transaction():
                 del self._active_transaction_by_id[transaction.id]
                 transaction.rollback()
 
-            case (
-                AppliedOperator(TransactionStateMark(TransactionState.committed)),
-                Transaction(),
-            ):
+            case TransactionState.committed, Transaction():
                 del self._active_transaction_by_id[transaction.id]
                 return transaction.commit(operator.time)
 
-            case (
-                AppliedOperator(TransactionStateMark(TransactionState.committed)),
-                None,
-            ):
+            case TransactionState.committed, None:
                 return TransactionFailedCommit(
                     operator.transaction_id, conflict=None
                 )
@@ -132,6 +102,7 @@ class TransactionHorizon:
         oldest_transaction = self._oldest_transaction()
         assert oldest_transaction is not None
 
+        oldest_transaction.rollback()
         del self._active_transaction_by_id[oldest_transaction.id]
 
     def _oldest_transaction(self) -> Transaction | None:
