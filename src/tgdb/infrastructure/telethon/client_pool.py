@@ -6,7 +6,6 @@ from types import TracebackType
 from typing import Self
 
 from telethon import TelegramClient
-from telethon.types import Message
 
 
 @dataclass(init=False)
@@ -35,8 +34,16 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     ) -> None:
         return
 
-    def __call__(self) -> TelegramClient:
-        client = self._clients.pop()
+    def __call__(self, client_id: int | None = None) -> TelegramClient:
+        if client_id is None:
+            client = self._clients.pop()
+            self._clients.appendleft(client)
+
+            return client
+
+        client = self._client_by_id[client_id]
+
+        self._clients.remove(client)
         self._clients.appendleft(client)
 
         return client
@@ -44,10 +51,3 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     def __iter__(self) -> Iterator[TelegramClient]:
         while True:
             yield self()
-
-    async def edit(self, message: Message, text: str) -> None:
-        sender = self._client_by_id[message.from_id.user_id]
-        self._clients.remove(sender)
-        self._clients.appendleft(sender)
-
-        await sender.edit_message(message, text)

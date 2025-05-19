@@ -1,18 +1,21 @@
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
 from typing import Any, overload
 from uuid import UUID
 
+from tgdb.entities.message import Message
 
-type RowAttribute = None | bool | int | str | datetime | UUID | StrEnum  # noqa: RUF036
+
+type RowAttribute = None | bool | int | str | datetime | UUID  # noqa: RUF036
+type Schema = str
 
 
 @dataclass(frozen=True, repr=False)
 class Row(Sequence[RowAttribute]):
     id: RowAttribute
     body: tuple[RowAttribute, ...]
+    schema: Schema
 
     def __iter__(self) -> Iterator[RowAttribute]:
         yield self.id
@@ -38,5 +41,25 @@ class Row(Sequence[RowAttribute]):
         return f"Row{tuple(self)}"
 
 
-def row(*attrs: RowAttribute) -> Row:
-    return Row(attrs[0], attrs[1:])
+def row(*attrs: RowAttribute, schema: Schema = "__undefined__") -> Row:
+    return Row(attrs[0], attrs[1:], schema)
+
+
+@dataclass(frozen=True)
+class NewRow:
+    row: Row
+
+
+@dataclass(frozen=True)
+class MutatedRow:
+    row: Row
+    message: Message | None
+
+
+@dataclass(frozen=True)
+class DeletedRow:
+    row: Row
+    message: Message | None
+
+
+type RowEffect = NewRow | MutatedRow | DeletedRow

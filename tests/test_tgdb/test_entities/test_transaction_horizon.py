@@ -17,16 +17,19 @@ from tgdb.entities.transaction import (
 from tgdb.entities.transaction_horizon import (
     NonLinearizedOperatorError,
     TransactionHorizon,
+    UnattainableTransactionHorizonError,
+    UnlimitedTransactionHorizonError,
+    UselessMaxHeightError,
     create_transaction_horizon,
 )
 
 
 @fixture
 def horizon() -> TransactionHorizon:
-    return create_transaction_horizon(100)
+    return create_transaction_horizon(100, 100)
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
 def test_without_all(object: str, horizon: TransactionHorizon) -> None:
     if object == "bool":
         assert not horizon
@@ -37,11 +40,14 @@ def test_without_all(object: str, horizon: TransactionHorizon) -> None:
     if object == "time":
         assert horizon.time() is None
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
 def test_with_one_bad_operator(
     object: str,
     horizon: TransactionHorizon,
@@ -58,11 +64,14 @@ def test_with_one_bad_operator(
     if object == "time":
         assert horizon.time() == 1
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
 def test_with_one_ok_operator(
     object: str,
     horizon: TransactionHorizon,
@@ -79,11 +88,14 @@ def test_with_one_ok_operator(
     if object == "time":
         assert horizon.time() == 1
 
-    if object == "len":
-        assert len(horizon) == 1
+    if object == "height":
+        assert horizon.height() == 1
+
+    if object == "width":
+        assert horizon.width() == 1
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
 def test_with_two_ok_operators(
     object: str,
     horizon: TransactionHorizon,
@@ -108,8 +120,11 @@ def test_with_two_ok_operators(
     if object == "time":
         assert horizon.time() == 2
 
-    if object == "len":
-        assert len(horizon) == 2
+    if object == "height":
+        assert horizon.height() == 2
+
+    if object == "width":
+        assert horizon.width() == 2
 
 
 def test_with_parallel_operators(horizon: TransactionHorizon) -> None:
@@ -142,7 +157,7 @@ def test_with_operator_from_past(horizon: TransactionHorizon) -> None:
         ))
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
 def test_rollback_with_transaction(
     object: str,
     horizon: TransactionHorizon,
@@ -167,11 +182,14 @@ def test_rollback_with_transaction(
     if object == "time":
         assert horizon.time() == 20
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
 def test_rollback_without_transaction(
     object: str,
     horizon: TransactionHorizon,
@@ -191,11 +209,16 @@ def test_rollback_without_transaction(
     if object == "time":
         assert horizon.time() == 1
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len", "commit"])
+@mark.parametrize(
+    "object", ["bool", "begining", "time", "height", "width", "commit"]
+)
 def test_commit_without_transaction(
     object: str,
     horizon: TransactionHorizon,
@@ -215,14 +238,17 @@ def test_commit_without_transaction(
     if object == "time":
         assert horizon.time() == 10
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
     if object == "commit":
         assert commit == TransactionFailedCommit(UUID(int=1), conflict=None)
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len", "commit"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width", "commit"])
 def test_commit_with_transaction_without_intermediate_operators(
     object: str,
     horizon: TransactionHorizon,
@@ -247,14 +273,17 @@ def test_commit_with_transaction_without_intermediate_operators(
     if object == "time":
         assert horizon.time() == 10
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
     if object == "commit":
         assert commit == TransactionOkCommit(UUID(int=1), [], 10)
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len", "commit"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width", "commit"])
 def test_commit_with_transaction_with_ok_intermediate_operators(
     object: str,
     horizon: TransactionHorizon,
@@ -289,8 +318,11 @@ def test_commit_with_transaction_with_ok_intermediate_operators(
     if object == "time":
         assert horizon.time() == 10
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
     if object == "commit":
         assert commit == TransactionOkCommit(
@@ -298,7 +330,7 @@ def test_commit_with_transaction_with_ok_intermediate_operators(
         )
 
 
-@mark.parametrize("object", ["bool", "begining", "time", "len", "commit"])
+@mark.parametrize("object", ["bool", "begining", "time", "height", "width", "commit"])
 def test_commit_with_transaction_with_bad_intermediate_operators(
     object: str,
     horizon: TransactionHorizon,
@@ -333,8 +365,11 @@ def test_commit_with_transaction_with_bad_intermediate_operators(
     if object == "time":
         assert horizon.time() == 10
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
     if object == "commit":
         assert commit == TransactionOkCommit(
@@ -350,27 +385,29 @@ def test_commit_with_transaction_with_bad_intermediate_operators(
         "bool_after_commit1",
         "begining_after_commit1",
         "time_after_commit1",
-        "len_after_commit1",
+        "height_after_commit1",
+        "width_after_commit1",
 
         "bool_after_commit2",
         "begining_after_commit2",
         "time_after_commit2",
-        "len_after_commit2",
+        "height_after_commit2",
+        "width_after_commit2",
 
         "bool_after_commit3",
         "begining_after_commit3",
         "time_after_commit3",
-        "len_after_commit3",
+        "width_after_commit3",
     ]
 )
-def test_horizon_movement(
+def test_horizon_movement(  # noqa: PLR0912
     object: str,
     horizon: TransactionHorizon,
 ) -> None:
     """
-    |--|
-      |--|
-        |--|
+    |-...-|
+      |-...-|
+        |-...-|
     """
 
     horizon.add(AppliedOperator(
@@ -386,7 +423,7 @@ def test_horizon_movement(
     horizon.add(AppliedOperator(
         TransactionState.committed,
         UUID(int=1),
-        0,
+        -25,
     ))
 
     if object == "bool_after_commit1":
@@ -396,33 +433,39 @@ def test_horizon_movement(
         assert horizon.beginning() == -50
 
     if object == "time_after_commit1":
-        assert horizon.time() == 0
+        assert horizon.time() == -25
 
-    if object == "len_after_commit1":
-        assert len(horizon) == 1
+    if object == "height_after_commit1":
+        assert horizon.height() == 1
+
+    if object == "width_after_commit1":
+        assert horizon.width() == 26
 
     horizon.add(AppliedOperator(
         TransactionState.started,
         UUID(int=3),
-        50,
+        -10,
     ))
     horizon.add(AppliedOperator(
         TransactionState.committed,
         UUID(int=2),
-        100,
+        -5,
     ))
 
     if object == "bool_after_commit2":
         assert horizon
 
     if object == "begining_after_commit2":
-        assert horizon.beginning() == 50
+        assert horizon.beginning() == -10
 
     if object == "time_after_commit2":
-        assert horizon.time() == 100
+        assert horizon.time() == -5
 
-    if object == "len_after_commit2":
-        assert len(horizon) == 1
+    if object == "height_after_commit2":
+        assert horizon.height() == 1
+
+    if object == "width_after_commit2":
+        assert horizon.width() == 6
 
     horizon.add(AppliedOperator(
         TransactionState.committed,
@@ -439,12 +482,16 @@ def test_horizon_movement(
     if object == "time_after_commit3":
         assert horizon.time() == 150
 
-    if object == "len_after_commit3":
-        assert len(horizon) == 0
+    if object == "height_after_commit3":
+        assert horizon.height() == 0
+
+    if object == "width_after_commit3":
+        assert horizon.width() == 0
 
 
 @mark.parametrize(
-    "object", ["bool", "begining", "time", "len", "commit1", "commit2"]
+    "object",
+    ["bool", "begining", "time", "height", "width", "commit1", "commit2"]
 )
 def test_with_sequential_transactions(
     object: str,
@@ -495,8 +542,11 @@ def test_with_sequential_transactions(
     if object == "time":
         assert horizon.time() == 12
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
+
+    if object == "width":
+        assert horizon.width() == 0
 
     if object == "commit1":
         assert commit1 == TransactionOkCommit(
@@ -510,7 +560,7 @@ def test_with_sequential_transactions(
 
 
 @mark.parametrize(
-    "object", ["bool", "begining", "time", "len", "commit1", "commit2"]
+    "object", ["bool", "begining", "time", "height", "commit1", "commit2"]
 )
 def test_conflict_by_id_with_left_transaction(
     object: str,
@@ -564,8 +614,8 @@ def test_conflict_by_id_with_left_transaction(
     if object == "time":
         assert horizon.time() == 5
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
 
     if object == "commit1":
         assert commit1 == TransactionOkCommit(
@@ -579,7 +629,7 @@ def test_conflict_by_id_with_left_transaction(
 
 
 @mark.parametrize(
-    "object", ["bool", "begining", "time", "len", "commit1", "commit2"]
+    "object", ["bool", "begining", "time", "height", "commit1", "commit2"]
 )
 def test_conflict_by_id_with_subset_transaction(
     object: str,
@@ -631,8 +681,8 @@ def test_conflict_by_id_with_subset_transaction(
     if object == "time":
         assert horizon.time() == 5
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
 
     if object == "commit1":
         assert commit1 == TransactionFailedCommit(
@@ -646,7 +696,7 @@ def test_conflict_by_id_with_subset_transaction(
 
 
 @mark.parametrize(
-    "object", ["bool", "begining", "time", "len", "commit1", "commit2"]
+    "object", ["bool", "begining", "time", "height", "commit1", "commit2"]
 )
 def test_conflict_by_id_with_left_long_distance_transaction(
     object: str,
@@ -721,8 +771,8 @@ def test_conflict_by_id_with_left_long_distance_transaction(
     if object == "time":
         assert horizon.time() == 8
 
-    if object == "len":
-        assert len(horizon) == 0
+    if object == "height":
+        assert horizon.height() == 0
 
     if object == "commit1":
         assert commit1 == TransactionOkCommit(
@@ -740,8 +790,82 @@ def test_conflict_by_id_with_left_long_distance_transaction(
         )
 
 
-# def test_max_len(horizon: TransactionHorizon) -> None:
-#     """
-#     ######
-#     |-----|
-#     """
+def test_max_width() -> None:
+    """
+    ##
+    |--
+     |-
+      |
+    """
+
+    horizon = create_transaction_horizon(2, None)
+
+    horizon.add(AppliedOperator(TransactionState.started, UUID(int=1), 1))
+
+    assert horizon.width() == 1
+    assert horizon.height() == 1
+    assert horizon.beginning() == 1
+
+    horizon.add(AppliedOperator(TransactionState.started, UUID(int=2), 2))
+
+    assert horizon.width() == 2
+    assert horizon.height() == 2
+    assert horizon.beginning() == 1
+
+    horizon.add(AppliedOperator(TransactionState.started, UUID(int=3), 3))
+
+    assert horizon.width() == 2
+    assert horizon.height() == 2
+    assert horizon.beginning() == 2
+
+
+def test_max_height() -> None:
+    """
+    # |--
+    #  |-
+        |
+    """
+
+    horizon = create_transaction_horizon(None, 2)
+
+    horizon.add(AppliedOperator(TransactionState.started, UUID(int=1), 1))
+
+    assert horizon.width() == 1
+    assert horizon.height() == 1
+    assert horizon.beginning() == 1
+
+    horizon.add(AppliedOperator(TransactionState.started, UUID(int=2), 2))
+
+    assert horizon.width() == 2
+    assert horizon.height() == 2
+    assert horizon.beginning() == 1
+
+    horizon.add(AppliedOperator(TransactionState.started, UUID(int=3), 3))
+
+    assert horizon.width() == 2
+    assert horizon.height() == 2
+    assert horizon.beginning() == 2
+
+
+def test_unlimited_horizon() -> None:
+    with raises(UnlimitedTransactionHorizonError):
+        create_transaction_horizon(None, None)
+
+
+def test_unattainable_horizon_by_width() -> None:
+    with raises(UnattainableTransactionHorizonError):
+        create_transaction_horizon(0, None)
+
+
+def test_unattainable_horizon_by_height() -> None:
+    with raises(UnattainableTransactionHorizonError):
+        create_transaction_horizon(None, 0)
+
+
+def test_useless_max_height() -> None:
+    with raises(UselessMaxHeightError):
+        create_transaction_horizon(10, 15)
+
+
+def test_no_errors_on_square_size_limit() -> None:
+    create_transaction_horizon(10, 10)

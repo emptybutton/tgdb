@@ -1,16 +1,8 @@
-from typing import cast
+from datetime import datetime
+from urllib import parse
+from uuid import UUID
 
-from tgdb.entities.row import (
-    Row,
-    RowAttribute,
-    RowSchema,
-    RowSchemaError,
-    row_from_attributes,
-)
-from tgdb.infrastructure.primitive_encoding import (
-    decoded_primitive,
-    encoded_primitive,
-)
+from tgdb.entities.row import Row, RowAttribute, Schema
 
 
 attribute_separator = " "
@@ -22,6 +14,10 @@ class TooLargeEncodedRowError(Exception): ...
 
 
 def encoded_row(row: Row) -> str:
+    """
+    :raises tgdb.infrastructure.row_encoding.TooLargeEncodedRowError:
+    """
+
     encoded_attributes = (
         encoded_attribute(row.schema, attribute_number, attribute)
         for attribute_number, attribute in enumerate(row)
@@ -34,85 +30,32 @@ def encoded_row(row: Row) -> str:
     return encoded_row_
 
 
+def encoded_attribute_body(attr: RowAttribute) -> str:
+    match attr:
+        case bool():
+            return str(int(attr))
+        case int():
+            return str(attr)
+        case str():
+            return parse.quote(attr)
+        case datetime():
+            return attr.isoformat()
+        case None:
+            return "@"
+        case UUID():
+            return attr.hex
+
+
 def encoded_attribute(
-    schema: RowSchema,
+    schema: Schema,
     attribute_number: int,
     attribute: RowAttribute,
 ) -> str:
     header = encoded_attribute_header(attribute_number, schema)
-    body = encoded_primitive(attribute)
+    body = encoded_attribute_body(attribute)
 
     return f"{header}{body}"
 
 
-def encoded_attribute_header(
-    attribute_number: int,
-    schema: RowSchema,
-) -> str:
-    return (
-        f"{schema.name}[{attribute_number}]{attrubute_header_end}"
-    )
-
-
-def decoded_attribute(
-    schema: RowSchema,
-    attribute_number: int,
-    encoded_attribute: str,
-) -> RowAttribute | None:
-    header_end_index = encoded_attribute.find(attrubute_header_end)
-
-    if header_end_index == -1:
-        return None
-
-    header = encoded_attribute[:header_end_index + 1]
-    body = encoded_attribute[header_end_index + 1:]
-
-    excepted_header = encoded_attribute_header(attribute_number, schema)
-
-    if header != excepted_header:
-        return None
-
-    attribute_type = schema[attribute_number]
-
-    return decoded_primitive(body, attribute_type)
-
-
-def decoded_row(
-    schema: RowSchema, encoded_row: str
-) -> Row:
-    encoded_attributes = encoded_row.split(attribute_separator)
-
-    attributes = tuple(
-        decoded_attribute(
-            schema,  # type: ignore[arg-type]
-            attribute_number,
-            encoded_attribute,
-        )
-        for attribute_number, encoded_attribute in enumerate(encoded_attributes)
-    )
-
-    if any(attribute is None for attribute in attributes):
-        raise RowSchemaError(schema)
-
-    return row_from_attributes(
-        cast(tuple[RowAttribute, ...], attributes),
-        schema,
-    )
-
-
-def schema_name_of_encoded_row(encoded_row: str) -> str | None:
-    schema_name_end_index = encoded_row.find("[")
-
-    if schema_name_end_index == -1:
-        return None
-
-    return encoded_row[:schema_name_end_index]
-
-
-def query_text(
-    schema: RowSchema, attribute_number: int, attribute: RowAttribute | None
-) -> str:
-    if attribute is None:
-        return encoded_attribute_header(attribute_number, schema)
-
-    return encoded_attribute(schema, attribute_number, attribute)
+def encoded_attribute_header(attribute_number: int, schema: Schema) -> str:
+    return f"{schema}[{attribute_number}]{attrubute_header_end}"

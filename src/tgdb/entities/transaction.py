@@ -3,18 +3,18 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from tgdb.entities.logic_time import LogicTime
-from tgdb.entities.operator import (
+from tgdb.entities.mark import Mark
+from tgdb.entities.operator import IntermediateOperator
+from tgdb.entities.row import (
     DeletedRow,
-    IntermediateOperatorEffect,
-    Mark,
     MutatedRow,
     NewRow,
-    RowOperatorEffect,
+    RowAttribute,
+    RowEffect,
 )
-from tgdb.entities.row import RowAttribute
 
 
-type TransactionEffect = Sequence[RowOperatorEffect]
+type TransactionEffect = Sequence[RowEffect]
 
 
 @dataclass(frozen=True)
@@ -42,17 +42,17 @@ type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
 class Transaction:
     id: UUID
     _beginning: LogicTime | None
-    _row_effects: list[RowOperatorEffect]
+    _effect: list[RowEffect]
     _is_readonly: bool
     _row_ids: set[RowAttribute]
     _marks: set[Mark]
     _concurrent_transactions: list["Transaction"]
     _transactions_with_possible_conflict: list["Transaction"]
 
-    def add_effect(self, effect: IntermediateOperatorEffect) -> None:
+    def add_operator(self, effect: IntermediateOperator) -> None:
         match effect:
             case NewRow() | MutatedRow() | DeletedRow() as row_effect:
-                self._row_effects.append(row_effect)
+                self._effect.append(row_effect)
                 self._row_ids.add(row_effect.row.id)
 
                 if self._is_readonly:
@@ -84,7 +84,7 @@ class Transaction:
         self._die()
         return TransactionOkCommit(
             transaction_id=self.id,
-            effect=self._row_effects,
+            effect=self._effect,
             time=current_time,
         )
 
@@ -99,7 +99,7 @@ class Transaction:
             id=transaction_id,
             _beginning=current_time,
             _is_readonly=True,
-            _row_effects=list(),
+            _effect=list(),
             _row_ids=set(),
             _marks=set(),
             _concurrent_transactions=list(active_transactions),

@@ -1,16 +1,15 @@
 from collections import OrderedDict
-from collections.abc import Iterator
 from dataclasses import dataclass
 from uuid import UUID
 
-from tgdb.entities.logic_time import LogicTime
+from tgdb.entities.assert_ import not_none
+from tgdb.entities.logic_time import LogicTime, age
 from tgdb.entities.operator import (
     AppliedOperator,
-    DeletedRow,
-    Mark,
-    MutatedRow,
-    NewRow,
-    TransactionState,
+    CommitOperator,
+    Operator,
+    RollbackOperator,
+    StartOperator,
 )
 from tgdb.entities.transaction import (
     Transaction,
@@ -19,26 +18,55 @@ from tgdb.entities.transaction import (
 )
 
 
-class NotStartedTransactionError(Exception): ...
-
-
 class NonLinearizedOperatorError(Exception): ...
+
+
+class UnlimitedTransactionHorizonError(Exception): ...
+
+
+class UnattainableTransactionHorizonError(Exception): ...
+
+
+class UselessMaxHeightError(Exception): ...
 
 
 @dataclass
 class TransactionHorizon:
-    _max_len: int
+    _max_width: LogicTime | None
+    _max_height: int | None
     _time: LogicTime | None
     _active_transaction_by_id: OrderedDict[UUID, Transaction]
 
+    def __post_init__(self) -> None:
+        """
+        :raises tgdb.entities.transaction_horizon.UnlimitedTransactionHorizonError:
+        :raises tgdb.entities.transaction_horizon.UnattainableTransactionHorizonError:
+        :raises tgdb.entities.transaction_horizon.UselessMaxHeightError:
+        """  # noqa: E501
+
+        if self._max_width is None and self._max_height is None:
+            raise UnlimitedTransactionHorizonError
+
+        if self._max_width is not None and self._max_width <= 0:
+            raise UnattainableTransactionHorizonError
+
+        if self._max_height is not None and self._max_height <= 0:
+            raise UnattainableTransactionHorizonError
+
+        if (
+            self._max_height is not None and self._max_width is not None
+            and self._max_width < self._max_height
+        ):
+            raise UselessMaxHeightError
+
     def __bool__(self) -> bool:
-        return self.beginning() is not None
+        return bool(self._active_transaction_by_id)
 
-    def __iter__(self) -> Iterator[Transaction]:
-        return iter(self._active_transaction_by_id.values())
-
-    def __len__(self) -> int:
+    def height(self) -> int:
         return len(self._active_transaction_by_id)
+
+    def width(self) -> LogicTime:
+        return age(self.beginning(), self.time())
 
     def time(self) -> LogicTime | None:
         return self._time
@@ -51,32 +79,39 @@ class TransactionHorizon:
 
         return oldest_transaction.beginning()
 
-    def add(self, operator: AppliedOperator) -> TransactionCommit | None:
-        if self._time is not None and operator.time <= self._time:
+    def add(
+        self, applied_operator: AppliedOperator
+    ) -> TransactionCommit | None:
+        """
+        :raises tgdb.entities.transaction_horizon.NonLinearizedOperatorError:
+        """
+
+        if self._time is not None and applied_operator.time <= self._time:
             raise NonLinearizedOperatorError
 
-        self._time = operator.time
+        self._time = applied_operator.time
 
+        return self._add_operator(applied_operator.operator)
+
+    def _add_operator(self, operator: Operator) -> TransactionCommit | None:
         transaction = self._active_transaction_by_id.get(
             operator.transaction_id
         )
 
-        match operator.effect, transaction:
-            case NewRow() | MutatedRow() | DeletedRow() | Mark(), Transaction():
-                transaction.add_effect(operator.effect)
-
-            case TransactionState.started, None:
+        match operator, transaction:
+            case StartOperator(), None:
                 self._start_transaction(operator.transaction_id)
 
-            case TransactionState.rollbacked, Transaction():
-                del self._active_transaction_by_id[transaction.id]
-                transaction.rollback()
+            case RollbackOperator(), Transaction():
+                return self._rollback(transaction)
 
-            case TransactionState.committed, Transaction():
-                del self._active_transaction_by_id[transaction.id]
-                return transaction.commit(operator.time)
+            case CommitOperator(_, intermediate_operators), Transaction():
+                for intermediate_operator in intermediate_operators:
+                    transaction.add_operator(intermediate_operator)
 
-            case TransactionState.committed, None:
+                return self._commit(transaction, )
+
+            case CommitOperator(), None:
                 return TransactionFailedCommit(
                     operator.transaction_id, conflict=None
                 )
@@ -87,23 +122,30 @@ class TransactionHorizon:
         return None
 
     def _start_transaction(self, transaction_id: UUID) -> None:
-        assert self._time is not None
-
         new_transaction = Transaction.start(
             transaction_id,
             self._active_transaction_by_id.values(),
-            self._time,
+            not_none(self._time),
         )
         self._active_transaction_by_id[transaction_id] = new_transaction
 
-        if len(self) <= self._max_len:
-            return
+        too_wide = (
+            self._max_width is not None and self.width() > self._max_width
+        )
+        too_high = (
+            self._max_height is not None and self.height() > self._max_height
+        )
 
-        oldest_transaction = self._oldest_transaction()
-        assert oldest_transaction is not None
+        if too_wide or too_high:
+            self._rollback(not_none(self._oldest_transaction()))
 
-        oldest_transaction.rollback()
-        del self._active_transaction_by_id[oldest_transaction.id]
+    def _rollback(self, transaction: Transaction) -> None:
+        del self._active_transaction_by_id[transaction.id]
+        transaction.rollback()
+
+    def _commit(self, transaction: Transaction) -> TransactionCommit:
+        del self._active_transaction_by_id[transaction.id]
+        return transaction.commit(not_none(self._time))
 
     def _oldest_transaction(self) -> Transaction | None:
         try:
@@ -112,9 +154,19 @@ class TransactionHorizon:
             return None
 
 
-def create_transaction_horizon(max_len: int) -> TransactionHorizon:
+def create_transaction_horizon(
+    max_width: LogicTime | None,
+    max_height: int | None,
+) -> TransactionHorizon:
+    """
+    :raises tgdb.entities.transaction_horizon.UnlimitedTransactionHorizonError:
+    :raises tgdb.entities.transaction_horizon.UnattainableTransactionHorizonError:
+    :raises tgdb.entities.transaction_horizon.UselessMaxHeightError:
+    """  # noqa: E501
+
     return TransactionHorizon(
+        _max_width=max_width,
+        _max_height=max_height,
         _time=None,
-        _max_len=max_len,
         _active_transaction_by_id=OrderedDict(),
     )

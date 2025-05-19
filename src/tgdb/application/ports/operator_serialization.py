@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
 
 from tgdb.entities.operator import Operator
 
 
-class OperatorSerialization[SerializedOperatorsT](ABC):
+class OperatorSerialization[SerializedOperatorT](ABC):
     @abstractmethod
     async def deserialized(
-        self, operators: SerializedOperatorsT, /
-    ) -> Sequence[Operator] | None: ...
+        self, operator: SerializedOperatorT, /
+    ) -> Operator | None: ...

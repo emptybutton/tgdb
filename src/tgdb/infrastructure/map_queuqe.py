@@ -3,6 +3,8 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Protocol, Self, overload
 
+from tgdb.entities.assert_ import not_none
+
 
 class MapQueuqeKey(Protocol):
     def __le__(self, other: Self, /) -> bool: ...
@@ -19,13 +21,23 @@ class MapQueuqe[ValueT](Mapping[int, ValueT]):
     _map: OrderedDict[int, ValueT] = field(
         default_factory=OrderedDict, init=False
     )
+    _min: int | None = field(default=None, init=False)
+    _max: int | None = field(default=None, init=False)
+
+    def min(self) -> int | None:
+        return self._min
+
+    def max(self) -> int | None:
+        return self._max
 
     def push(self, key: int, value: ValueT) -> None:
-        max_key = max(self, default=None)
-
-        if max_key and key <= max_key:
+        if self._max is not None and key <= self._max:
             raise ValueError
 
+        if self._min is None:
+            self._min = key
+
+        self._max = key
         self._map[key] = value
 
     @overload
@@ -40,10 +52,18 @@ class MapQueuqe[ValueT](Mapping[int, ValueT]):
         if count is None:
             return self._map.popitem(last=False)
 
-        return tuple(
+        pulled_pairs = tuple(
             self._map.popitem(last=False)
             for _ in range(count)
         )
+
+        if not self._map:
+            self._min = None
+            self._max = None
+
+        self._min = next(iter(self._map))
+
+        return pulled_pairs
 
     def __getitem__(self, key: int) -> ValueT:
         return self._map[key]
@@ -59,9 +79,9 @@ class MapQueuqe[ValueT](Mapping[int, ValueT]):
             return None
 
         if key is None:
-            return min(self._map)
+            return self._min
 
-        if key >= max(self._map):
+        if key >= not_none(self._max):
             return None
 
         next_key = key + 1

@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.async_queque import AsyncQueque
 from tgdb.application.ports.log import Log, LogOffset
 from tgdb.application.ports.log_iterator import LogIterator
-from tgdb.application.ports.sync_queque import SyncQueque
+from tgdb.application.ports.queque import Queque
 from tgdb.entities.logic_time import LogicTime
-from tgdb.entities.operator import AppliedOperator
+from tgdb.entities.operator import AppliedOperator, Operator
 from tgdb.entities.transaction import TransactionCommit
 from tgdb.entities.transaction_horizon import (
     TransactionHorizon,
@@ -17,20 +16,32 @@ from tgdb.entities.transaction_horizon import (
 class SerializeTransactions:
     log: Log
     log_iterator: LogIterator
-    input_operators: AsyncQueque[AppliedOperator]
-    output_commits: SyncQueque[TransactionCommit]
+    input_operators: Queque[Operator]
+    output_commits: Queque[TransactionCommit]
 
-    async def __call__(self, max_transaction_horizon_age: LogicTime) -> None:
-        horizon = create_transaction_horizon(max_transaction_horizon_age)
+    async def __call__(
+        self,
+        horizon_max_width: LogicTime | None,
+        horizon_max_height: int | None,
+    ) -> None:
+        """
+        :raises tgdb.entities.transaction_horizon.UnlimitedTransactionHorizonError:
+        :raises tgdb.entities.transaction_horizon.UnattainableTransactionHorizonError:
+        :raises tgdb.entities.transaction_horizon.UselessMaxHeightError:
+        """  # noqa: E501
 
-        input_operator_iter = await self.input_operators.iter()
+        horizon = create_transaction_horizon(
+            horizon_max_width, horizon_max_height
+        )
+
+        input_operators = aiter(self.input_operators)
 
         async for operator in self.log_iterator.finite():
             await self._output_operator(operator, horizon)
 
-        async for operator in input_operator_iter:
-            await self.log.push(operator)
-            await self._output_operator(operator, horizon)
+        async for operator in input_operators:
+            applied_operator = await self.log.push_one(operator)
+            await self._output_operator(applied_operator, horizon)
 
     async def _output_operator(
         self, operator: AppliedOperator, horizon: TransactionHorizon
@@ -47,7 +58,7 @@ class SerializeTransactions:
 
         if need_to_commit_offset:
             await self.output_commits.sync()
-            await self.log_iterator.commit(operator.time)
+            await self.log_iterator.commit(offset_to_commit)
 
     def _safe_offset_to_commit(
         self, operator: AppliedOperator, horizon: TransactionHorizon
