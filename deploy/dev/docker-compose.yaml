@@ -6,7 +6,7 @@ services:
     container_name: tgdb
     build:
       context: ../../
-      dockerfile: deployments/dev/tgdb/Dockerfile
+      dockerfile: deploy/dev/tgdb/Dockerfile
       tags:
         - "tgdb:dev"
     volumes:

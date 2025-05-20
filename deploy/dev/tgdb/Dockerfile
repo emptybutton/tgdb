@@ -9,4 +9,4 @@ ENV UV_CACHE_DIR /run/app/uv
 ENV PYTHONPATH /app/src:/app/tests
 ENV WATCHFILES_FORCE_POLLING true
 
-ENTRYPOINT ["bash", "deployments/dev/tgdb/entrypoint.sh"]
+ENTRYPOINT ["bash", "deploy/dev/tgdb/entrypoint.sh"]
