@@ -49,16 +49,24 @@ def row(*attrs: RowAttribute, schema: Schema = "__undefined__") -> Row:
 class NewRow:
     row: Row
 
+    @property
+    def row_id(self) -> RowAttribute:
+        return self.row.id
+
 
 @dataclass(frozen=True)
 class MutatedRow:
     row: Row
     message: Message | None
 
+    @property
+    def row_id(self) -> RowAttribute:
+        return self.row.id
+
 
 @dataclass(frozen=True)
 class DeletedRow:
-    row: Row
+    row_id: RowAttribute
     message: Message | None
 
 
