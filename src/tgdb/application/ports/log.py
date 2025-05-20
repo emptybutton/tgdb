@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import overload
 
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.operator import AppliedOperator, Operator

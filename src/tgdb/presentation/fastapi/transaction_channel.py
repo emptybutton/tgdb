@@ -3,19 +3,10 @@ from asyncio import gather
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, WebSocket
 
-from tgdb.application.ports.heap import Heap
-from tgdb.application.ports.log import LogSlot
-from tgdb.application.ports.logic_clock import LogicClock
 from tgdb.application.ports.queque import AsyncQueque
-from tgdb.entities.operator import Operator, applied_operator
+from tgdb.entities.operator import Operator
 from tgdb.entities.transaction import (
     TransactionCommit,
-    TransactionFailedCommit,
-    TransactionOkCommit,
-)
-from tgdb.entities.transaction_horizon import (
-    TransactionHorizon,
-    create_transaction_horizon,
 )
 
 
