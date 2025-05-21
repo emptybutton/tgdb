@@ -1,30 +1,25 @@
 from asyncio import TaskGroup
 from collections.abc import Awaitable, Generator
 from dataclasses import dataclass, field
+from io import BytesIO
 from types import TracebackType
 from typing import Any, Self, cast
 
 from telethon.types import Message
 
-from tgdb.infrastructure.primitive_encoding import (
-    Primitive,
-    decoded_primitive,
-    encoded_primitive,
-)
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 from tgdb.infrastructure.telethon.vacuum import AutoVacuum
 
 
 @dataclass
-class InTelegramPrimitive[PrimitiveT: Primitive](Awaitable[PrimitiveT | None]):
-    _value_type: type[PrimitiveT]
+class InTelegramBigText(Awaitable[str | None]):
     _pool_to_insert: TelegramClientPool
     _pool_to_select: TelegramClientPool
     _chat_id: int
     _auto_vacuum: AutoVacuum
 
     _tasks: TaskGroup = field(init=False, default_factory=TaskGroup)
-    _cached_value: PrimitiveT | None = field(init=False, default=None)
+    _cached_value: str | None = field(init=False, default=None)
 
     async def __aenter__(self) -> Self:
         await self._tasks.__aenter__()
@@ -40,19 +35,19 @@ class InTelegramPrimitive[PrimitiveT: Primitive](Awaitable[PrimitiveT | None]):
     ) -> None:
         return await self._tasks.__aexit__(error_type, error, traceback)
 
-    def __await__(self) -> Generator[Any, Any, PrimitiveT | None]:
+    def __await__(self) -> Generator[Any, Any, str | None]:
         return self._get().__await__()
 
-    async def set(self, value: PrimitiveT, /) -> None:
+    async def set(self, text: str) -> None:
         client = self._pool_to_insert()
 
         last_message = await client.send_message(
-            self._chat_id, encoded_primitive(value),
+            self._chat_id, file=text.encode()
         )
 
         self._auto_vacuum.update_horizon(last_message.id)
 
-    async def _get(self) -> PrimitiveT | None:
+    async def _get(self) -> str | None:
         if self._cached_value is not None:
             return self._cached_value
 
@@ -61,16 +56,18 @@ class InTelegramPrimitive[PrimitiveT: Primitive](Awaitable[PrimitiveT | None]):
         return self._cached_value
 
     async def _refresh(self) -> None:
-        client = self._pool_to_select()
-
-        messages = await client.get_messages(self._chat_id, limit=1)
+        messages = await self._pool_to_select().get_messages(
+            self._chat_id, limit=1
+        )
 
         if not messages:
             return
 
         last_message = cast(Message, messages[-1])
 
+        with BytesIO() as stream:
+            await self._pool_to_select().download_file(last_message, stream)
+            encoded_text = stream.getvalue()
+
         self._auto_vacuum.update_horizon(last_message.id)
-        self._cached_value = decoded_primitive(
-            last_message.raw_text, self._value_type
-        )
+        self._cached_value = encoded_text.decode()

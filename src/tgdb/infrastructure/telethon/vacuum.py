@@ -1,7 +1,8 @@
-from asyncio import gather
+from asyncio import gather, sleep
 from dataclasses import dataclass
 from itertools import batched
 from math import ceil
+from typing import NoReturn, cast
 
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 
@@ -30,3 +31,57 @@ class Vacuum:
             self.pool_to_delete().delete_message(chat_id, id_batch_to_delete)
             for id_batch_to_delete in id_batches_to_delete
         ))
+
+
+@dataclass
+class AutoVacuum:
+    _pool_to_select: TelegramClientPool
+    _vacuum: Vacuum
+    _seconds_between_vacuums: int | float
+    _min_message_count_to_delete: int
+    _horizon_start: int | None
+
+    def __post_init__(self) -> None:
+        assert self._seconds_between_vacuums > 0
+        assert self._min_message_count_to_delete > 0
+
+    def update_horizon(self, new_horizon_start: int) -> None:
+        if self._horizon_start is None:
+            self._horizon_start = new_horizon_start
+        else:
+            self._horizon_start = max(self._horizon_start, new_horizon_start)
+
+    async def __call__(self, chat_id: int) -> NoReturn:
+        start_messages = await self._pool_to_select().get_messages(
+            chat_id, limit=1, reverse=True, min_id=1
+        )
+        if start_messages:
+            cached_chat_min_id_to_delete = cast(int, start_messages[0].id)
+        else:
+            cached_chat_min_id_to_delete = 1
+
+        while True:
+            await sleep(self._seconds_between_vacuums)
+
+            if self._horizon_start is None:
+                continue
+
+            if self._horizon_start == cached_chat_min_id_to_delete:
+                continue
+
+            assert self._horizon_start > cached_chat_min_id_to_delete
+
+            message_count_to_delete = (
+                self._horizon_start - cached_chat_min_id_to_delete
+            )
+
+            if message_count_to_delete < self._min_message_count_to_delete:
+                continue
+
+            chat_min_id_after_vacuum = self._horizon_start
+
+            await self._vacuum(
+                chat_id, cached_chat_min_id_to_delete, self._horizon_start
+            )
+
+            cached_chat_min_id_to_delete = chat_min_id_after_vacuum

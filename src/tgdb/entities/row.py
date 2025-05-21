@@ -50,8 +50,13 @@ class NewRow:
     row: Row
 
     @property
-    def row_id(self) -> RowAttribute:
+    def id(self) -> RowAttribute:
         return self.row.id
+
+
+@dataclass(frozen=True)
+class ViewedRow:
+    id: RowAttribute
 
 
 @dataclass(frozen=True)
@@ -60,14 +65,14 @@ class MutatedRow:
     message: Message | None
 
     @property
-    def row_id(self) -> RowAttribute:
+    def id(self) -> RowAttribute:
         return self.row.id
 
 
 @dataclass(frozen=True)
 class DeletedRow:
-    row_id: RowAttribute
+    id: RowAttribute
     message: Message | None
 
 
-type RowEffect = NewRow | MutatedRow | DeletedRow
+type RowEffect = NewRow | MutatedRow | DeletedRow | ViewedRow

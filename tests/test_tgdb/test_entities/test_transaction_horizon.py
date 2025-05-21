@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from pytest import fixture, mark, raises
@@ -10,6 +11,7 @@ from tgdb.entities.operator import (
 )
 from tgdb.entities.row import MutatedRow, NewRow, row
 from tgdb.entities.transaction import (
+    Transaction,
     TransactionConflict,
     TransactionFailedCommit,
     TransactionOkCommit,
@@ -236,7 +238,7 @@ def test_commit_with_transaction_without_intermediate_operators(
         assert horizon.width() == 0
 
     if object == "commit":
-        assert commit == TransactionOkCommit(UUID(int=1), [], 10)
+        assert commit == TransactionOkCommit(UUID(int=1), [])
 
 
 @mark.parametrize(
@@ -279,8 +281,7 @@ def test_commit_with_transaction_with_ok_intermediate_operators(
     if object == "commit":
         assert commit == TransactionOkCommit(
             UUID(int=1),
-            [MutatedRow(row(1, "x"), None), NewRow(row(1, "y"))],
-            10,
+            [MutatedRow(row(1, "x"), None), NewRow(row(1, "y"))]
         )
 
 
@@ -413,12 +414,12 @@ def test_with_sequential_transactions(
 
     if object == "commit1":
         assert commit1 == TransactionOkCommit(
-            UUID(int=1), [MutatedRow(row(1, "a"), None)], 2
+            UUID(int=1), [MutatedRow(row(1, "a"), None)]
         )
 
     if object == "commit2":
         assert commit2 == TransactionOkCommit(
-            UUID(int=2), [MutatedRow(row(1, "b"), None)], 11
+            UUID(int=2), [MutatedRow(row(1, "b"), None)]
         )
 
 
@@ -470,7 +471,7 @@ def test_conflict_by_id_with_left_transaction(
 
     if object == "commit1":
         assert commit1 == TransactionOkCommit(
-            UUID(int=1), [MutatedRow(row(1, "a"), None)], 2
+            UUID(int=1), [MutatedRow(row(1, "a"), None)]
         )
 
     if object == "commit2":
@@ -532,7 +533,7 @@ def test_conflict_by_id_with_subset_transaction(
 
     if object == "commit2":
         assert commit2 == TransactionOkCommit(
-            UUID(int=2), [MutatedRow(row(1, "b"), None)], 2
+            UUID(int=2), [MutatedRow(row(1, "b"), None)]
         )
 
 
@@ -606,12 +607,12 @@ def test_conflict_by_id_with_left_long_distance_transaction(
 
     if object == "commit1":
         assert commit1 == TransactionOkCommit(
-            UUID(int=1), [MutatedRow(row("x"), None)], 5
+            UUID(int=1), [MutatedRow(row("x"), None)]
         )
 
     if object == "commit2":
         assert commit2 == TransactionOkCommit(
-            UUID(int=2), [MutatedRow(row("y"), None)], 4
+            UUID(int=2), [MutatedRow(row("y"), None)]
         )
 
     if object == "commit3":
@@ -699,3 +700,53 @@ def test_useless_max_height() -> None:
 
 def test_no_errors_on_square_size_limit() -> None:
     create_transaction_horizon(10, 10)
+
+
+def test_no_memory_leak() -> None:
+    """
+    |---------|
+     |-------|
+      |-----|
+       |---|
+        ...
+    """
+
+    transaction_counter = 0
+
+    old_transaction_init = Transaction.__init__
+
+    def new_transaction_init(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+        old_transaction_init(*args, **kwargs)
+
+        nonlocal transaction_counter
+        transaction_counter += 1
+
+    def transaction_del(self: Any, *args: Any, **kwargs: Any) -> None:  # noqa: ARG001,ANN401
+        nonlocal transaction_counter
+
+        assert self.id.int == transaction_counter
+        transaction_counter -= 1
+
+    Transaction.__init__ = new_transaction_init  # type: ignore[method-assign]
+    Transaction.__del__ = transaction_del  # type: ignore[attr-defined]
+
+    horizon = create_transaction_horizon(None, 1000)
+
+    time = -1
+
+    for xid in range(1, 101):
+        time += 1
+        horizon.add(AppliedOperator(StartOperator(UUID(int=xid)), time))
+
+    assert transaction_counter == 100
+
+    for xid in reversed(range(1, 101)):
+        time += 1
+        horizon.add(AppliedOperator(CommitOperator(UUID(int=xid), []), time))
+
+    horizon.add(AppliedOperator(StartOperator(UUID(int=200)), 1000))
+
+    Transaction.__init__ = old_transaction_init  # type: ignore[method-assign]
+    del Transaction.__del__  # type: ignore[attr-defined]
+
+    assert transaction_counter == 1

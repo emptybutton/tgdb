@@ -1,7 +1,7 @@
 [project]
 name = "tgdb"
 version = "0.1.0"
-description = "ACID NoSQL РСУБД для хранения данных в телеграме"
+description = "ACID NoSQL РСУБД поверх телеграма"
 authors = [
     {name = "Alexander Smolin", email = "88573504+emptybutton@users.noreply.github.com"}
 ]
@@ -15,6 +15,7 @@ dependencies = [
     "typenv>=0.2.0",
     "dishka>=1.4.2",
     "fastapi>=0.115.2",
+    "pydantic>=2.11.4",
     "uvicorn[standard]>=0.30.6",
 ]
 

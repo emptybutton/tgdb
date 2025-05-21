@@ -103,7 +103,8 @@ class TransactionHorizon:
                 self._start_transaction(operator.transaction_id)
 
             case RollbackOperator(), Transaction():
-                return self._rollback(transaction)
+                self._rollback(transaction)
+                return None
 
             case CommitOperator(_, intermediate_operators), Transaction():
                 for intermediate_operator in intermediate_operators:
@@ -145,7 +146,7 @@ class TransactionHorizon:
 
     def _commit(self, transaction: Transaction) -> TransactionCommit:
         del self._active_transaction_by_id[transaction.id]
-        return transaction.commit(not_none(self._time))
+        return transaction.commit()
 
     def _oldest_transaction(self) -> Transaction | None:
         try:

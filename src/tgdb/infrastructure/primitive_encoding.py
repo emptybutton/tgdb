@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from datetime import datetime
 from urllib import parse
 from uuid import UUID

@@ -10,11 +10,12 @@ from tgdb.entities.row import (
     MutatedRow,
     NewRow,
     RowAttribute,
-    RowEffect,
+    ViewedRow,
 )
 
 
-type TransactionEffect = Sequence[RowEffect]
+type TransactionScalarEffect = NewRow | MutatedRow | DeletedRow
+type TransactionEffect = Sequence[TransactionScalarEffect]
 
 
 @dataclass(frozen=True)
@@ -26,7 +27,6 @@ class TransactionConflict:
 class TransactionOkCommit:
     transaction_id: UUID
     effect: TransactionEffect
-    time: LogicTime
 
 
 @dataclass(frozen=True)
@@ -42,25 +42,23 @@ type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
 class Transaction:
     id: UUID
     _beginning: LogicTime | None
-    _effect: list[RowEffect]
-    _is_readonly: bool
+    _effect: list[TransactionScalarEffect]
     _row_ids: set[RowAttribute]
     _marks: set[Mark]
     _concurrent_transactions: list["Transaction"]
     _transactions_with_possible_conflict: list["Transaction"]
 
-    def add_operator(self, effect: IntermediateOperator) -> None:
-        match effect:
-            case NewRow() | MutatedRow() | DeletedRow() as row_effect:
-                self._effect.append(row_effect)
-                self._row_ids.add(row_effect.row.id)
+    def add_operator(self, operator: IntermediateOperator) -> None:
+        match operator:
+            case NewRow() | MutatedRow() | DeletedRow() as row:
+                self._effect.append(row)
+                self._row_ids.add(row.id)
 
-                if self._is_readonly:
-                    self._is_readonly = isinstance(row_effect, NewRow)
+            case ViewedRow() as row:
+                self._row_ids.add(row.id)
 
             case Mark() as mark:
                 self._marks.add(mark)
-                self._is_readonly = False
 
     def beginning(self) -> LogicTime | None:
         return self._beginning
@@ -68,25 +66,18 @@ class Transaction:
     def rollback(self) -> None:
         self._die()
 
-    def commit(self, current_time: LogicTime) -> TransactionCommit:
+    def commit(self) -> TransactionCommit:
         conflict = self._conflict()
 
         if conflict is not None:
             self._die()
             return TransactionFailedCommit(self.id, conflict)
 
-        is_conflictable = not self._is_readonly
-
-        if is_conflictable:
-            for transaction in self._concurrent_transactions:
-                transaction._transactions_with_possible_conflict.append(self)
+        for transaction in self._concurrent_transactions:
+            transaction._transactions_with_possible_conflict.append(self)
 
         self._die()
-        return TransactionOkCommit(
-            transaction_id=self.id,
-            effect=self._effect,
-            time=current_time,
-        )
+        return TransactionOkCommit(transaction_id=self.id, effect=self._effect)
 
     @classmethod
     def start(
@@ -98,7 +89,6 @@ class Transaction:
         transasction = Transaction(
             id=transaction_id,
             _beginning=current_time,
-            _is_readonly=True,
             _effect=list(),
             _row_ids=set(),
             _marks=set(),
@@ -113,6 +103,7 @@ class Transaction:
 
     def _die(self) -> None:
         self._concurrent_transactions.clear()
+        self._transactions_with_possible_conflict.clear()
 
     def _conflict(self) -> TransactionConflict | None:
         for transaction in self._transactions_with_possible_conflict:

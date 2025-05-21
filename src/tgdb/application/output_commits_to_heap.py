@@ -1,22 +1,28 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from tgdb.application.ports.heap import Heap
-from tgdb.application.ports.message import TransactionCommitMessage
 from tgdb.application.ports.queque import Queque
-from tgdb.entities.transaction import TransactionOkCommit
+from tgdb.entities.transaction import TransactionCommit, TransactionOkCommit
 
 
 @dataclass(frozen=True)
 class OutputCommitsToHeap:
     heap: Heap
-    output_commit_messages: Queque[TransactionCommitMessage]
+    output_commits: Queque[Sequence[TransactionCommit]]
 
     async def __call__(self) -> None:
-        async for message in self.output_commit_messages:
-            if not isinstance(message.commit, TransactionOkCommit):
-                return
+        is_previous_map_partial = True
 
-            if message.is_commit_duplicate:
-                await self.heap.map_as_duplicate(message.commit.effect)
+        async for commits in self.output_commits:
+            effects = tuple(
+                commit.effect
+                for commit in commits
+                if isinstance(commit, TransactionOkCommit)
+            )
+
+            if is_previous_map_partial:
+                await self.heap.map_as_duplicate(effects)
+                is_previous_map_partial = False
             else:
-                await self.heap.map(message.commit.effect)
+                await self.heap.map(effects)
