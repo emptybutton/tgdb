@@ -11,6 +11,7 @@ from tgdb.entities.operator import (
 )
 from tgdb.entities.row import MutatedRow, NewRow, row
 from tgdb.entities.transaction import (
+    NoTransaction,
     Transaction,
     TransactionConflict,
     TransactionFailedCommit,
@@ -136,7 +137,9 @@ def test_with_only_commit_operator(
         assert horizon.width() == 0
 
     if object == "commit":
-        assert commit == TransactionFailedCommit(UUID(int=1), None)
+        assert commit == TransactionFailedCommit(
+            UUID(int=1), reason=NoTransaction()
+        )
 
 
 @mark.parametrize("object", ["bool", "begining", "time", "height", "width"])
@@ -476,7 +479,7 @@ def test_conflict_by_id_with_left_transaction(
 
     if object == "commit2":
         assert commit2 == TransactionFailedCommit(
-            UUID(int=2), TransactionConflict(frozenset())
+            UUID(int=2), reason=TransactionConflict(frozenset())
         )
 
 
@@ -528,7 +531,7 @@ def test_conflict_by_id_with_subset_transaction(
 
     if object == "commit1":
         assert commit1 == TransactionFailedCommit(
-            UUID(int=1), TransactionConflict(frozenset())
+            UUID(int=1), reason=TransactionConflict(frozenset())
         )
 
     if object == "commit2":
@@ -617,7 +620,7 @@ def test_conflict_by_id_with_left_long_distance_transaction(
 
     if object == "commit3":
         assert commit3 == TransactionFailedCommit(
-            UUID(int=3), TransactionConflict(frozenset())
+            UUID(int=3), reason=TransactionConflict(frozenset())
         )
 
 

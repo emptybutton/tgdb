@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from uuid import UUID
 
 from tgdb.entities.logic_time import LogicTime
@@ -24,6 +24,10 @@ class TransactionConflict:
 
 
 @dataclass(frozen=True)
+class NoTransaction: ...
+
+
+@dataclass(frozen=True)
 class TransactionOkCommit:
     transaction_id: UUID
     effect: TransactionEffect
@@ -32,7 +36,7 @@ class TransactionOkCommit:
 @dataclass(frozen=True)
 class TransactionFailedCommit:
     transaction_id: UUID
-    conflict: TransactionConflict | None
+    reason: TransactionConflict | NoTransaction = field(kw_only=True)
 
 
 type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
@@ -71,7 +75,7 @@ class Transaction:
 
         if conflict is not None:
             self._die()
-            return TransactionFailedCommit(self.id, conflict)
+            return TransactionFailedCommit(self.id, reason=conflict)
 
         for transaction in self._concurrent_transactions:
             transaction._transactions_with_possible_conflict.append(self)

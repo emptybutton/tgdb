@@ -61,10 +61,13 @@ indent-width = 4
 [tool.ruff.lint]
 select = [
     "ANN", "F", "W", "E", "B", "C90", "N", "UP", "YTT", "ASYNC", "PL", "RUF",
-    "Q", "RET", "SLF", "SLOT", "SIM", "TID252", "TCH", "ARG", "PTH", "ERA", "TRY",
-    "PERF", "INP", "I", "S", "FAST", "TID", "TCH", "INT"
+    "Q", "RET", "SLF", "SLOT", "SIM", "TID252", "TCH", "ARG", "PTH", "ERA",
+    "TRY", "PERF", "INP", "I", "S", "FAST", "TID", "TCH", "INT"
 ]
-ignore = ["N818", "RUF009", "UP018", "PLR6301", "PLR0913", "PLW0108", "TC006", "S101"]
+ignore = [
+    "N818", "RUF009", "UP018", "PLR6301", "PLR0913", "PLW0108", "TC006",
+    "S101", "TC003", "TC002"
+]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2

@@ -12,6 +12,7 @@ from tgdb.entities.operator import (
     StartOperator,
 )
 from tgdb.entities.transaction import (
+    NoTransaction,
     Transaction,
     TransactionCommit,
     TransactionFailedCommit,
@@ -114,7 +115,7 @@ class TransactionHorizon:
 
             case CommitOperator(), None:
                 return TransactionFailedCommit(
-                    operator.transaction_id, conflict=None
+                    operator.transaction_id, reason=NoTransaction()
                 )
 
             case _:
