@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from types import TracebackType
 from typing import Any, Self, cast
 
-from telethon.types import Message
+from telethon.hints import TotalList
 
 from tgdb.infrastructure.primitive_encoding import (
     Primitive,
@@ -64,11 +64,12 @@ class InTelegramPrimitive[PrimitiveT: Primitive](Awaitable[PrimitiveT | None]):
         client = self._pool_to_select()
 
         messages = await client.get_messages(self._chat_id, limit=1)
+        messages = cast(TotalList, messages)
 
         if not messages:
             return
 
-        last_message = cast(Message, messages[-1])
+        last_message = messages[-1]
 
         self._auto_vacuum.update_horizon(last_message.id)
         self._cached_value = decoded_primitive(

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 from urllib import parse
 from uuid import UUID
 
@@ -67,4 +68,4 @@ def decoded_primitive[PrimitiveT: Primitive](
 ) -> PrimitiveT:
     decoded = _decoding_by_type[type_]
 
-    return decoded(encoded_value)
+    return cast(PrimitiveT, decoded(encoded_value))

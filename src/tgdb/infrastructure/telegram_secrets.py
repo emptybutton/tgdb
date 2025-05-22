@@ -7,7 +7,6 @@ from pathlib import Path
 class TelegramSecrets:
     app_api_id: int
     app_api_hash: str
-    bot_token: str
 
     @classmethod
     def load(cls, secrets_file_path: Path) -> "TelegramSecrets":
@@ -17,5 +16,4 @@ class TelegramSecrets:
             return TelegramSecrets(
                 app_api_id=raw_secrets["app_api_id"],
                 app_api_hash=raw_secrets["app_api_hash"],
-                bot_token=raw_secrets["bot_token"],
             )

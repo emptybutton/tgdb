@@ -115,7 +115,7 @@ class InTelegramHeap(Heap):
         tg_new_message = await self._pool_to_insert().send_message(
             self._heap_id, encoded_heap_row(new_row.row)
         )
-        self._message_map[new_row.row.id] = message(tg_new_message)
+        self._message_map[new_row.row.id] = message(tg_new_message)  # type: ignore[arg-type]
 
     async def _update(self, mutated_row: MutatedRow) -> None:
         message = await self._message(mutated_row)

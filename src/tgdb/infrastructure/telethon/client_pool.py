@@ -1,38 +1,51 @@
+from asyncio import gather
 from collections import deque
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import Self, cast
 
 from telethon import TelegramClient
+from telethon.sessions.string import StringSession
+from telethon.types import InputPeerUser
 
 
-@dataclass(init=False)
+@dataclass(frozen=True, unsafe_hash=False)
 class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     _clients: deque[TelegramClient]
-    _client_by_id: dict[int, TelegramClient]
 
-    def __init__(self, clients: Sequence[TelegramClient]) -> None:
-        self._clients = deque(clients, len(clients))
-        self._client_by_id = dict()
+    _client_by_id: dict[int, TelegramClient] = field(
+        init=False, default_factory=dict
+    )
 
     async def __aenter__(self) -> Self:
         for client in self._clients:
-            client_info = await client.get_me(input_peer=True)
+            client_info = (
+                cast(InputPeerUser, await client.get_me(input_peer=True))
+            )
             client_id = client_info.user_id
 
             self._client_by_id[client_id] = client
+
+        await gather(*(
+            client.__aenter__()  # type: ignore[no-untyped-call]
+            for client in self._clients
+        ))
 
         return self
 
     async def __aexit__(
         self,
-        _: type[BaseException] | None,
-        __: BaseException | None,
-        ___: TracebackType | None,
+        error_type: type[BaseException] | None,
+        error: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
-        return
+        await gather(*(
+            client.__aexit__(error_type, error, traceback)  # type: ignore[no-untyped-call]
+            for client in self._clients
+        ))
 
     def __call__(self, client_id: int | None = None) -> TelegramClient:
         if client_id is None:
@@ -51,3 +64,16 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     def __iter__(self) -> Iterator[TelegramClient]:
         while True:
             yield self()
+
+
+def loaded_client_pool_from_farm_file(
+    farm_file_path: Path, app_api_id: int, app_api_hash: str
+) -> TelegramClientPool:
+    with farm_file_path.open() as farm_file:
+        return TelegramClientPool(deque(
+            TelegramClient(
+                StringSession(session_token), app_api_id, app_api_hash
+            )
+            for session_token in farm_file
+            if session_token
+        ))

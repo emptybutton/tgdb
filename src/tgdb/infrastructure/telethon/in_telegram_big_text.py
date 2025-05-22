@@ -5,7 +5,7 @@ from io import BytesIO
 from types import TracebackType
 from typing import Any, Self, cast
 
-from telethon.types import Message
+from telethon.hints import TotalList
 
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 from tgdb.infrastructure.telethon.vacuum import AutoVacuum
@@ -19,7 +19,7 @@ class InTelegramBigText(Awaitable[str | None]):
     _auto_vacuum: AutoVacuum
 
     _tasks: TaskGroup = field(init=False, default_factory=TaskGroup)
-    _cached_value: str | None = field(init=False, default=None)
+    _cached_stored_text: str | None = field(init=False, default=None)
 
     async def __aenter__(self) -> Self:
         await self._tasks.__aenter__()
@@ -46,28 +46,30 @@ class InTelegramBigText(Awaitable[str | None]):
         )
 
         self._auto_vacuum.update_horizon(last_message.id)
+        self._cached_stored_text = text
 
     async def _get(self) -> str | None:
-        if self._cached_value is not None:
-            return self._cached_value
+        if self._cached_stored_text is not None:
+            return self._cached_stored_text
 
         await self._refresh()
 
-        return self._cached_value
+        return self._cached_stored_text
 
     async def _refresh(self) -> None:
         messages = await self._pool_to_select().get_messages(
             self._chat_id, limit=1
         )
+        messages = cast(TotalList, messages)
 
         if not messages:
             return
 
-        last_message = cast(Message, messages[-1])
+        last_message = messages[-1]
 
         with BytesIO() as stream:
             await self._pool_to_select().download_file(last_message, stream)
             encoded_text = stream.getvalue()
 
         self._auto_vacuum.update_horizon(last_message.id)
-        self._cached_value = encoded_text.decode()
+        self._cached_stored_text = encoded_text.decode()

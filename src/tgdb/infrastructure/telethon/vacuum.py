@@ -4,6 +4,8 @@ from itertools import batched
 from math import ceil
 from typing import NoReturn, cast
 
+from telethon.hints import TotalList
+
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 
 
@@ -28,7 +30,7 @@ class Vacuum:
         id_batches_to_delete = batched(range_, batch_size, strict=False)
 
         await gather(*(
-            self.pool_to_delete().delete_message(chat_id, id_batch_to_delete)
+            self.pool_to_delete().delete_messages(chat_id, id_batch_to_delete)
             for id_batch_to_delete in id_batches_to_delete
         ))
 
@@ -55,6 +57,7 @@ class AutoVacuum:
         start_messages = await self._pool_to_select().get_messages(
             chat_id, limit=1, reverse=True, min_id=1
         )
+        start_messages = cast(TotalList, start_messages)
         if start_messages:
             cached_chat_min_id_to_delete = cast(int, start_messages[0].id)
         else:

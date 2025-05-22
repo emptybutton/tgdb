@@ -1,12 +1,11 @@
 from asyncio import Event
 from collections import deque
-from collections.abc import AsyncIterator, Iterator, Sequence
+from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass, field
-from typing import Any, overload
 
 
 @dataclass(frozen=True, unsafe_hash=False)
-class AsyncQueque[ValueT](Sequence[ValueT]):
+class AsyncQueque[ValueT]:
     _values: deque[ValueT] = field(default_factory=deque)
     _is_synced: Event = field(default_factory=Event, init=False)
     _offset_by_iteration_event: dict[Event, int] = field(
@@ -26,18 +25,8 @@ class AsyncQueque[ValueT](Sequence[ValueT]):
     def __iter__(self) -> Iterator[ValueT]:
         return iter(self._values)
 
-    @overload
-    def __getitem__(self, index: int, /) -> ValueT: ...
-
-    @overload
-    def __getitem__(
-        self, slice_: "slice[Any, Any, Any]", /
-    ) -> Sequence[ValueT]: ...
-
-    def __getitem__(
-        self, value: "int | slice[Any, Any, Any]", /
-    ) -> Sequence[ValueT] | ValueT:
-        return self._values[value]
+    def __getitem__(self, index: int, /) -> ValueT:
+        return self._values[index]
 
     def push(self, value: ValueT) -> None:
         self._values.append(value)
@@ -87,9 +76,7 @@ class AsyncQueque[ValueT](Sequence[ValueT]):
                 self._is_synced.set()
 
     def _refresh(self) -> None:
-        min_offset = min(
-            self._offset_by_iteration_event.values(), default=-1
-        )
+        min_offset = min(self._offset_by_iteration_event.values(), default=-1)
 
         if min_offset >= 0:
             self._values.popleft()
