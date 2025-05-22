@@ -1,7 +1,7 @@
 [project]
 name = "tgdb"
 version = "0.1.0"
-description = "ACID NoSQL РСУБД поверх телеграма"
+description = "РСУБД поверх телеграмма"
 authors = [
     {name = "Alexander Smolin", email = "88573504+emptybutton@users.noreply.github.com"}
 ]
