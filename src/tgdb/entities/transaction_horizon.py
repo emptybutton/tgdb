@@ -7,6 +7,7 @@ from tgdb.entities.logic_time import LogicTime, age
 from tgdb.entities.operator import (
     AppliedOperator,
     CommitOperator,
+    IntermediateOperator,
     Operator,
     RollbackOperator,
     StartOperator,
@@ -15,7 +16,7 @@ from tgdb.entities.transaction import (
     NoTransaction,
     Transaction,
     TransactionCommit,
-    TransactionFailedCommit,
+    start_transaction,
 )
 
 
@@ -101,36 +102,41 @@ class TransactionHorizon:
 
         match operator, transaction:
             case StartOperator(), None:
-                self._start_transaction(operator.transaction_id)
+                self._start_transaction(operator)
 
             case RollbackOperator(), Transaction():
                 self._rollback(transaction)
                 return None
 
+            case IntermediateOperator(_, effect), Transaction():
+                transaction.add_effect(effect)
+
             case CommitOperator(_, intermediate_operators), Transaction():
                 for intermediate_operator in intermediate_operators:
-                    transaction.add_operator(intermediate_operator)
+                    transaction.add_effect(intermediate_operator.effect)
 
-                return self._commit(transaction, )
+                return self._commit(transaction)
 
             case CommitOperator(), None:
-                return TransactionFailedCommit(
-                    operator.transaction_id, reason=NoTransaction()
-                )
+                return NoTransaction(operator.transaction_id)
 
             case _:
                 ...
 
         return None
 
-    def _start_transaction(self, transaction_id: UUID) -> None:
-        new_transaction = Transaction.start(
-            transaction_id,
+    def _start_transaction(self, operator: StartOperator) -> None:
+        new_transaction = start_transaction(
+            operator.transaction_id,
+            operator.transaction_isolation,
             self._active_transaction_by_id.values(),
             not_none(self._time),
         )
-        self._active_transaction_by_id[transaction_id] = new_transaction
+        self._active_transaction_by_id[new_transaction.id()] = new_transaction
 
+        self._limit_size()
+
+    def _limit_size(self) -> None:
         too_wide = (
             self._max_width is not None and self.width() > self._max_width
         )
@@ -142,11 +148,11 @@ class TransactionHorizon:
             self._rollback(not_none(self._oldest_transaction()))
 
     def _rollback(self, transaction: Transaction) -> None:
-        del self._active_transaction_by_id[transaction.id]
+        del self._active_transaction_by_id[transaction.id()]
         transaction.rollback()
 
     def _commit(self, transaction: Transaction) -> TransactionCommit:
-        del self._active_transaction_by_id[transaction.id]
+        del self._active_transaction_by_id[transaction.id()]
         return transaction.commit()
 
     def _oldest_transaction(self) -> Transaction | None:

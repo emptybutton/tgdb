@@ -6,6 +6,9 @@ from tgdb.entities.transaction import TransactionEffect
 
 class Heap(ABC):
     @abstractmethod
+    async def rows(self, schema: str, )
+
+    @abstractmethod
     async def map(self, effects: Sequence[TransactionEffect], /) -> None: ...
 
     @abstractmethod
