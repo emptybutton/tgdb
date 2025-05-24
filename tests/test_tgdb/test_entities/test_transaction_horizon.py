@@ -9,13 +9,13 @@ from tgdb.entities.operator import (
     RollbackOperator,
     StartOperator,
 )
-from tgdb.entities.row import MutatedRow, NewRow, row
+from tgdb.entities.row import row
 from tgdb.entities.transaction import (
     NoTransaction,
     Transaction,
     TransactionConflict,
-    TransactionFailedCommit,
-    TransactionOkCommit,
+    TransactionIsolation,
+    TransactionOkPreparedCommit,
 )
 from tgdb.entities.transaction_horizon import (
     NonLinearizedOperatorError,
@@ -222,7 +222,13 @@ def test_commit_with_transaction_without_intermediate_operators(
     |--|
     """
 
-    horizon.add(AppliedOperator(StartOperator(UUID(int=1)), 1))
+    horizon.add(AppliedOperator(
+        StartOperator(
+            UUID(int=1),
+            TransactionIsolation.serializable_read_and_write,
+        ),
+        1,
+    ))
     commit = horizon.add(AppliedOperator(CommitOperator(UUID(int=1), []), 10))
 
     if object == "bool":
@@ -241,7 +247,7 @@ def test_commit_with_transaction_without_intermediate_operators(
         assert horizon.width() == 0
 
     if object == "commit":
-        assert commit == TransactionOkCommit(UUID(int=1), [])
+        assert commit == TransactionOkPreparedCommit(UUID(int=1), [])
 
 
 @mark.parametrize(
@@ -282,7 +288,7 @@ def test_commit_with_transaction_with_ok_intermediate_operators(
         assert horizon.width() == 0
 
     if object == "commit":
-        assert commit == TransactionOkCommit(
+        assert commit == TransactionOkPreparedCommit(
             UUID(int=1),
             [MutatedRow(row(1, "x"), None), NewRow(row(1, "y"))]
         )
@@ -416,12 +422,12 @@ def test_with_sequential_transactions(
         assert horizon.width() == 0
 
     if object == "commit1":
-        assert commit1 == TransactionOkCommit(
+        assert commit1 == TransactionOkPreparedCommit(
             UUID(int=1), [MutatedRow(row(1, "a"), None)]
         )
 
     if object == "commit2":
-        assert commit2 == TransactionOkCommit(
+        assert commit2 == TransactionOkPreparedCommit(
             UUID(int=2), [MutatedRow(row(1, "b"), None)]
         )
 
@@ -473,7 +479,7 @@ def test_conflict_by_id_with_left_transaction(
         assert horizon.width() == 0
 
     if object == "commit1":
-        assert commit1 == TransactionOkCommit(
+        assert commit1 == TransactionOkPreparedCommit(
             UUID(int=1), [MutatedRow(row(1, "a"), None)]
         )
 
@@ -535,7 +541,7 @@ def test_conflict_by_id_with_subset_transaction(
         )
 
     if object == "commit2":
-        assert commit2 == TransactionOkCommit(
+        assert commit2 == TransactionOkPreparedCommit(
             UUID(int=2), [MutatedRow(row(1, "b"), None)]
         )
 
@@ -609,12 +615,12 @@ def test_conflict_by_id_with_left_long_distance_transaction(
         assert horizon.width() == 0
 
     if object == "commit1":
-        assert commit1 == TransactionOkCommit(
+        assert commit1 == TransactionOkPreparedCommit(
             UUID(int=1), [MutatedRow(row("x"), None)]
         )
 
     if object == "commit2":
-        assert commit2 == TransactionOkCommit(
+        assert commit2 == TransactionOkPreparedCommit(
             UUID(int=2), [MutatedRow(row("y"), None)]
         )
 

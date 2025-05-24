@@ -10,8 +10,3 @@ class Heap(ABC):
 
     @abstractmethod
     async def map(self, effects: Sequence[TransactionEffect], /) -> None: ...
-
-    @abstractmethod
-    async def map_as_duplicate(
-        self, effects: Sequence[TransactionEffect], /
-    ) -> None: ...

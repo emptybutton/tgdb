@@ -4,8 +4,13 @@ from uuid import UUID
 
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.mark import Mark
-from tgdb.entities.row import DeletedRow, MutatedRow, NewRow, RowEffect
-from tgdb.entities.transaction import TransactionIsolation
+from tgdb.entities.transaction import (
+    DeletedRow,
+    MutatedRow,
+    NewRow,
+    TransactionIsolation,
+    TransactionScalarEffect,
+)
 
 
 @dataclass(frozen=True)
@@ -14,7 +19,7 @@ class StartOperator:
     transaction_isolation: TransactionIsolation
 
 
-type IntermediateOperatorEffect = RowEffect | Mark
+type IntermediateOperatorEffect = TransactionScalarEffect
 
 
 @dataclass(frozen=True)

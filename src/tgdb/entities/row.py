@@ -1,47 +1,109 @@
+from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, overload
 from uuid import UUID
 
-from tgdb.entities.message import Message
+
+type Attribute = None | bool | int | str | datetime | UUID  # noqa: RUF036
 
 
-type RowAttribute = None | bool | int | str | datetime | UUID  # noqa: RUF036
+class Domain(ABC):
+    @abstractmethod
+    def type(self) -> type[bool | int | str | datetime | UUID]: ...
+
+    @abstractmethod
+    def is_nonable(self) -> bool: ...
+
+    @abstractmethod
+    def __contains__(self, attribute: Attribute) -> bool: ...
 
 
 @dataclass(frozen=True)
-class AttributeSchema:
-    type_: type[bool | int | str | datetime | UUID]
-    is_nonable: bool
+class IntDomain(Domain):
+    min: int
+    max: int
+    _is_nonable: bool
 
-    def describes(self, attribute: RowAttribute) -> bool:
+    def type(self) -> type[int]:
+        return int
+
+    def is_nonable(self) -> bool:
+        return self._is_nonable
+
+    def __contains__(self, attribute: Attribute) -> bool:
+        return isinstance(attribute, int) and self.min <= attribute <= self.max
+
+
+@dataclass(frozen=True)
+class StrDomain(Domain):
+    max_len: int
+    _is_nonable: bool
+
+    def type(self) -> type[str]:
+        return str
+
+    def is_nonable(self) -> bool:
+        return self._is_nonable
+
+    def __contains__(self, attribute: Attribute) -> bool:
+        return isinstance(attribute, str) and len(attribute) <= self.max_len
+
+
+@dataclass(frozen=True)
+class SetDomain(Domain):
+    values: tuple[bool | int | str | datetime | UUID, ...]
+    _is_nonable: bool
+
+    def type(self) -> type[bool | int | str | datetime | UUID]:
+        return str
+
+    def is_nonable(self) -> bool:
+        return self._is_nonable
+
+    def __contains__(self, attribute: Attribute) -> bool:
+        return attribute in self.values
+
+
+@dataclass(frozen=True)
+class TypeDomain(Domain):
+    _type: type[bool | datetime | UUID]
+    _is_nonable: bool
+
+    def type(self) -> type[bool | datetime | UUID]:
+        return self._type
+
+    def is_nonable(self) -> bool:
+        return self._is_nonable
+
+    def __contains__(self, attribute: Attribute) -> bool:
         if attribute is None:
-            return self.is_nonable
+            return self._is_nonable
 
-        return isinstance(attribute, self.type_)
+        return isinstance(attribute, self._type)
 
 
-@dataclass(frozen=True)
-class SchemaID:
-    schema_name: str
+class NegativeNumberError(Exception): ...
 
 
 @dataclass(frozen=True)
-class SchemaVersionID:
-    schema_id: SchemaID
-    schema_version_number: int
+class Number:
+    int: int
+
+    def __post_init__(self) -> None:
+        if self.int < 0:
+            raise NegativeNumberError
+
+    def __int__(self) -> "int":
+        return self.int
 
 
 @dataclass(frozen=True, unsafe_hash=False, eq=False)
-class SchemaVersion(Sequence[AttributeSchema]):
-    schema_id: SchemaID
+class SchemaPartitionVersion(Sequence[Domain]):  # noqa: PLW1641
     number: int
-    row_id_schema: AttributeSchema
-    row_body_schema: tuple[AttributeSchema, ...]
-
-    def id(self) -> SchemaVersionID:
-        return SchemaVersionID(self.schema_id, self.number)
+    row_id_schema: Domain
+    row_body_schema: tuple[Domain, ...]
 
     def describes(self, row: "RowVersion") -> bool:
         if len(self) != len(row):
@@ -64,40 +126,34 @@ class SchemaVersion(Sequence[AttributeSchema]):
             for schema1, schema2 in zip(self, other, strict=True)
         )
 
-    def __iter__(self) -> Iterator[AttributeSchema]:
+    def __iter__(self) -> Iterator[Domain]:
         yield self.row_id_schema
         yield from self.row_body_schema
 
     @overload
-    def __getitem__(self, index: int, /) -> AttributeSchema: ...
+    def __getitem__(self, index: int, /) -> Domain: ...
 
     @overload
     def __getitem__(
         self, slice_: "slice[Any, Any, Any]", /
-    ) -> Sequence[AttributeSchema]: ...
+    ) -> Sequence[Domain]: ...
 
     def __getitem__(
         self, value: "int | slice[Any, Any, Any]", /
-    ) -> Sequence[AttributeSchema] | AttributeSchema:
+    ) -> Sequence[Domain] | Domain:
         return tuple(self)[value]
 
     def __len__(self) -> int:
         return len(self.row_body_schema) + 1
 
 
-class NotIncrementedSchemaVersionsError(Exception): ...
-
-
-class SchemaWithoutVersionsError(Exception): ...
-
-
-class UselessSchemaVersionError(Exception): ...
+# |1%1#0=123|
 
 
 @dataclass(frozen=True, unsafe_hash=False)
 class Schema:
-    name: str
-    _versions: list[SchemaVersion]
+    number: int
+    _partitions: list[SchemaPartition]
 
     def __post_init__(self) -> None:
         if not self._versions:
@@ -108,23 +164,44 @@ class Schema:
             next_version = self._versions[version_index]
 
             self._validate_increment(version, next_version)
-            self._validate_useless(version, next_version)
+
+
+class NotIncrementedSchemaVersionsError(Exception): ...
+
+
+class SchemaWithoutVersionsError(Exception): ...
+
+
+@dataclass(frozen=True, unsafe_hash=False)
+class SchemaPartition:
+    number: int
+    _versions: list[SchemaPartitionVersion]
+
+    def __post_init__(self) -> None:
+        if not self._versions:
+            raise SchemaWithoutVersionsError
+
+        for version_index in range(len(self._versions) - 1):
+            version = self._versions[version_index]
+            next_version = self._versions[version_index]
+
+            self._validate_increment(version, next_version)
 
     def id(self) -> SchemaID:
-        return SchemaID(self.name)
+        return SchemaID(self.number)
 
-    def last_version(self) -> SchemaVersion:
+    def last_version(self) -> SchemaPartitionVersion:
         return self._versions[-1]
 
-    def old_versions(self) -> Sequence[SchemaVersion]:
+    def old_versions(self) -> Sequence[SchemaPartitionVersion]:
         return self._versions[:-1]
 
     def add_version(
         self,
-        row_id_schema: AttributeSchema,
-        row_body_schema: tuple[AttributeSchema, ...],
+        row_id_schema: Domain,
+        row_body_schema: tuple[Domain, ...],
     ) -> None:
-        new_version = SchemaVersion(
+        new_version = SchemaPartitionVersion(
             self.id(),
             self.last_version().number + 1,
             row_id_schema,
@@ -140,53 +217,47 @@ class Schema:
             self._versions.pop(0)
 
     def _validate_increment(
-        self, prevous_version: SchemaVersion, new_version: SchemaVersion
+        self, prevous_version: SchemaPartitionVersion, new_version: SchemaPartitionVersion
     ) -> None:
         if prevous_version.number + 1 != new_version.number:
             raise NotIncrementedSchemaVersionsError
 
-    def _validate_useless(
-        self, prevous_version: SchemaVersion, new_version: SchemaVersion
-    ) -> None:
-        if prevous_version == new_version:
-            raise UselessSchemaVersionError
-
 
 @dataclass(frozen=True, repr=False)
 class RowID:
-    attribute: RowAttribute
+    attribute: Attribute
     schema_id: SchemaID
 
 
 @dataclass(frozen=True, repr=False)
 class RowVersionID:
-    attribute: RowAttribute
+    attribute: Attribute
     schema_version_id: SchemaVersionID
 
 
 @dataclass(frozen=True)
-class RowVersion(Sequence[RowAttribute]):
+class RowVersion(Sequence[Attribute]):
     id: RowVersionID
-    body: tuple[RowAttribute, ...]
+    body: tuple[Attribute, ...]
 
     def row_id(self) -> RowID:
         return RowID(self.id.attribute, self.id.schema_version_id.schema_id)
 
-    def __iter__(self) -> Iterator[RowAttribute]:
+    def __iter__(self) -> Iterator[Attribute]:
         yield self.id.attribute
         yield from self.body
 
     @overload
-    def __getitem__(self, index: int, /) -> RowAttribute: ...
+    def __getitem__(self, index: int, /) -> Attribute: ...
 
     @overload
     def __getitem__(
         self, slice_: "slice[Any, Any, Any]", /
-    ) -> Sequence[RowAttribute]: ...
+    ) -> Sequence[Attribute]: ...
 
     def __getitem__(
         self, value: "int | slice[Any, Any, Any]", /
-    ) -> Sequence[RowAttribute] | RowAttribute:
+    ) -> Sequence[Attribute] | Attribute:
         return tuple(self)[value]
 
     def __len__(self) -> int:
@@ -199,7 +270,7 @@ class Row:
     versions: tuple[RowVersion, ...]
 
 
-def row(*attrs: RowAttribute, schema_version_id: SchemaVersionID) -> Row:
+def row(*attrs: Attribute, schema_version_id: SchemaVersionID) -> Row:
     row_version_id = RowVersionID(attrs[0], schema_version_id)
     row_version_body = attrs[1:]
 
@@ -207,42 +278,3 @@ def row(*attrs: RowAttribute, schema_version_id: SchemaVersionID) -> Row:
     row_id = row_version.row_id()
 
     return Row(row_id, (row_version, ))
-
-
-@dataclass(frozen=True)
-class NewRow:
-    row_version: RowVersion
-
-    @property
-    def id(self) -> RowID:
-        return self.row_version.row_id()
-
-
-@dataclass(frozen=True)
-class ViewedRow:
-    id: RowID
-
-
-# |---|
-#  |========================|
-
-# int int int nullable nullable
-
-
-@dataclass(frozen=True)
-class MutatedRow:
-    row_version: RowVersion
-    message: Message | None
-
-    @property
-    def id(self) -> RowID:
-        return self.row.id
-
-
-@dataclass(frozen=True)
-class DeletedRow:
-    id: RowID
-    message: Message | None
-
-
-type RowEffect = NewRow | MutatedRow | DeletedRow | ViewedRow

@@ -7,7 +7,7 @@ def encoded_heap_row(row: Row) -> str:
         encoded_heap_row_attribute(row.schema, attribute_number, attribute)
         for attribute_number, attribute in enumerate(row)
     )
-    return " ".join(encoded_attributes)
+    return f"|{"|".join(encoded_attributes)}|"
 
 
 def encoded_heap_row_attribute(

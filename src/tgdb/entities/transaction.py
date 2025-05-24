@@ -6,18 +6,47 @@ from uuid import UUID
 
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.mark import Mark
-from tgdb.entities.operator import IntermediateOperatorEffect
-from tgdb.entities.row import (
-    DeletedRow,
-    MutatedRow,
-    NewRow,
-    RowID,
-    ViewedRow,
+from tgdb.entities.message import Message
+from tgdb.entities.row import RowID, RowVersion
+
+
+@dataclass(frozen=True)
+class NewRow:
+    row_version: RowVersion
+
+    @property
+    def id(self) -> RowID:
+        return self.row_version.row_id()
+
+
+@dataclass(frozen=True)
+class ViewedRow:
+    id: RowID
+
+
+@dataclass(frozen=True)
+class MutatedRow:
+    row_version: RowVersion
+    message: Message | None
+
+    @property
+    def id(self) -> RowID:
+        return self.row_version.row_id()
+
+
+@dataclass(frozen=True)
+class DeletedRow:
+    id: RowID
+    message: Message | None
+
+
+type TransactionScalarEffect = (
+    NewRow | MutatedRow | DeletedRow | ViewedRow | Mark
 )
-
-
-type TransactionScalarEffect = NewRow | MutatedRow | DeletedRow
 type TransactionEffect = Sequence[TransactionScalarEffect]
+
+type TransactionCommitScalarEffect = NewRow | MutatedRow | DeletedRow
+type TransactionCommitEffect = Sequence[TransactionCommitScalarEffect]
 
 
 @dataclass(frozen=True)
@@ -37,15 +66,31 @@ class NonSerializableWriteTransaction:
 
 
 @dataclass(frozen=True)
-class TransactionOkCommit:
+class TransactionOkPreparedCommit:
     transaction_id: UUID
-    effect: TransactionEffect
+    effect: TransactionCommitEffect
 
 
-type TransactionFailedCommit = (
+type TransactionFailedPreparedCommit = (
     TransactionConflict | NoTransaction | NonSerializableWriteTransaction
 )
-type TransactionCommit = TransactionOkCommit | TransactionFailedCommit
+
+type TransactionPreparedCommit = (
+    TransactionOkPreparedCommit | TransactionFailedPreparedCommit
+)
+
+
+@dataclass(frozen=True)
+class TransactionCommit:
+    transaction_id: UUID
+    effect: TransactionCommitEffect
+
+
+class TransactionState(Enum):
+    active = auto()
+    rollbacked = auto()
+    prepared = auto()
+    commited = auto()
 
 
 class Transaction(ABC):
@@ -53,72 +98,111 @@ class Transaction(ABC):
     def id(self) -> UUID: ...
 
     @abstractmethod
+    def state(self) -> TransactionState: ...
+
+    @abstractmethod
     def beginning(self) -> LogicTime: ...
 
     @abstractmethod
-    def add_effect(self, effect: IntermediateOperatorEffect, /) -> None: ...
+    def add_effect(self, effect: TransactionScalarEffect, /) -> None: ...
 
     @abstractmethod
     def rollback(self) -> None: ...
 
     @abstractmethod
+    def prepare_commit(self) -> TransactionPreparedCommit: ...
+
+    @abstractmethod
     def commit(self) -> TransactionCommit: ...
 
 
-@dataclass
+@dataclass(eq=False, unsafe_hash=False)
 class SerializableTransaction(Transaction):
     _id: UUID
+    _state: TransactionState
     _beginning: LogicTime
-    _effect: list[TransactionScalarEffect]
-    _is_serializable: bool
-    _row_ids: set[RowID]
+    _commit_effect: list[TransactionCommitScalarEffect]
+    _is_commit_effect_serializable: bool
+    _commit_effect_row_ids: set[RowID]
+    _not_commit_effect_row_ids: set[RowID]
     _marks: set[Mark]
-    _concurrent_transactions: list["Transaction"]
-    _transactions_with_possible_conflict: list["SerializableTransaction"]
+    _concurrent_transactions: set["Transaction"]
+    _transactions_with_possible_conflict: set["SerializableTransaction"]
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, type(self)) and self._id == other._id
+
+    def __hash__(self) -> int:
+        return hash(type(self)) + hash(self._id)
 
     def id(self) -> UUID:
         return self._id
 
+    def state(self) -> TransactionState:
+        return self._state
+
     def beginning(self) -> LogicTime:
         return self._beginning
 
-    def add_effect(self, effect: IntermediateOperatorEffect) -> None:
+    def add_effect(self, effect: TransactionScalarEffect) -> None:
         match effect:
-            case NewRow() | MutatedRow() | DeletedRow() | ViewedRow() as row:
-                if row.id in self._row_ids:
-                    self._is_serializable = False
+            case NewRow() | MutatedRow() | DeletedRow() as row:
+                if row.id in self._commit_effect_row_ids:
+                    self._is_commit_effect_serializable = False
             case _: ...
 
         match effect:
             case NewRow() | MutatedRow() | DeletedRow() as row:
-                self._effect.append(row)
-                self._row_ids.add(row.id)
+                self._commit_effect.append(row)
+                self._commit_effect_row_ids.add(row.id)
 
             case ViewedRow() as row:
-                self._row_ids.add(row.id)
+                self._not_commit_effect_row_ids.add(row.id)
 
             case Mark() as mark:
                 self._marks.add(mark)
 
     def rollback(self) -> None:
-        self._die()
+        if self._state is TransactionState.prepared:
+            for transaction in self._concurrent_transactions:
+                if not isinstance(transaction, SerializableTransaction):
+                    continue
 
-    def commit(self) -> TransactionCommit:
-        if not self._is_serializable:
+                transaction._transactions_with_possible_conflict.remove(self)
+
+        for transaction in self._concurrent_transactions:
+            if not isinstance(transaction, SerializableTransaction):
+                continue
+
+            transaction._concurrent_transactions.remove(self)
+
+        self._complete()
+        self._state = TransactionState.rollbacked
+
+    def prepare_commit(self) -> TransactionPreparedCommit:
+        if not self._is_commit_effect_serializable:
+            self.rollback()
             return NonSerializableWriteTransaction(self._id)
 
         conflict = self._conflict()
 
         if conflict is not None:
-            self._die()
+            self.rollback()
             return conflict
+
+        self._state = TransactionState.prepared
 
         for transaction in self._concurrent_transactions:
             if isinstance(transaction, SerializableTransaction):
-                transaction._transactions_with_possible_conflict.append(self)
+                transaction._transactions_with_possible_conflict.add(self)
 
-        self._die()
-        return TransactionOkCommit(transaction_id=self._id, effect=self._effect)
+        return TransactionOkPreparedCommit(self._id, self._commit_effect)
+
+    def commit(self) -> TransactionCommit:
+        self._complete()
+        self._state = TransactionState.commited
+
+        return TransactionCommit(self._id, self._commit_effect)
 
     @classmethod
     def start(
@@ -129,60 +213,83 @@ class SerializableTransaction(Transaction):
     ) -> "SerializableTransaction":
         transasction = SerializableTransaction(
             _id=transaction_id,
+            _state=TransactionState.active,
             _beginning=current_time,
-            _is_serializable=True,
-            _effect=list(),
-            _row_ids=set(),
+            _is_commit_effect_serializable=True,
+            _commit_effect=list(),
+            _commit_effect_row_ids=set(),
+            _not_commit_effect_row_ids=set(),
             _marks=set(),
-            _concurrent_transactions=list(active_transactions),
-            _transactions_with_possible_conflict=list(),
+            _concurrent_transactions=set(active_transactions),
+            _transactions_with_possible_conflict=set(),
         )
 
         for active_transaction in active_transactions:
-            if isinstance(active_transaction, SerializableTransaction):
-                active_transaction._concurrent_transactions.append(transasction)
+            if not isinstance(active_transaction, SerializableTransaction):
+                continue
+
+            if active_transaction._state is TransactionState.active:
+                active_transaction._concurrent_transactions.add(transasction)
+
+            if active_transaction._state is TransactionState.prepared:
+                transasction._transactions_with_possible_conflict.add(
+                    active_transaction
+                )
 
         return transasction
 
-    def _die(self) -> None:
+    def _complete(self) -> None:
         self._concurrent_transactions.clear()
         self._transactions_with_possible_conflict.clear()
 
     def _conflict(self) -> TransactionConflict | None:
         for transaction in self._transactions_with_possible_conflict:
             conflict_marks = frozenset(self._marks & transaction._marks)
-            conflict_row_ids = self._row_ids & transaction._row_ids
+            conflict_row_ids = self._row_ids() & transaction._row_ids()
 
             if conflict_marks or conflict_row_ids:
                 return TransactionConflict(self._id, marks=conflict_marks)
 
         return None
 
+    def _row_ids(self) -> set[RowID]:
+        return self._commit_effect_row_ids | self._not_commit_effect_row_ids
+
 
 @dataclass
 class NonSerializableReadTransaction(Transaction):
     _id: UUID
+    _state: TransactionState
     _beginning: LogicTime
     _is_readonly: bool
 
     def id(self) -> UUID:
         return self._id
 
+    def state(self) -> TransactionState:
+        return self._state
+
     def beginning(self) -> LogicTime:
         return self._beginning
 
-    def add_effect(self, effect: IntermediateOperatorEffect) -> None:
+    def add_effect(self, effect: TransactionScalarEffect) -> None:
         if self._is_readonly and not isinstance(effect, ViewedRow):
             self._is_readonly = False
 
     def rollback(self) -> None:
-        ...
+        self._state = TransactionState.rollbacked
 
-    def commit(self) -> TransactionOkCommit | NonSerializableWriteTransaction:
-        if self._is_readonly:
-            return TransactionOkCommit(self._id, effect=tuple())
+    def prepare_commit(self) -> TransactionPreparedCommit:
+        self._state = TransactionState.prepared
 
-        return NonSerializableWriteTransaction(self._id)
+        if not self._is_readonly:
+            return NonSerializableWriteTransaction(self._id)
+
+        return TransactionOkPreparedCommit(self._id, tuple())
+
+    def commit(self) -> TransactionCommit:
+        self._state = TransactionState.commited
+        return TransactionCommit(self._id, tuple())
 
     @classmethod
     def start(
@@ -192,6 +299,7 @@ class NonSerializableReadTransaction(Transaction):
     ) -> "NonSerializableReadTransaction":
         return NonSerializableReadTransaction(
             _id=transaction_id,
+            _state=TransactionState.active,
             _beginning=current_time,
             _is_readonly=True,
         )

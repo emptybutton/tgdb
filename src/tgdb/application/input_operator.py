@@ -1,15 +1,23 @@
 from dataclasses import dataclass
 
-from tgdb.application.errors.common import InvalidInputOperatorError
+from tgdb.application.errors.common import (
+    InvalidInputOperatorError,
+    NotActiveNodeError,
+)
+from tgdb.application.ports.buffer import Buffer
+from tgdb.application.ports.logic_clock import LogicClock
 from tgdb.application.ports.operator_serialization import OperatorSerialization
-from tgdb.application.ports.queque import Queque
-from tgdb.entities.operator import Operator
+from tgdb.application.ports.shared_horizon import SharedHorizon
+from tgdb.entities.operator import AppliedOperator
+from tgdb.entities.transaction import TransactionPreparedCommit
 
 
 @dataclass(frozen=True)
 class InputOperator[SerializedOperatorsT]:
-    input_operators: Queque[Operator]
+    clock: LogicClock
     operator_serialization: OperatorSerialization[SerializedOperatorsT]
+    commit_buffer: Buffer[TransactionPreparedCommit]
+    shared_horizon: SharedHorizon
 
     async def __call__(
         self, serialized_operator: SerializedOperatorsT
@@ -25,4 +33,11 @@ class InputOperator[SerializedOperatorsT]:
         if input_operator is None:
             raise InvalidInputOperatorError
 
-        await self.input_operators.push(input_operator)
+        async with self.shared_horizon as horizon:
+            time = await self.clock.time()
+            applied_input_operator = AppliedOperator(input_operator, time)
+
+            transaction_commit = horizon.add(applied_input_operator)
+
+            if transaction_commit:
+                await self.commit_buffer.add(transaction_commit)

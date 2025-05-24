@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -16,6 +17,9 @@ from tgdb.entities.transaction import (
     NoTransaction,
     Transaction,
     TransactionCommit,
+    TransactionOkPreparedCommit,
+    TransactionPreparedCommit,
+    TransactionState,
     start_transaction,
 )
 
@@ -81,9 +85,27 @@ class TransactionHorizon:
 
         return oldest_transaction.beginning()
 
+    def complete(
+        self, prepared_commit: TransactionOkPreparedCommit
+    ) -> TransactionCommit | None:
+        transaction = self._active_transaction_by_id.get(
+            prepared_commit.transaction_id
+        )
+
+        if (
+            transaction is None
+            or transaction.state is not TransactionState.prepared
+        ):
+            return None
+
+        commit = transaction.commit()
+        del self._active_transaction_by_id[transaction.id()]
+
+        return commit
+
     def add(
         self, applied_operator: AppliedOperator
-    ) -> TransactionCommit | None:
+    ) -> TransactionPreparedCommit | None:
         """
         :raises tgdb.entities.transaction_horizon.NonLinearizedOperatorError:
         """
@@ -95,29 +117,40 @@ class TransactionHorizon:
 
         return self._add_operator(applied_operator.operator)
 
-    def _add_operator(self, operator: Operator) -> TransactionCommit | None:
+    def _add_operator(
+        self, operator: Operator
+    ) -> TransactionPreparedCommit | None:
         transaction = self._active_transaction_by_id.get(
             operator.transaction_id
         )
+        state = None if transaction is None else transaction.state
 
-        match operator, transaction:
-            case StartOperator(), None:
+        match operator, transaction, state:
+            case StartOperator(), None, _:
                 self._start_transaction(operator)
 
-            case RollbackOperator(), Transaction():
+            case RollbackOperator(), Transaction(), TransactionState.active:
                 self._rollback(transaction)
                 return None
 
-            case IntermediateOperator(_, effect), Transaction():
+            case (
+                IntermediateOperator(_, effect),
+                Transaction(),
+                TransactionState.active
+            ):
                 transaction.add_effect(effect)
 
-            case CommitOperator(_, intermediate_operators), Transaction():
+            case (
+                CommitOperator(_, intermediate_operators),
+                Transaction(),
+                TransactionState.active
+            ):
                 for intermediate_operator in intermediate_operators:
                     transaction.add_effect(intermediate_operator.effect)
 
-                return self._commit(transaction)
+                return transaction.prepare_commit()
 
-            case CommitOperator(), None:
+            case CommitOperator(), None, _:
                 return NoTransaction(operator.transaction_id)
 
             case _:
@@ -150,10 +183,6 @@ class TransactionHorizon:
     def _rollback(self, transaction: Transaction) -> None:
         del self._active_transaction_by_id[transaction.id()]
         transaction.rollback()
-
-    def _commit(self, transaction: Transaction) -> TransactionCommit:
-        del self._active_transaction_by_id[transaction.id()]
-        return transaction.commit()
 
     def _oldest_transaction(self) -> Transaction | None:
         try:

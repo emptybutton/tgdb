@@ -1,13 +1,13 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from tgdb.application.ports.notification import Notification
+from tgdb.application.ports.notifying import Notifying
 from tgdb.entities.transaction import TransactionCommit
 from tgdb.presentation.async_map import AsyncMap
 
 
 class TransactionCommitListNotificationToAsyncMap(
-    Notification[Sequence[TransactionCommit]]
+    Notifying[Sequence[TransactionCommit]]
 ):
     _map: AsyncMap[UUID, TransactionCommit]
 

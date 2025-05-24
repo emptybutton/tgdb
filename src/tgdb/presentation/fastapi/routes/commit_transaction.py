@@ -10,7 +10,7 @@ from tgdb.entities.transaction import (
     NoTransaction,
     TransactionCommit,
     TransactionConflict,
-    TransactionOkCommit,
+    TransactionOkPreparedCommit,
 )
 from tgdb.presentation.async_map import AsyncMap
 from tgdb.presentation.fastapi.schemas.entity import StartOperatorSchema
@@ -59,7 +59,7 @@ async def _(
     await input_operator(request_body)
     commit = await async_commit
 
-    if isinstance(commit, TransactionOkCommit):
+    if isinstance(commit, TransactionOkPreparedCommit):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     match commit.reason:
