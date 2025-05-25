@@ -16,6 +16,12 @@ class Domain(ABC):
     @abstractmethod
     def __contains__(self, scalar: Scalar) -> bool: ...
 
+    @abstractmethod
+    def __eq__(self, other: object) -> bool: ...
+
+    @abstractmethod
+    def __hash__(self) -> int: ...
+
 
 @dataclass(frozen=True)
 class IntDomain(Domain):

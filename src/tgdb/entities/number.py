@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, overload
+from typing import Any, Self, overload
 from uuid import UUID
 
 
@@ -20,8 +20,8 @@ class Number:
     def __int__(self) -> "int":
         return self.int
 
-    def __add__(self, other: "Number | int") -> "Number":
-        return Number(self.int + int(other))
+    def __next__(self) -> "Number":
+        return Number(self.int + 1)
 
-    def __radd__(self, other: "int") -> "Number":
-        return Number(self.int + other)
+    def __lt__(self, other: "Number") -> bool:
+        return self.int < other.int

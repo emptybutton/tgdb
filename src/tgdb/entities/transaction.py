@@ -6,7 +6,6 @@ from uuid import UUID
 
 from tgdb.entities.logic_time import LogicTime
 from tgdb.entities.mark import Mark
-from tgdb.entities.message import Message
 from tgdb.entities.row import RowID, RowVersion
 
 
@@ -27,7 +26,6 @@ class ViewedRow:
 @dataclass(frozen=True)
 class MutatedRow:
     row_version: RowVersion
-    message: Message | None
 
     @property
     def id(self) -> RowID:
@@ -37,7 +35,6 @@ class MutatedRow:
 @dataclass(frozen=True)
 class DeletedRow:
     id: RowID
-    message: Message | None
 
 
 type TransactionScalarEffect = (
