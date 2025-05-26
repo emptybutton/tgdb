@@ -3,9 +3,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
-from tgdb.entities.assert_ import not_none
-from tgdb.entities.logic_time import LogicTime, age
-from tgdb.entities.operator import (
+from tgdb.entities.horizon.operator import (
     AppliedOperator,
     CommitOperator,
     IntermediateOperator,
@@ -13,7 +11,7 @@ from tgdb.entities.operator import (
     RollbackOperator,
     StartOperator,
 )
-from tgdb.entities.transaction import (
+from tgdb.entities.horizon.transaction import (
     NoTransaction,
     Transaction,
     TransactionCommit,
@@ -22,22 +20,24 @@ from tgdb.entities.transaction import (
     TransactionState,
     start_transaction,
 )
+from tgdb.entities.time.logic_time import LogicTime, age
+from tgdb.entities.tools.assert_ import not_none
 
 
 class NonLinearizedOperatorError(Exception): ...
 
 
-class UnlimitedTransactionHorizonError(Exception): ...
+class UnlimitedHorizonError(Exception): ...
 
 
-class UnattainableTransactionHorizonError(Exception): ...
+class UnattainableHorizonError(Exception): ...
 
 
 class UselessMaxHeightError(Exception): ...
 
 
 @dataclass
-class TransactionHorizon:
+class Horizon:
     _max_width: LogicTime | None
     _max_height: int | None
     _time: LogicTime | None
@@ -45,19 +45,19 @@ class TransactionHorizon:
 
     def __post_init__(self) -> None:
         """
-        :raises tgdb.entities.transaction_horizon.UnlimitedTransactionHorizonError:
-        :raises tgdb.entities.transaction_horizon.UnattainableTransactionHorizonError:
-        :raises tgdb.entities.transaction_horizon.UselessMaxHeightError:
-        """  # noqa: E501
+        :raises tgdb.entities.horizon.horizon.UnlimitedHorizonError:
+        :raises tgdb.entities.horizon.horizon.UnattainableHorizonError:
+        :raises tgdb.entities.horizon.horizon.UselessMaxHeightError:
+        """
 
         if self._max_width is None and self._max_height is None:
-            raise UnlimitedTransactionHorizonError
+            raise UnlimitedHorizonError
 
         if self._max_width is not None and self._max_width <= 0:
-            raise UnattainableTransactionHorizonError
+            raise UnattainableHorizonError
 
         if self._max_height is not None and self._max_height <= 0:
-            raise UnattainableTransactionHorizonError
+            raise UnattainableHorizonError
 
         if (
             self._max_height is not None and self._max_width is not None
@@ -107,7 +107,7 @@ class TransactionHorizon:
         self, applied_operator: AppliedOperator
     ) -> TransactionPreparedCommit | None:
         """
-        :raises tgdb.entities.transaction_horizon.NonLinearizedOperatorError:
+        :raises tgdb.entities.horizon.horizon.NonLinearizedOperatorError:
         """
 
         if self._time is not None and applied_operator.time <= self._time:
@@ -138,7 +138,7 @@ class TransactionHorizon:
                 Transaction(),
                 TransactionState.active
             ):
-                transaction.add_effect(effect)
+                transaction.include(effect)
 
             case (
                 CommitOperator(_, intermediate_operators),
@@ -146,7 +146,7 @@ class TransactionHorizon:
                 TransactionState.active
             ):
                 for intermediate_operator in intermediate_operators:
-                    transaction.add_effect(intermediate_operator.effect)
+                    transaction.include(intermediate_operator.effect)
 
                 return transaction.prepare_commit()
 
@@ -191,17 +191,17 @@ class TransactionHorizon:
             return None
 
 
-def create_transaction_horizon(
+def create_horizon(
     max_width: LogicTime | None,
     max_height: int | None,
-) -> TransactionHorizon:
+) -> Horizon:
     """
-    :raises tgdb.entities.transaction_horizon.UnlimitedTransactionHorizonError:
-    :raises tgdb.entities.transaction_horizon.UnattainableTransactionHorizonError:
-    :raises tgdb.entities.transaction_horizon.UselessMaxHeightError:
-    """  # noqa: E501
+    :raises tgdb.entities.horizon.horizon.UnlimitedHorizonError:
+    :raises tgdb.entities.horizon.horizon.UnattainableHorizonError:
+    :raises tgdb.entities.horizon.horizon.UselessMaxHeightError:
+    """
 
-    return TransactionHorizon(
+    return Horizon(
         _max_width=max_width,
         _max_height=max_height,
         _time=None,

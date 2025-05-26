@@ -2,6 +2,9 @@ from tgdb.entities.row import Row, RowAttribute, Schema
 from tgdb.infrastructure.primitive_encoding import encoded_primitive
 
 
+# 0:0:0:0:0dsadasdadsasda|0:0:0:0:dsadasdadsasda|0:0:0:0:asdasd|
+
+
 def encoded_heap_row(row: Row) -> str:
     encoded_attributes = (
         encoded_heap_row_attribute(row.schema, attribute_number, attribute)

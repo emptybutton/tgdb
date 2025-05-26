@@ -1,9 +1,4 @@
-from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Self, overload
-from uuid import UUID
 
 
 class NegativeNumberError(Exception): ...
@@ -11,6 +6,10 @@ class NegativeNumberError(Exception): ...
 
 @dataclass(frozen=True)
 class Number:
+    """
+    :raises tgdb.entities.numeration.number.NegativeNumberError:
+    """
+
     int: int
 
     def __post_init__(self) -> None:
@@ -25,3 +24,6 @@ class Number:
 
     def __lt__(self, other: "Number") -> bool:
         return self.int < other.int
+
+    def __le__(self, other: "Number") -> bool:
+        return self.int <= other.int

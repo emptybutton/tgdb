@@ -2,15 +2,15 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
-from tgdb.entities.logic_time import LogicTime
-from tgdb.entities.mark import Mark
-from tgdb.entities.transaction import (
-    DeletedRow,
-    MutatedRow,
-    NewRow,
-    TransactionIsolation,
-    TransactionScalarEffect,
+from tgdb.entities.horizon.effect import (
+    Claim,
+    ConflictableTransactionScalarEffect,
+    DeletedTuple,
+    MutatedTuple,
+    NewTuple,
 )
+from tgdb.entities.horizon.transaction import TransactionIsolation
+from tgdb.entities.time.logic_time import LogicTime
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,7 @@ class StartOperator:
     transaction_isolation: TransactionIsolation
 
 
-type IntermediateOperatorEffect = TransactionScalarEffect
+type IntermediateOperatorEffect = ConflictableTransactionScalarEffect
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,7 @@ class RollbackOperator:
 class CommitOperator:
     transaction_id: UUID
     operators: Sequence[
-        IntermediateOperator[NewRow | MutatedRow | DeletedRow | Mark]
+        IntermediateOperator[NewTuple | MutatedTuple | DeletedTuple | Claim]
     ]
 
 

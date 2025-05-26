@@ -55,12 +55,13 @@ class StrDomain(Domain):
 
 
 @dataclass(frozen=True)
-class SetDomain(Domain):
-    values: tuple[bool | int | str | datetime | UUID, ...]
+class SetDomain[T: bool | int | str | datetime | UUID](Domain):
+    values: tuple[T, ...]
+    _type: type[T]
     _is_nonable: bool
 
-    def type(self) -> type[bool | int | str | datetime | UUID]:
-        return str
+    def type(self) -> type[T]:
+        return self._type
 
     def is_nonable(self) -> bool:
         return self._is_nonable

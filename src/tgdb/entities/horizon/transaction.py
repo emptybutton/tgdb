@@ -1,55 +1,24 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum, auto
 from uuid import UUID
 
-from tgdb.entities.logic_time import LogicTime
-from tgdb.entities.mark import Mark
-from tgdb.entities.row import RowID, RowVersion
-
-
-@dataclass(frozen=True)
-class NewRow:
-    row_version: RowVersion
-
-    @property
-    def id(self) -> RowID:
-        return self.row_version.row_id()
-
-
-@dataclass(frozen=True)
-class ViewedRow:
-    id: RowID
-
-
-@dataclass(frozen=True)
-class MutatedRow:
-    row_version: RowVersion
-
-    @property
-    def id(self) -> RowID:
-        return self.row_version.row_id()
-
-
-@dataclass(frozen=True)
-class DeletedRow:
-    id: RowID
-
-
-type TransactionScalarEffect = (
-    NewRow | MutatedRow | DeletedRow | ViewedRow | Mark
+from tgdb.entities.horizon.effect import (
+    Claim,
+    ConflictableTransactionScalarEffect,
+    TransactionEffect,
+    TupleEffect,
+    ViewedTuple,
 )
-type TransactionEffect = Sequence[TransactionScalarEffect]
-
-type TransactionCommitScalarEffect = NewRow | MutatedRow | DeletedRow
-type TransactionCommitEffect = Sequence[TransactionCommitScalarEffect]
+from tgdb.entities.time.logic_time import LogicTime
+from tgdb.entities.topic.partition import PartitionTupleID
 
 
 @dataclass(frozen=True)
 class TransactionConflict:
     transaction_id: UUID
-    marks: frozenset[Mark]
+    rejected_claims: frozenset[Claim]
 
 
 @dataclass(frozen=True)
@@ -65,7 +34,7 @@ class NonSerializableWriteTransaction:
 @dataclass(frozen=True)
 class TransactionOkPreparedCommit:
     transaction_id: UUID
-    effect: TransactionCommitEffect
+    effect: TransactionEffect
 
 
 type TransactionFailedPreparedCommit = (
@@ -80,7 +49,7 @@ type TransactionPreparedCommit = (
 @dataclass(frozen=True)
 class TransactionCommit:
     transaction_id: UUID
-    effect: TransactionCommitEffect
+    effect: TransactionEffect
 
 
 class TransactionState(Enum):
@@ -101,7 +70,8 @@ class Transaction(ABC):
     def beginning(self) -> LogicTime: ...
 
     @abstractmethod
-    def add_effect(self, effect: TransactionScalarEffect, /) -> None: ...
+    def include(self, effect: ConflictableTransactionScalarEffect, /) -> None:
+        ...
 
     @abstractmethod
     def rollback(self) -> None: ...
@@ -118,11 +88,8 @@ class SerializableTransaction(Transaction):
     _id: UUID
     _state: TransactionState
     _beginning: LogicTime
-    _commit_effect: list[TransactionCommitScalarEffect]
-    _is_commit_effect_serializable: bool
-    _commit_effect_row_ids: set[RowID]
-    _not_commit_effect_row_ids: set[RowID]
-    _marks: set[Mark]
+    _space_map: dict[PartitionTupleID, TupleEffect]
+    _claims: set[Claim]
     _concurrent_transactions: set["Transaction"]
     _transactions_with_possible_conflict: set["SerializableTransaction"]
 
@@ -141,23 +108,17 @@ class SerializableTransaction(Transaction):
     def beginning(self) -> LogicTime:
         return self._beginning
 
-    def add_effect(self, effect: TransactionScalarEffect) -> None:
-        match effect:
-            case NewRow() | MutatedRow() | DeletedRow() as row:
-                if row.id in self._commit_effect_row_ids:
-                    self._is_commit_effect_serializable = False
-            case _: ...
+    def include(self, effect: ConflictableTransactionScalarEffect) -> None:
+        if isinstance(effect, Claim):
+            self._claims.add(effect)
+            return
 
-        match effect:
-            case NewRow() | MutatedRow() | DeletedRow() as row:
-                self._commit_effect.append(row)
-                self._commit_effect_row_ids.add(row.id)
+        prevous_effect = self._space_map.get(effect.id)
 
-            case ViewedRow() as row:
-                self._not_commit_effect_row_ids.add(row.id)
+        if prevous_effect is not None:
+            effect = prevous_effect & effect
 
-            case Mark() as mark:
-                self._marks.add(mark)
+        self._space_map[effect.id] = effect
 
     def rollback(self) -> None:
         if self._state is TransactionState.prepared:
@@ -177,10 +138,6 @@ class SerializableTransaction(Transaction):
         self._state = TransactionState.rollbacked
 
     def prepare_commit(self) -> TransactionPreparedCommit:
-        if not self._is_commit_effect_serializable:
-            self.rollback()
-            return NonSerializableWriteTransaction(self._id)
-
         conflict = self._conflict()
 
         if conflict is not None:
@@ -193,13 +150,13 @@ class SerializableTransaction(Transaction):
             if isinstance(transaction, SerializableTransaction):
                 transaction._transactions_with_possible_conflict.add(self)
 
-        return TransactionOkPreparedCommit(self._id, self._commit_effect)
+        return TransactionOkPreparedCommit(self._id, self._effect())
 
     def commit(self) -> TransactionCommit:
         self._complete()
         self._state = TransactionState.commited
 
-        return TransactionCommit(self._id, self._commit_effect)
+        return TransactionCommit(self._id, self._effect())
 
     @classmethod
     def start(
@@ -212,11 +169,8 @@ class SerializableTransaction(Transaction):
             _id=transaction_id,
             _state=TransactionState.active,
             _beginning=current_time,
-            _is_commit_effect_serializable=True,
-            _commit_effect=list(),
-            _commit_effect_row_ids=set(),
-            _not_commit_effect_row_ids=set(),
-            _marks=set(),
+            _space_map=dict(),
+            _claims=set(),
             _concurrent_transactions=set(active_transactions),
             _transactions_with_possible_conflict=set(),
         )
@@ -241,16 +195,25 @@ class SerializableTransaction(Transaction):
 
     def _conflict(self) -> TransactionConflict | None:
         for transaction in self._transactions_with_possible_conflict:
-            conflict_marks = frozenset(self._marks & transaction._marks)
-            conflict_row_ids = self._row_ids() & transaction._row_ids()
+            conflict_claims = frozenset(self._claims & transaction._claims)
+            conflict_space = self._space() & transaction._space()
 
-            if conflict_marks or conflict_row_ids:
-                return TransactionConflict(self._id, marks=conflict_marks)
+            if conflict_claims or conflict_space:
+                return TransactionConflict(
+                    self._id, rejected_claims=conflict_claims
+                )
 
         return None
 
-    def _row_ids(self) -> set[RowID]:
-        return self._commit_effect_row_ids | self._not_commit_effect_row_ids
+    def _space(self) -> set[PartitionTupleID]:
+        return set(self._space_map)
+
+    def _effect(self) -> TransactionEffect:
+        return set(
+            scalar_effect
+            for scalar_effect in self._space_map.values()
+            if not isinstance(scalar_effect, ViewedTuple)
+        )
 
 
 @dataclass
@@ -269,8 +232,8 @@ class NonSerializableReadTransaction(Transaction):
     def beginning(self) -> LogicTime:
         return self._beginning
 
-    def add_effect(self, effect: TransactionScalarEffect) -> None:
-        if self._is_readonly and not isinstance(effect, ViewedRow):
+    def include(self, effect: ConflictableTransactionScalarEffect) -> None:
+        if self._is_readonly and not isinstance(effect, ViewedTuple):
             self._is_readonly = False
 
     def rollback(self) -> None:
@@ -282,11 +245,11 @@ class NonSerializableReadTransaction(Transaction):
         if not self._is_readonly:
             return NonSerializableWriteTransaction(self._id)
 
-        return TransactionOkPreparedCommit(self._id, tuple())
+        return TransactionOkPreparedCommit(self._id, frozenset())
 
     def commit(self) -> TransactionCommit:
         self._state = TransactionState.commited
-        return TransactionCommit(self._id, tuple())
+        return TransactionCommit(self._id, frozenset())
 
     @classmethod
     def start(
