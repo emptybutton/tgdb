@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from collections.abc import Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -94,7 +93,7 @@ class Horizon:
 
         if (
             transaction is None
-            or transaction.state is not TransactionState.prepared
+            or transaction.state() is not TransactionState.prepared
         ):
             return None
 

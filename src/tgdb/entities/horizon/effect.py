@@ -2,12 +2,12 @@ from collections.abc import Sequence, Set
 from dataclasses import dataclass
 from uuid import UUID
 
-from tgdb.entities.topic.partition import PartitionTuple, PartitionTupleID
+from tgdb.entities.relation.tuple import Tuple, TupleID
 
 
 @dataclass(frozen=True)
 class ViewedTuple:
-    id: PartitionTupleID
+    id: TupleID
 
     def __and__(self, effect: "TupleEffect") -> "TupleEffect":
         return effect
@@ -15,7 +15,7 @@ class ViewedTuple:
 
 @dataclass(frozen=True)
 class NewTuple:
-    tuple: PartitionTuple
+    tuple: Tuple
 
     def __and__(self, effect: "TupleEffect") -> "TupleEffect":
         match effect:
@@ -27,13 +27,13 @@ class NewTuple:
                 return effect
 
     @property
-    def id(self) -> PartitionTupleID:
+    def id(self) -> TupleID:
         return self.tuple.id
 
 
 @dataclass(frozen=True)
 class MutatedTuple:
-    tuple: PartitionTuple
+    tuple: Tuple
 
     def __and__(self, effect: "TupleEffect") -> "TupleEffect":
         match effect:
@@ -45,13 +45,13 @@ class MutatedTuple:
                 return effect
 
     @property
-    def id(self) -> PartitionTupleID:
+    def id(self) -> TupleID:
         return self.tuple.id
 
 
 @dataclass(frozen=True)
 class DeletedTuple:
-    id: PartitionTupleID
+    id: TupleID
 
     def __and__(self, effect: "TupleEffect") -> "TupleEffect":
         match effect:

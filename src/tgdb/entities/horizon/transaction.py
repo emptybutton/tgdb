@@ -11,8 +11,8 @@ from tgdb.entities.horizon.effect import (
     TupleEffect,
     ViewedTuple,
 )
+from tgdb.entities.relation.tuple import TupleID
 from tgdb.entities.time.logic_time import LogicTime
-from tgdb.entities.topic.partition import PartitionTupleID
 
 
 @dataclass(frozen=True)
@@ -88,7 +88,7 @@ class SerializableTransaction(Transaction):
     _id: UUID
     _state: TransactionState
     _beginning: LogicTime
-    _space_map: dict[PartitionTupleID, TupleEffect]
+    _space_map: dict[TupleID, TupleEffect]
     _claims: set[Claim]
     _concurrent_transactions: set["Transaction"]
     _transactions_with_possible_conflict: set["SerializableTransaction"]
@@ -205,7 +205,7 @@ class SerializableTransaction(Transaction):
 
         return None
 
-    def _space(self) -> set[PartitionTupleID]:
+    def _space(self) -> set[TupleID]:
         return set(self._space_map)
 
     def _effect(self) -> TransactionEffect:

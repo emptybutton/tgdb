@@ -60,7 +60,7 @@ class SetDomain[T: bool | int | str | datetime | UUID](Domain):
     _type: type[T]
     _is_nonable: bool
 
-    def type(self) -> type[T]:
+    def type(self) -> type[T]:  # type: ignore[override]
         return self._type
 
     def is_nonable(self) -> bool:
