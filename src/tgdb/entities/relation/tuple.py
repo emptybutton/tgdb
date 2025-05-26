@@ -18,3 +18,7 @@ class Tuple:
 
     def __iter__(self) -> Iterator[Scalar]:
         return iter(self.scalars)
+
+
+def tuple_(*scalars: Scalar, relation_id: Number = Number(0)) -> "Tuple":  # noqa: B008
+    return Tuple(TupleID(relation_id, scalars[0]), scalars[1:])

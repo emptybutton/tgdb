@@ -12,18 +12,12 @@ from tgdb.entities.horizon.effect import (
     ViewedTuple,
 )
 from tgdb.entities.relation.tuple import TupleID
-from tgdb.entities.time.logic_time import LogicTime
 
 
 @dataclass(frozen=True)
 class TransactionConflict:
     transaction_id: UUID
     rejected_claims: frozenset[Claim]
-
-
-@dataclass(frozen=True)
-class NoTransaction:
-    transaction_id: UUID
 
 
 @dataclass(frozen=True)
@@ -38,7 +32,7 @@ class TransactionOkPreparedCommit:
 
 
 type TransactionFailedPreparedCommit = (
-    TransactionConflict | NoTransaction | NonSerializableWriteTransaction
+    TransactionConflict | NonSerializableWriteTransaction
 )
 
 type TransactionPreparedCommit = (
@@ -67,9 +61,6 @@ class Transaction(ABC):
     def state(self) -> TransactionState: ...
 
     @abstractmethod
-    def beginning(self) -> LogicTime: ...
-
-    @abstractmethod
     def include(self, effect: ConflictableTransactionScalarEffect, /) -> None:
         ...
 
@@ -82,19 +73,26 @@ class Transaction(ABC):
     @abstractmethod
     def commit(self) -> TransactionCommit: ...
 
+    @abstractmethod
+    def __eq__(self, other: object) -> bool: ...
+
+    @abstractmethod
+    def __hash__(self) -> int: ...
+
 
 @dataclass(eq=False, unsafe_hash=False)
 class SerializableTransaction(Transaction):
     _id: UUID
     _state: TransactionState
-    _beginning: LogicTime
     _space_map: dict[TupleID, TupleEffect]
     _claims: set[Claim]
     _concurrent_transactions: set["Transaction"]
     _transactions_with_possible_conflict: set["SerializableTransaction"]
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, type(self)) and self._id == other._id
+        return (
+            isinstance(other, SerializableTransaction) and self._id == other._id
+        )
 
     def __hash__(self) -> int:
         return hash(type(self)) + hash(self._id)
@@ -104,9 +102,6 @@ class SerializableTransaction(Transaction):
 
     def state(self) -> TransactionState:
         return self._state
-
-    def beginning(self) -> LogicTime:
-        return self._beginning
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
         if isinstance(effect, Claim):
@@ -163,12 +158,10 @@ class SerializableTransaction(Transaction):
         cls,
         transaction_id: UUID,
         active_transactions: Iterable["Transaction"],
-        current_time: LogicTime,
     ) -> "SerializableTransaction":
         transasction = SerializableTransaction(
             _id=transaction_id,
             _state=TransactionState.active,
-            _beginning=current_time,
             _space_map=dict(),
             _claims=set(),
             _concurrent_transactions=set(active_transactions),
@@ -220,7 +213,6 @@ class SerializableTransaction(Transaction):
 class NonSerializableReadTransaction(Transaction):
     _id: UUID
     _state: TransactionState
-    _beginning: LogicTime
     _is_readonly: bool
 
     def id(self) -> UUID:
@@ -228,9 +220,6 @@ class NonSerializableReadTransaction(Transaction):
 
     def state(self) -> TransactionState:
         return self._state
-
-    def beginning(self) -> LogicTime:
-        return self._beginning
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
         if self._is_readonly and not isinstance(effect, ViewedTuple):
@@ -252,15 +241,10 @@ class NonSerializableReadTransaction(Transaction):
         return TransactionCommit(self._id, frozenset())
 
     @classmethod
-    def start(
-        cls,
-        transaction_id: UUID,
-        current_time: LogicTime,
-    ) -> "NonSerializableReadTransaction":
+    def start(cls, transaction_id: UUID) -> "NonSerializableReadTransaction":
         return NonSerializableReadTransaction(
             _id=transaction_id,
             _state=TransactionState.active,
-            _beginning=current_time,
             _is_readonly=True,
         )
 
@@ -274,13 +258,12 @@ def start_transaction(
     transaction_id: UUID,
     transaction_isolation: TransactionIsolation,
     active_transactions: Iterable[Transaction],
-    time: LogicTime,
 ) -> Transaction:
     match transaction_isolation:
         case TransactionIsolation.serializable_read_and_write:
             return SerializableTransaction.start(
-                transaction_id, active_transactions, time,
+                transaction_id, active_transactions
             )
 
         case TransactionIsolation.non_serializable_read:
-            return NonSerializableReadTransaction.start(transaction_id, time)
+            return NonSerializableReadTransaction.start(transaction_id)
