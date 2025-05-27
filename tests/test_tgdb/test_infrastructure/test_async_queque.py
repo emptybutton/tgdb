@@ -143,9 +143,7 @@ async def test_iterations_with_concurrent_pushes(
 
 @mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque"])
-async def test_infinite_iterations(
-    queque: Queque, object: str
-) -> None:
+async def test_infinite_iterations(queque: Queque, object: str) -> None:
     result = list[int]()
 
     async def iterate(iter: AsyncIterable[int]) -> None:
@@ -181,9 +179,7 @@ async def test_infinite_iterations(
 
 @mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque"])
-async def test_sync(
-    queque: Queque, object: str
-) -> None:
+async def test_sync(queque: Queque, object: str) -> None:
     result = list[int]()
     is_sync_overcome = False
 
@@ -229,9 +225,7 @@ async def test_sync(
 
 @mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque", "iterations_after_sync"])
-async def test_deadlock_on_sync(
-    queque: Queque, object: str
-) -> None:
+async def test_deadlock_on_sync(queque: Queque, object: str) -> None:
     result = list[int]()
     iterations_after_sync = 0
 

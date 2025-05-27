@@ -56,7 +56,7 @@ class Horizon:
     def __post_init__(self) -> None:
         assert_(
             self._max_len > 0 and self._max_transaction_age > 0,
-            else_=HorizonAlwaysWithoutTransactionsError
+            else_=HorizonAlwaysWithoutTransactionsError,
         )
 
     def __bool__(self) -> bool:
@@ -164,7 +164,8 @@ class Horizon:
         self.move_to_future(time)
 
         transaction = self._serializable_transaction(
-            xid, SerializableTransactionState.prepared,
+            xid,
+            SerializableTransactionState.prepared,
         )
 
         commit = transaction.commit()
@@ -211,8 +212,7 @@ class Horizon:
 
     def _oldest_transaction(self) -> Transaction | None:
         first_map_tranactions = (
-            first_map_value(map)
-            for map in self._transaction_maps()
+            first_map_value(map) for map in self._transaction_maps()
         )
         oldest_transactions = tuple(
             first_map_tranaction

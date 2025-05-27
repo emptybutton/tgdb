@@ -23,9 +23,7 @@ def assert_(
 
 
 @overload
-def assert_(
-    assertion: bool, else_: Exception | type[Exception]
-) -> None: ...
+def assert_(assertion: bool, else_: Exception | type[Exception]) -> None: ...
 
 
 def assert_(assertion: bool, else_: Exception | type[Exception]) -> None:

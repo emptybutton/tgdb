@@ -61,7 +61,7 @@ class Relation[IDDomainT: Domain]:
         return self._inital_version
 
     def intermediate_versions(
-        self
+        self,
     ) -> Sequence[DerivativeRelationVersion[IDDomainT]]:
         return self._intermediate_versions
 
@@ -87,12 +87,11 @@ class Relation[IDDomainT: Domain]:
         if not self._intermediate_versions:
             return tuple()
 
-        current_version_index = (
-            int(self._intermediate_versions[0].number)
-            - int(current_version_number)
-        )
+        current_version_index = int(
+            self._intermediate_versions[0].number
+        ) - int(current_version_number)
 
-        return self._intermediate_versions[current_version_index + 1:]
+        return self._intermediate_versions[current_version_index + 1 :]
 
     def migrate(
         self,
@@ -108,8 +107,8 @@ class Relation[IDDomainT: Domain]:
 
     def remove_old_versions(self, count: int) -> None:
         count_to_remove_intermediate_versions = count - 1
-        count_to_remove_intermediate_versions = (
-            min(count_to_remove_intermediate_versions, len(self) - 1)
+        count_to_remove_intermediate_versions = min(
+            count_to_remove_intermediate_versions, len(self) - 1
         )
         del self._intermediate_versions[:count_to_remove_intermediate_versions]
 

@@ -155,10 +155,7 @@ def test_rollback_with_transaction(
         assert len(horizon) == 0
 
 
-@mark.parametrize(
-    "object",
-    ["bool", "len", "commit"]
-)
+@mark.parametrize("object", ["bool", "len", "commit"])
 def test_commit_with_transaction_without_transaction_effect(
     object: str,
     horizon: Horizon,
@@ -182,10 +179,7 @@ def test_commit_with_transaction_without_transaction_effect(
         assert commit == PreparedCommit(UUID(int=1), set())
 
 
-@mark.parametrize(
-    "object",
-    ["bool", "len", "commit"]
-)
+@mark.parametrize("object", ["bool", "len", "commit"])
 def test_commit_completion_with_transaction_without_transaction_effect(
     object: str,
     horizon: Horizon,
@@ -210,10 +204,7 @@ def test_commit_completion_with_transaction_without_transaction_effect(
         assert commit == Commit(UUID(int=1), set())
 
 
-@mark.parametrize(
-    "object",
-    ["bool", "len"]
-)
+@mark.parametrize("object", ["bool", "len"])
 def test_commit_completion_without_transaction(
     object: str,
     horizon: Horizon,
@@ -232,9 +223,7 @@ def test_commit_completion_without_transaction(
         assert len(horizon) == 0
 
 
-@mark.parametrize(
-    "object", ["len", "prepared_commit", "completed_commit"]
-)
+@mark.parametrize("object", ["len", "prepared_commit", "completed_commit"])
 def test_commit_with_transaction_with_effect(
     object: str,
     horizon: Horizon,
@@ -247,10 +236,14 @@ def test_commit_with_transaction_with_effect(
         1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
-    prepared_commit = horizon.commit_transaction(2, UUID(int=1), [
-        MutatedTuple(tuple_(1, "x")),
-        NewTuple(tuple_(1, "y")),
-    ])
+    prepared_commit = horizon.commit_transaction(
+        2,
+        UUID(int=1),
+        [
+            MutatedTuple(tuple_(1, "x")),
+            NewTuple(tuple_(1, "y")),
+        ],
+    )
     completed_commit = horizon.complete_commit(3, prepared_commit.xid)
 
     if object == "len":
@@ -335,24 +328,24 @@ def test_with_sequential_transactions(
     horizon.start_transaction(
         1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
-    commit = horizon.commit_transaction(2, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+    commit = horizon.commit_transaction(
+        2, UUID(int=1), [MutatedTuple(tuple_(1, "a"))]
+    )
     commit1 = horizon.complete_commit(3, commit.xid)
 
     horizon.start_transaction(
         4, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
-    commit = horizon.commit_transaction(5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+    commit = horizon.commit_transaction(
+        5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))]
+    )
     commit2 = horizon.complete_commit(6, commit.xid)
 
     if object == "commit1":
-        assert commit1 == Commit(
-            UUID(int=1), {MutatedTuple(tuple_(1, "a"))}
-        )
+        assert commit1 == Commit(UUID(int=1), {MutatedTuple(tuple_(1, "a"))})
 
     if object == "commit2":
-        assert commit2 == Commit(
-            UUID(int=2), {MutatedTuple(tuple_(1, "b"))}
-        )
+        assert commit2 == Commit(UUID(int=2), {MutatedTuple(tuple_(1, "b"))})
 
 
 @mark.parametrize(
@@ -376,19 +369,21 @@ def test_conflict_by_id_with_left_transaction(
         2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
 
-    commit = horizon.commit_transaction(3, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+    commit = horizon.commit_transaction(
+        3, UUID(int=1), [MutatedTuple(tuple_(1, "a"))]
+    )
     commit1 = horizon.complete_commit(4, commit.xid)
 
     conflict = None
     try:
-        horizon.commit_transaction(5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+        horizon.commit_transaction(
+            5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))]
+        )
     except ConflictError as error:
         conflict = error
 
     if object == "commit1":
-        assert commit1 == Commit(
-            UUID(int=1), {MutatedTuple(tuple_(1, "a"))}
-        )
+        assert commit1 == Commit(UUID(int=1), {MutatedTuple(tuple_(1, "a"))})
 
     if object == "commit2":
         assert conflict == ConflictError(UUID(int=2), frozenset())
@@ -415,12 +410,16 @@ def test_conflict_by_id_with_subset_transaction(
         2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
 
-    commit2 = horizon.commit_transaction(3, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+    commit2 = horizon.commit_transaction(
+        3, UUID(int=2), [MutatedTuple(tuple_(1, "b"))]
+    )
     commit2 = horizon.complete_commit(4, commit2.xid)
 
     commit1 = None
     try:
-        horizon.commit_transaction(5, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+        horizon.commit_transaction(
+            5, UUID(int=1), [MutatedTuple(tuple_(1, "a"))]
+        )
     except ConflictError as error:
         commit1 = error
 
@@ -428,9 +427,7 @@ def test_conflict_by_id_with_subset_transaction(
         assert commit1 == ConflictError(UUID(int=1), frozenset())
 
     if object == "commit2":
-        assert commit2 == Commit(
-            UUID(int=2), {MutatedTuple(tuple_(1, "b"))}
-        )
+        assert commit2 == Commit(UUID(int=2), {MutatedTuple(tuple_(1, "b"))})
 
 
 @mark.parametrize(
@@ -468,10 +465,14 @@ def test_conflict_by_id_with_left_long_distance_transaction(
         3, UUID(int=3), IsolationLevel.serializable_read_and_write
     )
 
-    commit = horizon.commit_transaction(4, UUID(int=2), [MutatedTuple(tuple_("y"))])
+    commit = horizon.commit_transaction(
+        4, UUID(int=2), [MutatedTuple(tuple_("y"))]
+    )
     commit2 = horizon.complete_commit(5, commit.xid)
 
-    commit = horizon.commit_transaction(6, UUID(int=1), [MutatedTuple(tuple_("x"))])
+    commit = horizon.commit_transaction(
+        6, UUID(int=1), [MutatedTuple(tuple_("x"))]
+    )
     commit1 = horizon.complete_commit(7, commit.xid)
 
     commit3 = None
@@ -481,14 +482,10 @@ def test_conflict_by_id_with_left_long_distance_transaction(
         commit3 = error
 
     if object == "commit2":
-        assert commit2 == Commit(
-            UUID(int=2), {MutatedTuple(tuple_("y"))}
-        )
+        assert commit2 == Commit(UUID(int=2), {MutatedTuple(tuple_("y"))})
 
     if object == "commit1":
-        assert commit1 == Commit(
-            UUID(int=1), {MutatedTuple(tuple_("x"))}
-        )
+        assert commit1 == Commit(UUID(int=1), {MutatedTuple(tuple_("x"))})
 
     if object == "commit3":
         assert commit3 == ConflictError(UUID(int=3), frozenset())

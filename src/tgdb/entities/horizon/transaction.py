@@ -204,9 +204,7 @@ class SerializableTransaction:
             conflict_space = self.space() & transaction.space()
 
             if conflict_claims or conflict_space:
-                return ConflictError(
-                    self._xid, rejected_claims=conflict_claims
-                )
+                return ConflictError(self._xid, rejected_claims=conflict_claims)
 
         return None
 
