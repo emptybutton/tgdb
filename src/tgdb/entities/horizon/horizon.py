@@ -22,6 +22,7 @@ from tgdb.entities.horizon.transaction import (
     Transaction,
     start_transaction,
 )
+from tgdb.entities.relation.tuple import Tuple, VersionedTuple
 from tgdb.entities.time.logic_time import LogicTime
 from tgdb.entities.tools.assert_ import assert_
 from tgdb.entities.tools.map import first_map_value
@@ -99,8 +100,8 @@ class Horizon:
         self,
         time: LogicTime,
         xid: XID,
-        effect: ViewedTuple,
-    ) -> None:
+        tuple: VersionedTuple,
+    ) -> Tuple:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
@@ -112,7 +113,20 @@ class Horizon:
         transaction = self._transaction(
             xid, SerializableTransactionState.active
         )
-        transaction.include(effect)
+
+        if isinstance(transaction, NonSerializableReadTransaction):
+            transaction.include(ViewedTuple(tuple.latest_version().id))
+            return tuple.latest_version()
+
+        latest_version = tuple.latest_version()
+        old_versions = tuple.old_versions()
+
+        if old_versions:
+            transaction.include(MutatedTuple(latest_version))
+        else:
+            transaction.include(ViewedTuple(tuple.latest_version().id))
+
+        return latest_version
 
     def rollback_transaction(self, time: LogicTime, xid: XID) -> None:
         """
