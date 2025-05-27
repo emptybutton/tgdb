@@ -15,7 +15,7 @@ from tgdb.entities.horizon.horizon import (
 from tgdb.entities.horizon.transaction import (
     Commit,
     ConflictError,
-    Isolation,
+    IsolationLevel,
     PreparedCommit,
     SerializableTransaction,
     Transaction,
@@ -47,7 +47,7 @@ def test_with_only_start(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
     if object == "bool":
@@ -68,10 +68,10 @@ def test_two_concurrent_transactions(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
 
     if object == "bool":
@@ -125,12 +125,12 @@ def test_with_two_start(horizon: Horizon) -> None:
     """
 
     horizon.start_transaction(
-        2, UUID(int=1), Isolation.serializable_read_and_write
+        2, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
     with raises(InvalidTransactionStateError):
         horizon.start_transaction(
-            3, UUID(int=1), Isolation.serializable_read_and_write
+            3, UUID(int=1), IsolationLevel.serializable_read_and_write
         )
 
 
@@ -144,7 +144,7 @@ def test_rollback_with_transaction(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     horizon.rollback_transaction(2, UUID(int=1))
 
@@ -168,7 +168,7 @@ def test_commit_with_transaction_without_transaction_effect(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     commit = horizon.commit_transaction(2, UUID(int=1), [])
 
@@ -195,7 +195,7 @@ def test_commit_completion_with_transaction_without_transaction_effect(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     horizon.commit_transaction(2, UUID(int=1), [])
     commit = horizon.complete_commit(3, UUID(int=1))
@@ -244,7 +244,7 @@ def test_commit_with_transaction_with_effect(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
     prepared_commit = horizon.commit_transaction(2, UUID(int=1), [
@@ -290,11 +290,11 @@ def test_horizon_movement(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
 
     horizon.commit_transaction(3, UUID(int=1), [])
@@ -304,7 +304,7 @@ def test_horizon_movement(
         assert len(horizon) == 1
 
     horizon.start_transaction(
-        5, UUID(int=3), Isolation.serializable_read_and_write
+        5, UUID(int=3), IsolationLevel.serializable_read_and_write
     )
 
     horizon.commit_transaction(6, UUID(int=2), [])
@@ -333,13 +333,13 @@ def test_with_sequential_transactions(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     commit = horizon.commit_transaction(2, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
     commit1 = horizon.complete_commit(3, commit.xid)
 
     horizon.start_transaction(
-        4, UUID(int=2), Isolation.serializable_read_and_write
+        4, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
     commit = horizon.commit_transaction(5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
     commit2 = horizon.complete_commit(6, commit.xid)
@@ -369,11 +369,11 @@ def test_conflict_by_id_with_left_transaction(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
 
     commit = horizon.commit_transaction(3, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
@@ -408,11 +408,11 @@ def test_conflict_by_id_with_subset_transaction(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
 
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
 
     commit2 = horizon.commit_transaction(3, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
@@ -459,13 +459,13 @@ def test_conflict_by_id_with_left_long_distance_transaction(
     """
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
     horizon.start_transaction(
-        3, UUID(int=3), Isolation.serializable_read_and_write
+        3, UUID(int=3), IsolationLevel.serializable_read_and_write
     )
 
     commit = horizon.commit_transaction(4, UUID(int=2), [MutatedTuple(tuple_("y"))])
@@ -504,17 +504,17 @@ def test_max_len() -> None:
     horizon = horizon_(max_len=2, time=0, max_transaction_age=1000)
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 1
 
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 2
 
     horizon.start_transaction(
-        3, UUID(int=3), Isolation.serializable_read_and_write
+        3, UUID(int=3), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 2
 
@@ -531,22 +531,22 @@ def test_max_transaction_age() -> None:
     horizon = horizon_(max_len=1000, time=0, max_transaction_age=2)
 
     horizon.start_transaction(
-        1, UUID(int=1), Isolation.serializable_read_and_write
+        1, UUID(int=1), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 1
 
     horizon.start_transaction(
-        2, UUID(int=2), Isolation.serializable_read_and_write
+        2, UUID(int=2), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 2
 
     horizon.start_transaction(
-        3, UUID(int=3), Isolation.serializable_read_and_write
+        3, UUID(int=3), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 2
 
     horizon.start_transaction(
-        4, UUID(int=4), Isolation.serializable_read_and_write
+        4, UUID(int=4), IsolationLevel.serializable_read_and_write
     )
     assert len(horizon) == 2
 
@@ -584,7 +584,7 @@ def test_no_memory_leak(horizon: Horizon) -> None:
         time += 1
 
         horizon.start_transaction(
-            time, UUID(int=xid_int), Isolation.serializable_read_and_write
+            time, UUID(int=xid_int), IsolationLevel.serializable_read_and_write
         )
 
     assert transaction_counter == 100
@@ -598,7 +598,7 @@ def test_no_memory_leak(horizon: Horizon) -> None:
 
     time += 1
     horizon.start_transaction(
-        time, UUID(int=200), Isolation.serializable_read_and_write
+        time, UUID(int=200), IsolationLevel.serializable_read_and_write
     )
 
     SerializableTransaction.__init__ = old_transaction_init  # type: ignore[method-assign]

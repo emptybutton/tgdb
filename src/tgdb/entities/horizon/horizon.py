@@ -14,7 +14,7 @@ from tgdb.entities.horizon.effect import (
 from tgdb.entities.horizon.transaction import (
     XID,
     Commit,
-    Isolation,
+    IsolationLevel,
     NonSerializableReadTransaction,
     PreparedCommit,
     SerializableTransaction,
@@ -69,7 +69,7 @@ class Horizon:
         self,
         time: LogicTime,
         xid: XID,
-        isolation: Isolation,
+        isolation: IsolationLevel,
     ) -> XID:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:

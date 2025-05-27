@@ -281,7 +281,7 @@ class NonSerializableReadTransaction:
 type Transaction = SerializableTransaction | NonSerializableReadTransaction
 
 
-class Isolation(Enum):
+class IsolationLevel(Enum):
     serializable_read_and_write = auto()
     non_serializable_read = auto()
 
@@ -289,14 +289,14 @@ class Isolation(Enum):
 def start_transaction(
     xid: XID,
     time: LogicTime,
-    isolation: Isolation,
+    isolation: IsolationLevel,
     serializable_transactions: Iterable[SerializableTransaction],
 ) -> Transaction:
     match isolation:
-        case Isolation.serializable_read_and_write:
+        case IsolationLevel.serializable_read_and_write:
             return SerializableTransaction.start(
                 xid, time, serializable_transactions
             )
 
-        case Isolation.non_serializable_read:
+        case IsolationLevel.non_serializable_read:
             return NonSerializableReadTransaction.start(xid, time)
