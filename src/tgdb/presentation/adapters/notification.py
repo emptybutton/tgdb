@@ -13,4 +13,4 @@ class TransactionCommitListNotificationToAsyncMap(
 
     async def send(self, commits: Sequence[TransactionCommit], /) -> None:
         for commit in commits:
-            self._map[commit.transaction_id] = commit
+            self._map[commit.xid] = commit

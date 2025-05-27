@@ -10,7 +10,7 @@ from tgdb.entities.transaction import (
     NoTransaction,
     TransactionCommit,
     TransactionConflict,
-    TransactionOkPreparedCommit,
+    TransactionCommit,
 )
 from tgdb.presentation.async_map import AsyncMap
 from tgdb.presentation.fastapi.schemas.entity import StartOperatorSchema
@@ -54,12 +54,12 @@ async def _(
     commit_map: FromDishka[AsyncMap[UUID, TransactionCommit]],
     request_body: StartOperatorSchema,
 ) -> Response:
-    async_commit = commit_map[request_body.transaction_id]
+    async_commit = commit_map[request_body.xid]
 
     await input_operator(request_body)
     commit = await async_commit
 
-    if isinstance(commit, TransactionOkPreparedCommit):
+    if isinstance(commit, TransactionCommit):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     match commit.reason:

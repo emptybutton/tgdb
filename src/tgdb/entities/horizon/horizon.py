@@ -1,7 +1,8 @@
 from collections import OrderedDict
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
-from uuid import UUID
+from itertools import chain
 
 from tgdb.entities.horizon.effect import (
     Claim,
@@ -11,15 +12,19 @@ from tgdb.entities.horizon.effect import (
     ViewedTuple,
 )
 from tgdb.entities.horizon.transaction import (
+    XID,
+    Commit,
+    Isolation,
+    NonSerializableReadTransaction,
+    PreparedCommit,
+    SerializableTransaction,
+    SerializableTransactionState,
     Transaction,
-    TransactionCommit,
-    TransactionIsolation,
-    TransactionOkPreparedCommit,
-    TransactionPreparedCommit,
-    TransactionState,
     start_transaction,
 )
-from tgdb.entities.tools.assert_ import not_none
+from tgdb.entities.time.logic_time import LogicTime
+from tgdb.entities.tools.assert_ import assert_
+from tgdb.entities.tools.map import first_map_value
 
 
 class NoTransactionError(Exception): ...
@@ -28,117 +33,209 @@ class NoTransactionError(Exception): ...
 class InvalidTransactionStateError(Exception): ...
 
 
+class HorizonAlwaysWithoutTransactionsError(Exception): ...
+
+
+class NotMonotonicTimeError(Exception): ...
+
+
 @dataclass
 class Horizon:
+    """
+    :raises tgdb.entities.horizon.horizon.HorizonAlwaysWithoutTransactionsError:
+    """
+
+    _time: LogicTime
     _max_len: int
-    _transaction_map: OrderedDict[UUID, Transaction]
+    _max_transaction_age: LogicTime
+    _serializable_transaction_map: OrderedDict[XID, SerializableTransaction]
+    _non_serializable_read_transaction_map: OrderedDict[
+        XID, NonSerializableReadTransaction
+    ]
+
+    def __post_init__(self) -> None:
+        assert_(
+            self._max_len > 0 and self._max_transaction_age > 0,
+            else_=HorizonAlwaysWithoutTransactionsError
+        )
 
     def __bool__(self) -> bool:
-        return bool(self._transaction_map)
+        return any(self._transaction_maps())
 
     def __len__(self) -> int:
-        return len(self._transaction_map)
+        return sum(map(len, self._transaction_maps()))
 
     def start_transaction(
         self,
-        transaction_id: UUID,
-        transaction_isolation: TransactionIsolation,
-    ) -> Transaction:
+        time: LogicTime,
+        xid: XID,
+        isolation: Isolation,
+    ) -> XID:
         """
+        :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         """
 
-        if transaction_id in self._transaction_map:
-            raise InvalidTransactionStateError
-
-        new_transaction = start_transaction(
-            transaction_id,
-            transaction_isolation,
-            self._transaction_map.values(),
+        assert_(
+            xid not in chain(*self._transaction_maps()),
+            else_=InvalidTransactionStateError,
         )
-        self._transaction_map[new_transaction.id()] = new_transaction
-        self._limit_len()
 
-        return new_transaction
+        started_transaction = start_transaction(
+            xid,
+            self._time,
+            isolation,
+            self._serializable_transaction_map.values(),
+        )
+
+        map = self._transaction_map(started_transaction)
+        map[started_transaction.xid()] = started_transaction
+        self._limit_len()
+        self.move_to_future(time)
+
+        return started_transaction.xid()
 
     def view_tuple(
         self,
-        transaction_id: UUID,
+        time: LogicTime,
+        xid: XID,
         effect: ViewedTuple,
     ) -> None:
         """
+        :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         """
 
-        transaction = self._transaction(transaction_id, TransactionState.active)
+        self.move_to_future(time)
+
+        transaction = self._transaction(
+            xid, SerializableTransactionState.active
+        )
         transaction.include(effect)
 
-    def rollback_transaction(self, transaction_id: UUID) -> None:
+    def rollback_transaction(self, time: LogicTime, xid: XID) -> None:
         """
+        :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         """
 
-        transaction = self._transaction(transaction_id)
+        self.move_to_future(time)
+
+        transaction = self._transaction(xid)
         transaction.rollback()
-        del self._transaction_map[transaction.id()]
+        del self._transaction_map(transaction)[transaction.xid()]
 
     def commit_transaction(
         self,
-        transaction_id: UUID,
+        time: LogicTime,
+        xid: XID,
         effects: Sequence[NewTuple | MutatedTuple | DeletedTuple | Claim],
-    ) -> TransactionPreparedCommit:
+    ) -> Commit | PreparedCommit:
         """
+        :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
-        """
+        :raises tgdb.entities.horizon.transaction.TransactionConflictError:
+        :raises tgdb.entities.horizon.transaction.NonSerializableWriteTransactionError:
+        """  # noqa: E501
 
-        transaction = self._transaction(transaction_id, TransactionState.active)
+        self.move_to_future(time)
+
+        transaction = self._transaction(
+            xid, SerializableTransactionState.active
+        )
 
         for effect in effects:
             transaction.include(effect)
 
-        return transaction.prepare_commit()
+        match transaction:
+            case SerializableTransaction():
+                return transaction.prepare_commit()
+            case NonSerializableReadTransaction():
+                return transaction.commit()
 
-    def complete_commit(
-        self, prepared_commit: TransactionOkPreparedCommit
-    ) -> TransactionCommit:
+    def complete_commit(self, time: LogicTime, xid: XID) -> Commit:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         """
 
-        transaction = self._transaction(
-            prepared_commit.transaction_id,
-            TransactionState.prepared,
+        self.move_to_future(time)
+
+        transaction = self._serializable_transaction(
+            xid, SerializableTransactionState.prepared,
         )
 
         commit = transaction.commit()
-        del self._transaction_map[transaction.id()]
+        del self._serializable_transaction_map[transaction.xid()]
 
         return commit
 
+    def move_to_future(self, time: LogicTime) -> None:
+        """
+        :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
+        """
+
+        assert_(self._time < time, else_=NotMonotonicTimeError)
+        self._time = time
+
+        self._limit_transaction_age()
+
+    def _limit_transaction_age(self) -> None:
+        while True:
+            oldest_transaction = self._oldest_transaction()
+
+            if oldest_transaction is None:
+                break
+
+            if oldest_transaction.age(self._time) <= self._max_transaction_age:
+                break
+
+            oldest_transaction.rollback()
+            del self._transaction_map(oldest_transaction)[
+                oldest_transaction.xid()
+            ]
+
     def _limit_len(self) -> None:
-        if len(self) > self._max_len:
-            transaction = not_none(self._oldest_transaction())
-            transaction.rollback()
-            del self._transaction_map[transaction.id()]
+        while len(self) > self._max_len:
+            oldest_transaction = self._oldest_transaction()
+
+            if oldest_transaction is None:
+                return
+
+            oldest_transaction.rollback()
+            del self._transaction_map(oldest_transaction)[
+                oldest_transaction.xid()
+            ]
 
     def _oldest_transaction(self) -> Transaction | None:
-        try:
-            return next(iter(self._transaction_map.values()))
-        except StopIteration:
+        first_map_tranactions = (
+            first_map_value(map)
+            for map in self._transaction_maps()
+        )
+        oldest_transactions = tuple(
+            first_map_tranaction
+            for first_map_tranaction in first_map_tranactions
+            if first_map_tranaction is not None
+        )
+
+        if not oldest_transactions:
             return None
 
-    def _transaction(
-        self, id: UUID, state: TransactionState | None = None
-    ) -> Transaction:
+        return min(oldest_transactions, key=lambda it: it.start_time())
+
+    def _serializable_transaction(
+        self,
+        xid: XID,
+        state: SerializableTransactionState | None = None,
+    ) -> SerializableTransaction:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         """
 
-        transaction = self._transaction_map.get(id)
+        transaction = self._serializable_transaction_map.get(xid)
 
         if transaction is None:
             raise NoTransactionError
@@ -148,6 +245,55 @@ class Horizon:
 
         return transaction
 
+    def _non_serializable_read_transaction(
+        self, xid: XID
+    ) -> NonSerializableReadTransaction:
+        """
+        :raises tgdb.entities.horizon.horizon.NoTransactionError:
+        """
 
-def horizon(max_len: int) -> Horizon:
-    return Horizon(_max_len=max_len, _transaction_map=OrderedDict())
+        transaction = self._non_serializable_read_transaction_map.get(xid)
+
+        if transaction is None:
+            raise NoTransactionError
+
+        return transaction
+
+    def _transaction(
+        self,
+        xid: XID,
+        state: SerializableTransactionState | None = None,
+    ) -> Transaction:
+        with suppress(NoTransactionError):
+            return self._non_serializable_read_transaction(xid)
+
+        return self._serializable_transaction(xid, state)
+
+    def _transaction_maps(self) -> Iterable[Mapping[XID, Transaction]]:
+        yield self._serializable_transaction_map
+        yield self._non_serializable_read_transaction_map
+
+    def _transaction_map[TransactionT: Transaction](
+        self, transaction: TransactionT
+    ) -> OrderedDict[XID, TransactionT]:
+        match transaction:
+            case NonSerializableReadTransaction():
+                return self._non_serializable_read_transaction_map  # type: ignore[return-value]
+            case SerializableTransaction():
+                return self._serializable_transaction_map  # type: ignore[return-value]
+
+
+def horizon(
+    time: LogicTime, max_len: int, max_transaction_age: LogicTime
+) -> Horizon:
+    """
+    :raises tgdb.entities.horizon.horizon.HorizonAlwaysWithoutTransactionsError:
+    """
+
+    return Horizon(
+        _time=time,
+        _max_len=max_len,
+        _max_transaction_age=max_transaction_age,
+        _serializable_transaction_map=OrderedDict(),
+        _non_serializable_read_transaction_map=OrderedDict(),
+    )

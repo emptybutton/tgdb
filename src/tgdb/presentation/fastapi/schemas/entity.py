@@ -92,21 +92,21 @@ class MarkOperatorSchema(EntitySchema[Mark]):
 
 
 class StartOperatorSchema(EntitySchema[StartOperator]):
-    transaction_id: UUID = Field(alias="transactionID")
+    xid: XID = Field(alias="transactionID")
 
     def entity(self) -> StartOperator:
-        return StartOperator(self.transaction_id)
+        return StartOperator(self.xid)
 
 
 class RollbackOperatorSchema(EntitySchema[RollbackOperator]):
-    transaction_id: UUID = Field(alias="transactionID")
+    xid: XID = Field(alias="transactionID")
 
     def entity(self) -> RollbackOperator:
-        return RollbackOperator(self.transaction_id)
+        return RollbackOperator(self.xid)
 
 
 class CommitOperatorSchema(EntitySchema[CommitOperator]):
-    transaction_id: UUID = Field(alias="transactionID")
+    xid: XID = Field(alias="transactionID")
 
     new_row_operators: tuple[NewRowOperatorSchema, ...] = Field(
         alias="newRowOperators",
@@ -126,7 +126,7 @@ class CommitOperatorSchema(EntitySchema[CommitOperator]):
     )
 
     def entity(self) -> CommitOperator:
-        return CommitOperator(self.transaction_id, self._entity_operators())
+        return CommitOperator(self.xid, self._entity_operators())
 
     def _entity_operators(self) -> tuple[IntermediateOperator, ...]:
         schema_operators: Iterable[EntitySchema[IntermediateOperator]] = chain(

@@ -6,16 +6,16 @@ from tgdb.application.ports.notifying import Notifying
 from tgdb.application.ports.queque import Queque
 from tgdb.application.ports.shared_horizon import SharedHorizon
 from tgdb.entities.transaction import (
-    TransactionOkPreparedCommit,
-    TransactionPreparedCommit,
+    TransactionCommit,
+    TransactionCommit,
 )
 
 
 @dataclass(frozen=True)
 class OutputCommits:
-    commit_buffer: Buffer[TransactionPreparedCommit]
-    notifying: Notifying[Sequence[TransactionPreparedCommit]]
-    output_commits: Queque[Sequence[TransactionOkPreparedCommit]]
+    commit_buffer: Buffer[TransactionCommit]
+    notifying: Notifying[Sequence[TransactionCommit]]
+    output_commits: Queque[Sequence[TransactionCommit]]
     shared_horizon: SharedHorizon
 
     async def __call__(self) -> None:
@@ -24,7 +24,7 @@ class OutputCommits:
 
             ok_prepared_commits = tuple(
                 commit for commit in prepared_commits
-                if isinstance(commit, TransactionOkPreparedCommit)
+                if isinstance(commit, TransactionCommit)
             )
 
             await self.output_commits.push(ok_prepared_commits)

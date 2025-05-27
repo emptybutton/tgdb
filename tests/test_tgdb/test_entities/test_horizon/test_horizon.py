@@ -13,19 +13,19 @@ from tgdb.entities.horizon.horizon import (
     horizon as horizon_,
 )
 from tgdb.entities.horizon.transaction import (
+    Commit,
+    ConflictError,
+    Isolation,
+    PreparedCommit,
+    SerializableTransaction,
     Transaction,
-    TransactionCommit,
-    TransactionConflict,
-    TransactionIsolation,
-    TransactionOkPreparedCommit,
 )
-from tgdb.entities.numeration.number import Number
-from tgdb.entities.relation.tuple import Tuple, TupleID, tuple_
+from tgdb.entities.relation.tuple import tuple_
 
 
 @fixture
 def horizon() -> Horizon:
-    return horizon_(100)
+    return horizon_(0, 1000, 1_000_000_000)
 
 
 @mark.parametrize("object", ["bool", "len"])
@@ -47,7 +47,7 @@ def test_with_only_start(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
 
     if object == "bool":
@@ -68,10 +68,10 @@ def test_two_concurrent_transactions(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
     horizon.start_transaction(
-        UUID(int=2), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=2), Isolation.serializable_read_and_write
     )
 
     if object == "bool":
@@ -91,7 +91,7 @@ def test_with_only_commit(
     """
 
     with raises(NoTransactionError):
-        horizon.commit_transaction(UUID(int=1), [NewTuple(tuple_(1))])
+        horizon.commit_transaction(1, UUID(int=1), [NewTuple(tuple_(1))])
 
     if object == "bool":
         assert not horizon
@@ -110,7 +110,7 @@ def test_with_only_rollback(
     """
 
     with raises(NoTransactionError):
-        horizon.rollback_transaction(UUID(int=1))
+        horizon.rollback_transaction(1, UUID(int=1))
 
     if object == "bool":
         assert not horizon
@@ -125,12 +125,12 @@ def test_with_two_start(horizon: Horizon) -> None:
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=1), Isolation.serializable_read_and_write
     )
 
     with raises(InvalidTransactionStateError):
         horizon.start_transaction(
-            UUID(int=1), TransactionIsolation.serializable_read_and_write
+            3, UUID(int=1), Isolation.serializable_read_and_write
         )
 
 
@@ -144,9 +144,9 @@ def test_rollback_with_transaction(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
-    horizon.rollback_transaction(UUID(int=1))
+    horizon.rollback_transaction(2, UUID(int=1))
 
     if object == "bool":
         assert not horizon
@@ -168,9 +168,9 @@ def test_commit_with_transaction_without_transaction_effect(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
-    commit = horizon.commit_transaction(UUID(int=1), [])
+    commit = horizon.commit_transaction(2, UUID(int=1), [])
 
     if object == "bool":
         assert horizon
@@ -179,7 +179,7 @@ def test_commit_with_transaction_without_transaction_effect(
         assert len(horizon) == 1
 
     if object == "commit":
-        assert commit == TransactionOkPreparedCommit(UUID(int=1), set())
+        assert commit == PreparedCommit(UUID(int=1), set())
 
 
 @mark.parametrize(
@@ -195,12 +195,10 @@ def test_commit_completion_with_transaction_without_transaction_effect(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
-    commit = horizon.commit_transaction(UUID(int=1), [])
-    assert isinstance(commit, TransactionOkPreparedCommit)
-
-    commit = horizon.complete_commit(commit)
+    horizon.commit_transaction(2, UUID(int=1), [])
+    commit = horizon.complete_commit(3, UUID(int=1))
 
     if object == "bool":
         assert not horizon
@@ -209,7 +207,7 @@ def test_commit_completion_with_transaction_without_transaction_effect(
         assert len(horizon) == 0
 
     if object == "commit":
-        assert commit == TransactionCommit(UUID(int=1), set())
+        assert commit == Commit(UUID(int=1), set())
 
 
 @mark.parametrize(
@@ -221,13 +219,11 @@ def test_commit_completion_without_transaction(
     horizon: Horizon,
 ) -> None:
     """
-    |--|-|
+    -|
     """
 
-    commit = TransactionOkPreparedCommit(UUID(int=1), set())
-
     with raises(NoTransactionError):
-        horizon.complete_commit(commit)
+        horizon.complete_commit(1, UUID(int=1))
 
     if object == "bool":
         assert not horizon
@@ -248,22 +244,20 @@ def test_commit_with_transaction_with_effect(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
 
-    prepared_commit = horizon.commit_transaction(UUID(int=1), [
+    prepared_commit = horizon.commit_transaction(2, UUID(int=1), [
         MutatedTuple(tuple_(1, "x")),
         NewTuple(tuple_(1, "y")),
     ])
-    assert isinstance(prepared_commit, TransactionOkPreparedCommit)
-
-    completed_commit = horizon.complete_commit(prepared_commit)
+    completed_commit = horizon.complete_commit(3, prepared_commit.xid)
 
     if object == "len":
         assert len(horizon) == 0
 
     if object == "prepared_commit":
-        assert prepared_commit == TransactionOkPreparedCommit(
+        assert prepared_commit == PreparedCommit(
             UUID(int=1),
             {
                 MutatedTuple(tuple_(1, "y")),
@@ -271,7 +265,7 @@ def test_commit_with_transaction_with_effect(
         )
 
     if object == "completed_commit":
-        assert completed_commit == TransactionCommit(
+        assert completed_commit == Commit(
             UUID(int=1),
             {MutatedTuple(tuple_(1, "y"))},
         )
@@ -296,34 +290,31 @@ def test_horizon_movement(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
 
     horizon.start_transaction(
-        UUID(int=2), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=2), Isolation.serializable_read_and_write
     )
 
-    commit1 = horizon.commit_transaction(UUID(int=1), [])
-    assert isinstance(commit1, TransactionOkPreparedCommit)
-    horizon.complete_commit(commit1)
+    horizon.commit_transaction(3, UUID(int=1), [])
+    horizon.complete_commit(4, UUID(int=1))
 
     if object == "len_after_commit1":
         assert len(horizon) == 1
 
     horizon.start_transaction(
-        UUID(int=3), TransactionIsolation.serializable_read_and_write
+        5, UUID(int=3), Isolation.serializable_read_and_write
     )
 
-    commit2 = horizon.commit_transaction(UUID(int=2), [])
-    assert isinstance(commit2, TransactionOkPreparedCommit)
-    horizon.complete_commit(commit2)
+    horizon.commit_transaction(6, UUID(int=2), [])
+    horizon.complete_commit(7, UUID(int=2))
 
     if object == "len_after_commit1":
         assert len(horizon) == 1
 
-    commit3 = horizon.commit_transaction(UUID(int=3), [])
-    assert isinstance(commit3, TransactionOkPreparedCommit)
-    horizon.complete_commit(commit3)
+    horizon.commit_transaction(8, UUID(int=3), [])
+    horizon.complete_commit(9, UUID(int=3))
 
     if object == "len_after_commit1":
         assert len(horizon) == 0
@@ -342,27 +333,24 @@ def test_with_sequential_transactions(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
-    commit = horizon.commit_transaction(UUID(int=3), [MutatedTuple(tuple_(1, "a"))])
-    assert isinstance(commit, TransactionOkPreparedCommit)
-    commit1 = horizon.complete_commit(commit)
-
+    commit = horizon.commit_transaction(2, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+    commit1 = horizon.complete_commit(3, commit.xid)
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        4, UUID(int=2), Isolation.serializable_read_and_write
     )
-    commit = horizon.commit_transaction(UUID(int=3), [MutatedTuple(tuple_(1, "b"))])
-    assert isinstance(commit, TransactionOkPreparedCommit)
-    commit2 = horizon.complete_commit(commit)
+    commit = horizon.commit_transaction(5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+    commit2 = horizon.complete_commit(6, commit.xid)
 
     if object == "commit1":
-        assert commit1 == TransactionCommit(
+        assert commit1 == Commit(
             UUID(int=1), {MutatedTuple(tuple_(1, "a"))}
         )
 
     if object == "commit2":
-        assert commit2 == TransactionCommit(
+        assert commit2 == Commit(
             UUID(int=2), {MutatedTuple(tuple_(1, "b"))}
         )
 
@@ -381,26 +369,29 @@ def test_conflict_by_id_with_left_transaction(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
 
     horizon.start_transaction(
-        UUID(int=2), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=2), Isolation.serializable_read_and_write
     )
 
-    commit = horizon.commit_transaction(UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
-    assert isinstance(commit, TransactionOkPreparedCommit)
-    commit1 = horizon.complete_commit(commit)
+    commit = horizon.commit_transaction(3, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+    commit1 = horizon.complete_commit(4, commit.xid)
 
-    commit2 = horizon.commit_transaction(UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+    conflict = None
+    try:
+        horizon.commit_transaction(5, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+    except ConflictError as error:
+        conflict = error
 
     if object == "commit1":
-        assert commit1 == TransactionCommit(
+        assert commit1 == Commit(
             UUID(int=1), {MutatedTuple(tuple_(1, "a"))}
         )
 
     if object == "commit2":
-        assert commit2 == TransactionConflict(UUID(int=2), frozenset())
+        assert conflict == ConflictError(UUID(int=2), frozenset())
 
 
 @mark.parametrize(
@@ -417,24 +408,27 @@ def test_conflict_by_id_with_subset_transaction(
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
 
     horizon.start_transaction(
-        UUID(int=2), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=2), Isolation.serializable_read_and_write
     )
 
-    commit2 = horizon.commit_transaction(UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
-    assert isinstance(commit2, TransactionOkPreparedCommit)
-    commit2 = horizon.complete_commit(commit2)
+    commit2 = horizon.commit_transaction(3, UUID(int=2), [MutatedTuple(tuple_(1, "b"))])
+    commit2 = horizon.complete_commit(4, commit2.xid)
 
-    commit1 = horizon.commit_transaction(UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+    commit1 = None
+    try:
+        horizon.commit_transaction(5, UUID(int=1), [MutatedTuple(tuple_(1, "a"))])
+    except ConflictError as error:
+        commit1 = error
 
     if object == "commit1":
-        assert commit1 == TransactionConflict(UUID(int=1), frozenset())
+        assert commit1 == ConflictError(UUID(int=1), frozenset())
 
     if object == "commit2":
-        assert commit2 == TransactionCommit(
+        assert commit2 == Commit(
             UUID(int=2), {MutatedTuple(tuple_(1, "b"))}
         )
 
@@ -459,43 +453,45 @@ def test_conflict_by_id_with_left_long_distance_transaction(
     Begin order: 123
     Commit order: 213
 
-    1 mutates x
     2 mutates y
+    1 mutates x
     3 mutates x
     """
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
     horizon.start_transaction(
-        UUID(int=2), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=2), Isolation.serializable_read_and_write
     )
     horizon.start_transaction(
-        UUID(int=3), TransactionIsolation.serializable_read_and_write
+        3, UUID(int=3), Isolation.serializable_read_and_write
     )
 
-    commit = horizon.commit_transaction(UUID(int=2), [MutatedTuple(tuple_("y"))])
-    assert isinstance(commit, TransactionOkPreparedCommit)
-    commit2 = horizon.complete_commit(commit)
+    commit = horizon.commit_transaction(4, UUID(int=2), [MutatedTuple(tuple_("y"))])
+    commit2 = horizon.complete_commit(5, commit.xid)
 
-    commit = horizon.commit_transaction(UUID(int=1), [MutatedTuple(tuple_(1, "x"))])
-    assert isinstance(commit, TransactionOkPreparedCommit)
-    commit1 = horizon.complete_commit(commit)
+    commit = horizon.commit_transaction(6, UUID(int=1), [MutatedTuple(tuple_("x"))])
+    commit1 = horizon.complete_commit(7, commit.xid)
 
-    commit3 = horizon.commit_transaction(UUID(int=3), [MutatedTuple(tuple_(1, "x"))])
+    commit3 = None
+    try:
+        horizon.commit_transaction(8, UUID(int=3), [MutatedTuple(tuple_("x"))])
+    except ConflictError as error:
+        commit3 = error
 
     if object == "commit2":
-        assert commit2 == TransactionCommit(
+        assert commit2 == Commit(
             UUID(int=2), {MutatedTuple(tuple_("y"))}
         )
 
     if object == "commit1":
-        assert commit1 == TransactionCommit(
+        assert commit1 == Commit(
             UUID(int=1), {MutatedTuple(tuple_("x"))}
         )
 
     if object == "commit3":
-        assert commit3 == TransactionConflict(UUID(int=3), frozenset())
+        assert commit3 == ConflictError(UUID(int=3), frozenset())
 
 
 def test_max_len() -> None:
@@ -505,25 +501,58 @@ def test_max_len() -> None:
         |
     """
 
-    horizon = horizon_(2)
+    horizon = horizon_(max_len=2, time=0, max_transaction_age=1000)
 
     horizon.start_transaction(
-        UUID(int=1), TransactionIsolation.serializable_read_and_write
+        1, UUID(int=1), Isolation.serializable_read_and_write
     )
     assert len(horizon) == 1
 
     horizon.start_transaction(
-        UUID(int=2), TransactionIsolation.serializable_read_and_write
+        2, UUID(int=2), Isolation.serializable_read_and_write
     )
     assert len(horizon) == 2
 
     horizon.start_transaction(
-        UUID(int=3), TransactionIsolation.serializable_read_and_write
+        3, UUID(int=3), Isolation.serializable_read_and_write
     )
     assert len(horizon) == 2
 
 
-def test_no_memory_leak() -> None:
+def test_max_transaction_age() -> None:
+    """
+    ##
+    |---
+     |--
+      |-
+       |
+    """
+
+    horizon = horizon_(max_len=1000, time=0, max_transaction_age=2)
+
+    horizon.start_transaction(
+        1, UUID(int=1), Isolation.serializable_read_and_write
+    )
+    assert len(horizon) == 1
+
+    horizon.start_transaction(
+        2, UUID(int=2), Isolation.serializable_read_and_write
+    )
+    assert len(horizon) == 2
+
+    horizon.start_transaction(
+        3, UUID(int=3), Isolation.serializable_read_and_write
+    )
+    assert len(horizon) == 2
+
+    horizon.start_transaction(
+        4, UUID(int=4), Isolation.serializable_read_and_write
+    )
+    assert len(horizon) == 2
+
+
+@mark.timeout(1)
+def test_no_memory_leak(horizon: Horizon) -> None:
     """
     |---------||
      |-------||
@@ -534,7 +563,7 @@ def test_no_memory_leak() -> None:
 
     transaction_counter = 0
 
-    old_transaction_init = Transaction.__init__
+    old_transaction_init = SerializableTransaction.__init__
 
     def new_transaction_init(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401
         old_transaction_init(*args, **kwargs)
@@ -542,34 +571,37 @@ def test_no_memory_leak() -> None:
         nonlocal transaction_counter
         transaction_counter += 1
 
-    def transaction_del(self: Any, *args: Any, **kwargs: Any) -> None:  # noqa: ARG001,ANN401
+    def transaction_del(self: Transaction, *args: Any, **kwargs: Any) -> None:  # noqa: ARG001,ANN401
         nonlocal transaction_counter
-
-        assert self._id == transaction_counter
         transaction_counter -= 1
 
-    Transaction.__init__ = new_transaction_init  # type: ignore[method-assign]
-    Transaction.__del__ = transaction_del  # type: ignore[attr-defined]
+    SerializableTransaction.__init__ = new_transaction_init  # type: ignore[method-assign]
+    SerializableTransaction.__del__ = transaction_del  # type: ignore[attr-defined]
 
-    horizon = horizon_(1000)
+    time = 0
 
-    for xid in range(1, 101):
+    for xid_int in range(1, 101):
+        time += 1
+
         horizon.start_transaction(
-            UUID(int=xid), TransactionIsolation.serializable_read_and_write
+            time, UUID(int=xid_int), Isolation.serializable_read_and_write
         )
 
     assert transaction_counter == 100
 
     for xid in reversed(range(1, 101)):
-        commit = horizon.commit_transaction(UUID(int=xid), [])
-        assert isinstance(commit, TransactionOkPreparedCommit)
-        horizon.complete_commit(commit)
+        time += 1
+        commit = horizon.commit_transaction(time, UUID(int=xid), [])
 
+        time += 1
+        horizon.complete_commit(time, commit.xid)
+
+    time += 1
     horizon.start_transaction(
-        UUID(int=200), TransactionIsolation.serializable_read_and_write
+        time, UUID(int=200), Isolation.serializable_read_and_write
     )
 
-    Transaction.__init__ = old_transaction_init  # type: ignore[method-assign]
-    del Transaction.__del__  # type: ignore[attr-defined]
+    SerializableTransaction.__init__ = old_transaction_init  # type: ignore[method-assign]
+    del SerializableTransaction.__del__  # type: ignore[attr-defined]
 
     assert transaction_counter == 1

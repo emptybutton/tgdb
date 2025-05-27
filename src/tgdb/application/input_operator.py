@@ -9,14 +9,14 @@ from tgdb.application.ports.logic_clock import LogicClock
 from tgdb.application.ports.operator_serialization import OperatorSerialization
 from tgdb.application.ports.shared_horizon import SharedHorizon
 from tgdb.entities.operator import AppliedOperator
-from tgdb.entities.transaction import TransactionPreparedCommit
+from tgdb.entities.transaction import TransactionCommit
 
 
 @dataclass(frozen=True)
 class InputOperator[SerializedOperatorsT]:
     clock: LogicClock
     operator_serialization: OperatorSerialization[SerializedOperatorsT]
-    commit_buffer: Buffer[TransactionPreparedCommit]
+    commit_buffer: Buffer[TransactionCommit]
     shared_horizon: SharedHorizon
 
     async def __call__(
