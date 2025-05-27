@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-from contextlib import AbstractAsyncContextManager
+from abc import ABC
+from collections.abc import Awaitable
 
-from tgdb.entities.transaction_horizon import TransactionHorizon
+from tgdb.entities.horizon.horizon import Horizon
 
 
-class SharedHorizon(AbstractAsyncContextManager[TransactionHorizon], ABC): ...
+class SharedHorizon(Awaitable[Horizon], ABC): ...

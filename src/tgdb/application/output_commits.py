@@ -5,15 +5,12 @@ from tgdb.application.ports.buffer import Buffer
 from tgdb.application.ports.notifying import Notifying
 from tgdb.application.ports.queque import Queque
 from tgdb.application.ports.shared_horizon import SharedHorizon
-from tgdb.entities.transaction import (
-    TransactionCommit,
-    TransactionCommit,
-)
+from tgdb.entities.horizon.transaction import PreparedCommit
 
 
 @dataclass(frozen=True)
 class OutputCommits:
-    commit_buffer: Buffer[TransactionCommit]
+    commit_buffer: Buffer[PreparedCommit]
     notifying: Notifying[Sequence[TransactionCommit]]
     output_commits: Queque[Sequence[TransactionCommit]]
     shared_horizon: SharedHorizon
