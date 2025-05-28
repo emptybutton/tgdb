@@ -1,20 +1,32 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence, Set
 from dataclasses import dataclass
 from enum import Enum, auto
 from uuid import UUID
 
-from tgdb.entities.horizon.effect import (
-    Claim,
-    ConflictableTransactionScalarEffect,
-    TransactionEffect,
-    TupleEffect,
+from tgdb.entities.horizon.claim import Claim
+from tgdb.entities.relation.tuple import TID
+from tgdb.entities.relation.tuple_effect import (
+    DeletedTuple,
+    MigratedTuple,
+    MutatedTuple,
+    NewTuple,
+    TupleOkEffect,
     ViewedTuple,
 )
-from tgdb.entities.relation.tuple import TupleID
 from tgdb.entities.time.logic_time import LogicTime
 
 
 type XID = UUID
+
+type ConflictableTransactionScalarEffect = TupleOkEffect | Claim
+type ConflictableTransactionEffect = Sequence[
+    ConflictableTransactionScalarEffect
+]
+
+type TransactionScalarEffect = (
+    NewTuple | MutatedTuple | MigratedTuple | DeletedTuple
+)
+type TransactionEffect = Set[TransactionScalarEffect]
 
 
 @dataclass(frozen=True)
@@ -52,7 +64,7 @@ class SerializableTransaction:
     _xid: XID
     _start_time: LogicTime
     _state: SerializableTransactionState
-    _space_map: dict[TupleID, TupleEffect]
+    _space_map: dict[TID, TupleOkEffect]
     _claims: set[Claim]
     _concurrent_transactions: set["SerializableTransaction"]
     _transactions_with_possible_conflict: set["SerializableTransaction"]
@@ -81,7 +93,7 @@ class SerializableTransaction:
     def claims(self) -> frozenset[Claim]:
         return frozenset(self._claims)
 
-    def space(self) -> frozenset[TupleID]:
+    def space(self) -> frozenset[TID]:
         return frozenset(self._space_map)
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
@@ -89,12 +101,12 @@ class SerializableTransaction:
             self._claims.add(effect)
             return
 
-        prevous_effect = self._space_map.get(effect.id)
+        prevous_effect = self._space_map.get(effect.tid)
 
         if prevous_effect is not None:
             effect = prevous_effect & effect
 
-        self._space_map[effect.id] = effect
+        self._space_map[effect.tid] = effect
 
     def rollback(self) -> None:
         state_before_rollback = self._state
@@ -237,7 +249,10 @@ class NonSerializableReadTransaction:
         return time - self._start_time
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
-        if self._is_readonly and not isinstance(effect, ViewedTuple):
+        if (
+            self._is_readonly
+            and not isinstance(effect, ViewedTuple | MigratedTuple)
+        ):
             self._is_readonly = False
 
     def rollback(self) -> None:

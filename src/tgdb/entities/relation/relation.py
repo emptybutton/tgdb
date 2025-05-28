@@ -4,26 +4,23 @@ from itertools import pairwise
 from uuid import UUID
 
 from tgdb.entities.numeration.number import Number
-from tgdb.entities.relation.domain import Domain
 from tgdb.entities.relation.schema import Schema
 
 
 @dataclass(frozen=True)
-class InitialRelationVersion[IDDomainT: Domain]:
+class InitialRelationVersion:
     number: Number
-    schema: Schema[IDDomainT]
+    schema: Schema
 
 
 @dataclass(frozen=True)
-class DerivativeRelationVersion[IDDomainT: Domain]:
+class DerivativeRelationVersion:
     number: Number
-    schema: Schema[IDDomainT]
+    schema: Schema
     migration_id: UUID
 
 
-type RelationVersion[IDDomainT: Domain] = (
-    InitialRelationVersion[IDDomainT] | DerivativeRelationVersion[IDDomainT]
-)
+type RelationVersion = InitialRelationVersion | DerivativeRelationVersion
 
 
 class NotIncrementedRelationVersionError(Exception): ...
@@ -33,39 +30,43 @@ class RelationWithoutLastVersionError(Exception): ...
 
 
 @dataclass
-class Relation[IDDomainT: Domain]:
+class Relation:
     """
     :raises tgdb.entities.relation.relation.RelationWithoutLastVersionError:
     :raises tgdb.entities.relation.relation.NotIncrementedRelationVersionError:
     """
 
-    _id: Number
-    _inital_version: InitialRelationVersion[IDDomainT]
-    _intermediate_versions: list[DerivativeRelationVersion[IDDomainT]]
+    _number: Number
+    _inital_version: InitialRelationVersion
+    _intermediate_versions: list[DerivativeRelationVersion]
 
     def __post_init__(self) -> None:
         if not self._intermediate_versions or not self._inital_version:
             raise RelationWithoutLastVersionError
 
-        for version, next_version in pairwise(self._versions()):
+        for version, next_version in pairwise(self):
             if next(version.number) != next_version.number:
                 raise NotIncrementedRelationVersionError
 
     def __len__(self) -> int:
         return len(self._intermediate_versions) + 1
 
-    def __iter__(self) -> Iterator[RelationVersion[IDDomainT]]:
-        return iter(self._versions())
+    def __iter__(self) -> Iterator[RelationVersion]:
+        yield self._inital_version
+        yield from self._intermediate_versions
 
-    def inital_version(self) -> InitialRelationVersion[IDDomainT] | None:
+    def number(self) -> Number:
+        return self._number
+
+    def inital_version(self) -> InitialRelationVersion | None:
         return self._inital_version
 
     def intermediate_versions(
         self,
-    ) -> Sequence[DerivativeRelationVersion[IDDomainT]]:
+    ) -> Sequence[DerivativeRelationVersion]:
         return self._intermediate_versions
 
-    def last_version(self) -> RelationVersion[IDDomainT]:
+    def last_version(self) -> RelationVersion:
         return (
             self._intermediate_versions[-1]
             if self._intermediate_versions
@@ -74,7 +75,7 @@ class Relation[IDDomainT: Domain]:
 
     def recent_versions(
         self, current_version_number: Number
-    ) -> Sequence[DerivativeRelationVersion[IDDomainT]]:
+    ) -> Sequence[DerivativeRelationVersion]:
         if current_version_number < self._inital_version.number:
             return tuple()
 
@@ -95,7 +96,7 @@ class Relation[IDDomainT: Domain]:
 
     def migrate(
         self,
-        new_version_schema: Schema[IDDomainT],
+        new_version_schema: Schema,
         new_version_migration_id: UUID,
     ) -> None:
         last_version = DerivativeRelationVersion(
@@ -122,16 +123,16 @@ class Relation[IDDomainT: Domain]:
 
     @classmethod
     def new(
-        cls, id: Number, schema: Schema[IDDomainT]
-    ) -> "Relation[IDDomainT]":
+        cls, id: Number, schema: Schema
+    ) -> "Relation":
         return Relation(
             id,
             InitialRelationVersion(Number(0), schema),
             list(),
         )
 
-    def _versions(self) -> Sequence[RelationVersion[IDDomainT]]:
-        if self._inital_version:
-            return (self._inital_version, *self._intermediate_versions)
 
-        return self._intermediate_versions
+@dataclass(frozen=True)
+class RelationVersionID:
+    relation_number: Number
+    relation_version_number: Number

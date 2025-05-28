@@ -4,13 +4,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from itertools import chain
 
-from tgdb.entities.horizon.effect import (
-    Claim,
-    DeletedTuple,
-    MutatedTuple,
-    NewTuple,
-    ViewedTuple,
-)
+from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.horizon.transaction import (
     XID,
     Commit,
@@ -22,7 +16,13 @@ from tgdb.entities.horizon.transaction import (
     Transaction,
     start_transaction,
 )
-from tgdb.entities.relation.tuple import Tuple, VersionedTuple
+from tgdb.entities.relation.tuple_effect import (
+    DeletedTuple,
+    InvalidTuple,
+    MigratedTuple,
+    MutatedTuple,
+    NewTuple,
+)
 from tgdb.entities.time.logic_time import LogicTime
 from tgdb.entities.tools.assert_ import assert_
 from tgdb.entities.tools.map import first_map_value
@@ -96,12 +96,12 @@ class Horizon:
 
         return started_transaction.xid()
 
-    def view_tuple(
+    def include(
         self,
         time: LogicTime,
         xid: XID,
-        tuple: VersionedTuple,
-    ) -> Tuple:
+        effect: NewTuple | MigratedTuple | InvalidTuple,
+    ) -> None:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
@@ -114,19 +114,11 @@ class Horizon:
             xid, SerializableTransactionState.active
         )
 
-        if isinstance(transaction, NonSerializableReadTransaction):
-            transaction.include(ViewedTuple(tuple.latest_version().id))
-            return tuple.latest_version()
-
-        latest_version = tuple.latest_version()
-        old_versions = tuple.old_versions()
-
-        if old_versions:
-            transaction.include(MutatedTuple(latest_version))
+        if isinstance(effect, InvalidTuple):
+            transaction.rollback()
+            del self._transaction_map(transaction)[transaction.xid()]
         else:
-            transaction.include(ViewedTuple(tuple.latest_version().id))
-
-        return latest_version
+            transaction.include(effect)
 
     def rollback_transaction(self, time: LogicTime, xid: XID) -> None:
         """

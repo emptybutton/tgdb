@@ -6,7 +6,12 @@ from tgdb.entities.transaction import TransactionEffect
 
 class Heap(ABC):
     @abstractmethod
-    async def rows(self, schema: str, )
+    async def tuples_with(self, id: TupleID)
 
     @abstractmethod
     async def map(self, effects: Sequence[TransactionEffect], /) -> None: ...
+
+    @abstractmethod
+    async def map_as_dublicates(
+        self, effects: Sequence[TransactionEffect], /
+    ) -> None: ...

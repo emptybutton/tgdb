@@ -1,57 +1,43 @@
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterator
 from dataclasses import dataclass
+from uuid import UUID
 
 from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.relation import RelationVersionID
 from tgdb.entities.relation.scalar import Scalar
-from tgdb.entities.tools.assert_ import assert_
+from tgdb.entities.relation.schema import Schema
 
 
-@dataclass(frozen=True)
-class TupleID:
-    relation_id: Number
-    scalar: Scalar
+type TID = UUID
 
 
 @dataclass(frozen=True)
 class Tuple:
-    id: TupleID
+    tid: TID
+    relation_version_id: RelationVersionID
     scalars: tuple[Scalar, ...]
 
     def __iter__(self) -> Iterator[Scalar]:
-        yield self.id.scalar
-        yield from iter(self.scalars)
+        return iter(self.scalars)
 
     def __len__(self) -> int:
-        return len(self.scalars) + 1
+        return len(self.scalars)
 
+    def matches(self, schema: Schema) -> bool:
+        if len(schema) != len(self):
+            return False
 
-class HeterogeneousVersionedTupleError(Exception): ...
-
-
-@dataclass(frozen=True)
-class VersionedTuple:
-    map: Mapping[Number, Tuple]
-
-    def latest_version(self) -> Tuple:
-        return self.map[max(self.map)]
-
-    def old_versions(self) -> Sequence[Tuple]:
-        latest_version_number = max(self.map)
-
-        return tuple(
-            self.map[latest_version_number]
-            for number in self.map
-            if number != latest_version_number
+        return all(
+            scalar in domain
+            for scalar, domain in zip(self, schema, strict=True)
         )
 
-    def __post_init__(self) -> None:
-        """
-        :raises tgdb.entities.relation.tuple.HeterogeneousVersionedTupleError:
-        """
 
-        id_set = frozenset(version.id for version in self.map.values())
-        assert_(len(id_set) == 1, else_=HeterogeneousVersionedTupleError)
-
-
-def tuple_(*scalars: Scalar, relation_id: Number = Number(0)) -> "Tuple":  # noqa: B008
-    return Tuple(TupleID(relation_id, scalars[0]), scalars[1:])
+def tuple_(
+    *scalars: Scalar,
+    tid: TID,
+    relation_version_id: RelationVersionID = RelationVersionID(  # noqa: B008
+        Number(0), Number(0)  # noqa: B008
+    ),
+) -> Tuple:
+    return Tuple(tid, relation_version_id, scalars)

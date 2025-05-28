@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 
-from tgdb.entities.horizon.transaction import Commit, ConflictError, NonSerializableWriteTransactionError
+from tgdb.entities.horizon.transaction import (
+    Commit,
+    ConflictError,
+    NonSerializableWriteTransactionError,
+)
 
 
 type Publishable = Commit | ConflictError | NonSerializableWriteTransactionError
