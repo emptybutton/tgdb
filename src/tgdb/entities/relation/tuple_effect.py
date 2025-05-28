@@ -95,11 +95,7 @@ class InvalidTuple:
 
 
 type TupleOkEffect = (
-    NewTuple
-    | ViewedTuple
-    | MutatedTuple
-    | MigratedTuple
-    | DeletedTuple
+    NewTuple | ViewedTuple | MutatedTuple | MigratedTuple | DeletedTuple
 )
 type TupleEffect = TupleOkEffect | InvalidTuple
 

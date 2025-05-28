@@ -91,7 +91,9 @@ def test_with_only_commit(
     """
 
     with raises(NoTransactionError):
-        horizon.commit_transaction(1, UUID(int=1), [NewTuple(tuple_(tid=UUID(int=0)))])
+        horizon.commit_transaction(
+            1, UUID(int=1), [NewTuple(tuple_(tid=UUID(int=0)))]
+        )
 
     if object == "bool":
         assert not horizon
@@ -342,10 +344,14 @@ def test_with_sequential_transactions(
     commit2 = horizon.complete_commit(6, commit.xid)
 
     if object == "commit1":
-        assert commit1 == Commit(UUID(int=1), {MutatedTuple(tuple_("a", tid=UUID(int=1)))})
+        assert commit1 == Commit(
+            UUID(int=1), {MutatedTuple(tuple_("a", tid=UUID(int=1)))}
+        )
 
     if object == "commit2":
-        assert commit2 == Commit(UUID(int=2), {MutatedTuple(tuple_("b", tid=UUID(int=1)))})
+        assert commit2 == Commit(
+            UUID(int=2), {MutatedTuple(tuple_("b", tid=UUID(int=1)))}
+        )
 
 
 @mark.parametrize(
@@ -383,7 +389,9 @@ def test_conflict_by_id_with_left_transaction(
         conflict = error
 
     if object == "commit1":
-        assert commit1 == Commit(UUID(int=1), {MutatedTuple(tuple_("a", tid=UUID(int=1)))})
+        assert commit1 == Commit(
+            UUID(int=1), {MutatedTuple(tuple_("a", tid=UUID(int=1)))}
+        )
 
     if object == "commit2":
         assert conflict == ConflictError(UUID(int=2), frozenset())
@@ -427,7 +435,9 @@ def test_conflict_by_id_with_subset_transaction(
         assert commit1 == ConflictError(UUID(int=1), frozenset())
 
     if object == "commit2":
-        assert commit2 == Commit(UUID(int=2), {MutatedTuple(tuple_("b", tid=UUID(int=1)))})
+        assert commit2 == Commit(
+            UUID(int=2), {MutatedTuple(tuple_("b", tid=UUID(int=1)))}
+        )
 
 
 @mark.parametrize(
@@ -477,15 +487,21 @@ def test_conflict_by_id_with_left_long_distance_transaction(
 
     commit3 = None
     try:
-        horizon.commit_transaction(8, UUID(int=3), [MutatedTuple(tuple_(tid=UUID(int=1)))])
+        horizon.commit_transaction(
+            8, UUID(int=3), [MutatedTuple(tuple_(tid=UUID(int=1)))]
+        )
     except ConflictError as error:
         commit3 = error
 
     if object == "commit2":
-        assert commit2 == Commit(UUID(int=2), {MutatedTuple(tuple_(tid=UUID(int=2)))})
+        assert commit2 == Commit(
+            UUID(int=2), {MutatedTuple(tuple_(tid=UUID(int=2)))}
+        )
 
     if object == "commit1":
-        assert commit1 == Commit(UUID(int=1), {MutatedTuple(tuple_(tid=UUID(int=1)))})
+        assert commit1 == Commit(
+            UUID(int=1), {MutatedTuple(tuple_(tid=UUID(int=1)))}
+        )
 
     if object == "commit3":
         assert commit3 == ConflictError(UUID(int=3), frozenset())

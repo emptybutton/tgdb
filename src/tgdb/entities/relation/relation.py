@@ -122,9 +122,7 @@ class Relation:
         del self._intermediate_versions[0]
 
     @classmethod
-    def new(
-        cls, id: Number, schema: Schema
-    ) -> "Relation":
+    def new(cls, id: Number, schema: Schema) -> "Relation":
         return Relation(
             id,
             InitialRelationVersion(Number(0), schema),

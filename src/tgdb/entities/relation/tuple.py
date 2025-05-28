@@ -37,7 +37,8 @@ def tuple_(
     *scalars: Scalar,
     tid: TID,
     relation_version_id: RelationVersionID = RelationVersionID(  # noqa: B008
-        Number(0), Number(0)  # noqa: B008
+        Number(0),  # noqa: B008
+        Number(0),  # noqa: B008
     ),
 ) -> Tuple:
     return Tuple(tid, relation_version_id, scalars)

@@ -249,9 +249,8 @@ class NonSerializableReadTransaction:
         return time - self._start_time
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
-        if (
-            self._is_readonly
-            and not isinstance(effect, ViewedTuple | MigratedTuple)
+        if self._is_readonly and not isinstance(
+            effect, ViewedTuple | MigratedTuple
         ):
             self._is_readonly = False
 
