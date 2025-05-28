@@ -2,31 +2,46 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from tgdb.application.ports.buffer import Buffer
-from tgdb.application.ports.notifying import Notifying
+from tgdb.application.ports.channel import Channel
+from tgdb.application.ports.clock import Clock
 from tgdb.application.ports.queque import Queque
 from tgdb.application.ports.shared_horizon import SharedHorizon
-from tgdb.entities.horizon.transaction import PreparedCommit
+from tgdb.entities.horizon.horizon import (
+    InvalidTransactionStateError,
+    NoTransactionError,
+)
+from tgdb.entities.horizon.transaction import XID, PreparedCommit
 
 
 @dataclass(frozen=True)
 class OutputCommits:
     commit_buffer: Buffer[PreparedCommit]
-    notifying: Notifying[Sequence[TransactionCommit]]
-    output_commits: Queque[Sequence[TransactionCommit]]
+    channel: Channel
+    output_commits: Queque[Sequence[PreparedCommit]]
     shared_horizon: SharedHorizon
+    clock: Clock
 
     async def __call__(self) -> None:
         async for prepared_commits in self.commit_buffer:
-            await self.notifying.publish(prepared_commits)
-
-            ok_prepared_commits = tuple(
-                commit for commit in prepared_commits
-                if isinstance(commit, TransactionCommit)
-            )
-
-            await self.output_commits.push(ok_prepared_commits)
+            await self.output_commits.push(prepared_commits)
             await self.output_commits.sync()
 
+            ok_commit_xids = list[XID]()
+            error_commit_map = dict[
+                XID, NoTransactionError | InvalidTransactionStateError
+            ]()
+
             async with self.shared_horizon as horizon:
-                for ok_prepared_commit in ok_prepared_commits:
-                    horizon.complete(ok_prepared_commit)
+                for prepared_commit in prepared_commits:
+                    time = await self.clock
+
+                    try:
+                        horizon.complete_commit(time, prepared_commit.xid)
+                    except (
+                        NoTransactionError, InvalidTransactionStateError
+                    ) as error:
+                        error_commit_map[prepared_commit.xid] = error
+                    else:
+                        ok_commit_xids.append(prepared_commit.xid)
+
+                await self.channel.publish(ok_commit_xids, error_commit_map)

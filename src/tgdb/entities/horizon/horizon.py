@@ -8,8 +8,10 @@ from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.horizon.transaction import (
     XID,
     Commit,
+    ConflictError,
     IsolationLevel,
     NonSerializableReadTransaction,
+    NonSerializableWriteTransactionError,
     PreparedCommit,
     SerializableTransaction,
     SerializableTransactionState,
@@ -38,6 +40,19 @@ class HorizonAlwaysWithoutTransactionsError(Exception): ...
 
 
 class NotMonotonicTimeError(Exception): ...
+
+
+@dataclass(frozen=True)
+class InvalidTupleError(Exception):
+    tuple: InvalidTuple
+
+
+class InvalidEffectsError(Exception): ...
+
+
+type HorizonWriteEffect = (
+    NewTuple | MutatedTuple | DeletedTuple | InvalidTuple | Claim
+)
 
 
 @dataclass
@@ -136,13 +151,15 @@ class Horizon:
         self,
         time: LogicTime,
         xid: XID,
-        effects: Sequence[NewTuple | MutatedTuple | DeletedTuple | Claim],
+        effects: Sequence[HorizonWriteEffect] | None,
     ) -> Commit | PreparedCommit:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
-        :raises tgdb.entities.horizon.transaction.TransactionConflictError:
+        :raises tgdb.entities.horizon.horizon.InvalidTupleError:
+        :raises tgdb.entities.horizon.horizon.InvalidEffectsError:
+        :raises tgdb.entities.horizon.transaction.ConflictError:
         :raises tgdb.entities.horizon.transaction.NonSerializableWriteTransactionError:
         """  # noqa: E501
 
@@ -152,14 +169,28 @@ class Horizon:
             xid, SerializableTransactionState.active
         )
 
+        if not effects:
+            transaction.rollback()
+            del self._transaction_map(transaction)[xid]
+            raise InvalidEffectsError
+
         for effect in effects:
+            if isinstance(effect, InvalidTuple):
+                transaction.rollback()
+                del self._transaction_map(transaction)[xid]
+                raise InvalidTupleError(effect)
+
             transaction.include(effect)
 
-        match transaction:
-            case SerializableTransaction():
-                return transaction.prepare_commit()
-            case NonSerializableReadTransaction():
-                return transaction.commit()
+        try:
+            match transaction:
+                case SerializableTransaction():
+                    return transaction.prepare_commit()
+                case NonSerializableReadTransaction():
+                    return transaction.commit()
+        except (ConflictError, NonSerializableWriteTransactionError) as error:
+            del self._transaction_map(transaction)[xid]
+            raise error from error
 
     def complete_commit(self, time: LogicTime, xid: XID) -> Commit:
         """
@@ -247,6 +278,9 @@ class Horizon:
             raise NoTransactionError
 
         if state is not None and transaction.state() is not state:
+            transaction.rollback()
+            del self._serializable_transaction_map[xid]
+
             raise InvalidTransactionStateError
 
         return transaction
@@ -270,6 +304,11 @@ class Horizon:
         xid: XID,
         state: SerializableTransactionState | None = None,
     ) -> Transaction:
+        """
+        :raises tgdb.entities.horizon.horizon.NoTransactionError:
+        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        """
+
         with suppress(NoTransactionError):
             return self._non_serializable_read_transaction(xid)
 

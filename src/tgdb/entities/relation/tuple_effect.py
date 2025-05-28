@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.relation import Relation, RelationVersionID
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID, Tuple
@@ -87,22 +88,30 @@ class DeletedTuple:
 
 @dataclass(frozen=True)
 class InvalidTuple:
-    tuple: Tuple
-
-    @property
-    def tid(self) -> TID:
-        return self.tuple.tid
+    tid: TID | None
+    scalars: tuple[Scalar, ...] | None
+    relation_number: Number | None
 
 
 type TupleOkEffect = (
-    NewTuple | ViewedTuple | MutatedTuple | MigratedTuple | DeletedTuple
+    NewTuple
+    | ViewedTuple
+    | MutatedTuple
+    | MigratedTuple
+    | DeletedTuple
 )
 type TupleEffect = TupleOkEffect | InvalidTuple
 
 
 def relation_last_version_tuple(
-    tid: TID, scalars: tuple[Scalar, ...], relation: Relation
+    tid: TID | None,
+    scalars: tuple[Scalar, ...] | None,
+    relation: Relation | None,
 ) -> Tuple | InvalidTuple:
+    if tid is None or scalars is None or relation is None:
+        relation_number = None if relation is None else relation.number()
+        return InvalidTuple(tid, scalars, relation_number)
+
     relation_last_version = relation.last_version()
     relation_last_version_id = RelationVersionID(
         relation.number(), relation_last_version.number
@@ -111,13 +120,15 @@ def relation_last_version_tuple(
     tuple = Tuple(tid, relation_last_version_id, scalars)
 
     if not tuple.matches(relation_last_version.schema):
-        return InvalidTuple(tuple)
+        return InvalidTuple(tid, scalars, relation.number())
 
     return tuple
 
 
 def new_tuple(
-    tid: TID, scalars: tuple[Scalar, ...], relation: Relation
+    tid: TID | None,
+    scalars: tuple[Scalar, ...] | None,
+    relation: Relation | None,
 ) -> NewTuple | InvalidTuple:
     tuple = relation_last_version_tuple(tid, scalars, relation)
 
@@ -128,7 +139,9 @@ def new_tuple(
 
 
 def mutated_tuple(
-    tid: TID, scalars: tuple[Scalar, ...], relation: Relation
+    tid: TID | None,
+    scalars: tuple[Scalar, ...] | None,
+    relation: Relation | None,
 ) -> MutatedTuple | InvalidTuple:
     tuple = relation_last_version_tuple(tid, scalars, relation)
 
@@ -138,18 +151,26 @@ def mutated_tuple(
     return MutatedTuple(tuple)
 
 
-def deleted_tuple(tid: TID) -> DeletedTuple:
+def deleted_tuple(tid: TID | None) -> DeletedTuple | InvalidTuple:
+    if tid is None:
+        return InvalidTuple(None, None, None)
+
     return DeletedTuple(tid)
 
 
 def viewed_tuple(
-    tuple: VersionedTuple, relation: Relation
+    tuple: VersionedTuple | None, relation: Relation | None
 ) -> ViewedTuple | MigratedTuple | InvalidTuple:
+    if tuple is None or relation is None:
+        return InvalidTuple(None, None, None)
+
     last_version = tuple.last_version()
     old_versions = tuple.old_versions()
 
     if not last_version.matches(relation.last_version().schema):
-        return InvalidTuple(last_version)
+        return InvalidTuple(
+            last_version.tid, last_version.scalars, relation.number()
+        )
 
     if old_versions:
         return MigratedTuple(last_version)

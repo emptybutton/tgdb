@@ -265,6 +265,7 @@ class NonSerializableReadTransaction:
         self._is_completed = True
 
         if not self._is_readonly:
+            self.rollback()
             raise NonSerializableWriteTransactionError(self._xid)
 
         return Commit(self._xid, frozenset())

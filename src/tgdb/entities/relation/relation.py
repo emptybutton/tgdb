@@ -20,6 +20,12 @@ class DerivativeRelationVersion:
     migration_id: UUID
 
 
+@dataclass(frozen=True)
+class RelationVersionID:
+    relation_number: Number
+    relation_version_number: Number
+
+
 type RelationVersion = InitialRelationVersion | DerivativeRelationVersion
 
 
@@ -72,6 +78,9 @@ class Relation:
             if self._intermediate_versions
             else self._inital_version
         )
+
+    def last_version_id(self) -> RelationVersionID:
+        return RelationVersionID(self._number, self.last_version().number)
 
     def recent_versions(
         self, current_version_number: Number
@@ -128,9 +137,3 @@ class Relation:
             InitialRelationVersion(Number(0), schema),
             list(),
         )
-
-
-@dataclass(frozen=True)
-class RelationVersionID:
-    relation_number: Number
-    relation_version_number: Number
