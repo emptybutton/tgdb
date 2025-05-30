@@ -32,13 +32,9 @@ type RelationVersion = InitialRelationVersion | DerivativeRelationVersion
 class NotIncrementedRelationVersionError(Exception): ...
 
 
-class RelationWithoutLastVersionError(Exception): ...
-
-
 @dataclass
 class Relation:
     """
-    :raises tgdb.entities.relation.relation.RelationWithoutLastVersionError:
     :raises tgdb.entities.relation.relation.NotIncrementedRelationVersionError:
     """
 
@@ -47,9 +43,6 @@ class Relation:
     _intermediate_versions: list[DerivativeRelationVersion]
 
     def __post_init__(self) -> None:
-        if not self._intermediate_versions or not self._inital_version:
-            raise RelationWithoutLastVersionError
-
         for version, next_version in pairwise(self):
             if next(version.number) != next_version.number:
                 raise NotIncrementedRelationVersionError

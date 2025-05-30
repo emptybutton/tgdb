@@ -2,7 +2,8 @@ from tgdb.entities.row import Row, RowAttribute, Schema
 from tgdb.infrastructure.primitive_encoding import encoded_primitive
 
 
-# 0:0:0:0:0dsadasdadsasda|0:0:0:0:dsadasdadsasda|0:0:0:0:asdasd|
+# {TID}{ENCODED_ATTR}|{ENCODED_ATTR}|{ENCODED_ATTR}|{ENCODED_ATTR}
+# {ENCODED_ATTR} = {RELAION}:{RELATION_VERSION}:{ATTRIBUTE}:{VALUE}
 
 
 def encoded_heap_row(row: Row) -> str:

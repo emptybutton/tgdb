@@ -2,8 +2,8 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from tgdb.entities.transaction import TransactionCommit
+from tgdb.entities.horizon.transaction import PreparedCommit
 
 
-class TransactionCommitListSchema(BaseModel):
-    commits: Sequence[TransactionCommit]
+class PreparedCommitListSchema(BaseModel):
+    commits: Sequence[PreparedCommit]

@@ -4,8 +4,7 @@ from dataclasses import dataclass
 
 from in_memory_db import InMemoryDb
 
-from tgdb.application.common.ports.heap import Heap
-from tgdb.entities.message import Message
+from tgdb.application.common.ports.tuples import Tuples
 from tgdb.entities.row import (
     DeletedRow,
     MutatedRow,
@@ -20,7 +19,7 @@ from tgdb.infrastructure.telethon.mapping import message
 
 
 @dataclass(frozen=True, unsafe_hash=False)
-class InMemoryHeap(Heap):
+class InMemoryTuples(Tuples):
     _db: InMemoryDb[Row]
 
     async def map(self, effects: Sequence[TransactionEffect]) -> None:

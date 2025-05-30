@@ -7,9 +7,9 @@ from types import TracebackType
 from typing import Self
 
 from tgdb.application.common.ports.buffer import Buffer
-from tgdb.entities.transaction import TransactionCommit
+from tgdb.entities.horizon.transaction import PreparedCommit
 from tgdb.infrastructure.pydantic.commit_encoding import (
-    TransactionCommitListSchema,
+    PreparedCommitListSchema,
 )
 from tgdb.infrastructure.telethon.in_telegram_big_text import InTelegramBigText
 
@@ -47,8 +47,8 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
 
 
 @dataclass(frozen=True)
-class InTelegramReplicableTransactionCommitBuffer(Buffer[TransactionCommit]):
-    _buffer: Buffer[TransactionCommit]
+class InTelegramReplicablePreparedCommitBuffer(Buffer[PreparedCommit]):
+    _buffer: Buffer[PreparedCommit]
     _in_tg_encoded_commits: InTelegramBigText
 
     async def __aenter__(self) -> Self:
@@ -58,7 +58,7 @@ class InTelegramReplicableTransactionCommitBuffer(Buffer[TransactionCommit]):
             return self
 
         commit_list_schema = (
-            TransactionCommitListSchema.model_validate_json(encoded_commits)
+            PreparedCommitListSchema.model_validate_json(encoded_commits)
         )
         for commit in commit_list_schema.commits:
             await self._buffer.add(commit)
@@ -72,12 +72,12 @@ class InTelegramReplicableTransactionCommitBuffer(Buffer[TransactionCommit]):
         traceback: TracebackType | None,
     ) -> None: ...
 
-    async def add(self, commit: TransactionCommit, /) -> None:
+    async def add(self, commit: PreparedCommit, /) -> None:
         await self._buffer.add(commit)
 
-    async def __aiter__(self) -> AsyncIterator[Sequence[TransactionCommit]]:
+    async def __aiter__(self) -> AsyncIterator[Sequence[PreparedCommit]]:
         async for commits in self._buffer:
-            commit_list_schema = TransactionCommitListSchema(commits=commits)
+            commit_list_schema = PreparedCommitListSchema(commits=commits)
             encoded_encoded_commits = commit_list_schema.model_dump_json()
 
             await self._in_tg_encoded_commits.set(encoded_encoded_commits)
