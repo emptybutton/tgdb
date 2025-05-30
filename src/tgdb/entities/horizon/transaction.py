@@ -7,18 +7,18 @@ from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.relation.tuple import TID
 from tgdb.entities.relation.tuple_effect import (
     DeletedTuple,
+    JustViewedTuple,
     MigratedTuple,
     MutatedTuple,
     NewTuple,
-    TupleOkEffect,
-    ViewedTuple,
+    TupleEffect,
 )
 from tgdb.entities.time.logic_time import LogicTime
 
 
 type XID = UUID
 
-type ConflictableTransactionScalarEffect = TupleOkEffect | Claim
+type ConflictableTransactionScalarEffect = TupleEffect | Claim
 type ConflictableTransactionEffect = Sequence[
     ConflictableTransactionScalarEffect
 ]
@@ -64,7 +64,7 @@ class SerializableTransaction:
     _xid: XID
     _start_time: LogicTime
     _state: SerializableTransactionState
-    _space_map: dict[TID, TupleOkEffect]
+    _space_map: dict[TID, TupleEffect]
     _claims: set[Claim]
     _concurrent_transactions: set["SerializableTransaction"]
     _transactions_with_possible_conflict: set["SerializableTransaction"]
@@ -224,7 +224,7 @@ class SerializableTransaction:
         return set(
             scalar_effect
             for scalar_effect in self._space_map.values()
-            if not isinstance(scalar_effect, ViewedTuple)
+            if not isinstance(scalar_effect, JustViewedTuple)
         )
 
     def _complete(self) -> None:
@@ -250,7 +250,7 @@ class NonSerializableReadTransaction:
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
         if self._is_readonly and not isinstance(
-            effect, ViewedTuple | MigratedTuple
+            effect, JustViewedTuple | MigratedTuple
         ):
             self._is_readonly = False
 

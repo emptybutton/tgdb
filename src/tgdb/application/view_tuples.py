@@ -1,34 +1,53 @@
-from collections.abc import Sequence
 from dataclasses import dataclass
 
-from tgdb.application.ports.buffer import Buffer
-from tgdb.application.ports.channel import Channel
 from tgdb.application.ports.clock import Clock
-from tgdb.application.ports.migrations import Migrations
-from tgdb.application.ports.queque import Queque
+from tgdb.application.ports.relations import NoRelationError, Relations
 from tgdb.application.ports.shared_horizon import SharedHorizon
-from tgdb.application.ports.uuids import UUIDs
-from tgdb.entities.horizon.horizon import (
-    InvalidTransactionStateError,
-    NoTransactionError,
+from tgdb.application.ports.tuples import Tuples
+from tgdb.entities.horizon.transaction import XID
+from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.scalar import Scalar
+from tgdb.entities.relation.tuple_effect import viewed_tuple
+from tgdb.entities.relation.versioned_tuple import (
+    versioned_tuple,
 )
-from tgdb.entities.horizon.transaction import (
-    XID,
-    IsolationLevel,
-    PreparedCommit,
-)
+from tgdb.entities.tools.assert_ import not_none
 
 
 @dataclass(frozen=True)
 class ViewTuples:
-    uuids: UUIDs
     shared_horizon: SharedHorizon
     clock: Clock
-    migrations: Migrations
+    tuples: Tuples
+    relartions: Relations
 
-    async def __call__(self, xid: XID, ) -> None:
-        time = await self.clock
-        xid = await self.uuids.random_uuid()
+    async def __call__(
+        self,
+        xid: XID,
+        relation_number: Number,
+        attribute_number: Number,
+        scalar: Scalar,
+    ) -> None:
+        """
+        :raises tgdb.application.ports.relations.NoRelationError:
+        :raises tgdb.entities.horizon.horizon.NoTransactionError:
+        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        """
+
+        tuples = await self.tuples.tuples_with_attribute(
+            relation_number, attribute_number, scalar
+        )
+        versioned_tuples = map(versioned_tuple, tuples)
+
+        relation = await self.relartions.relation(relation_number)
+        relation = not_none(relation, else_=NoRelationError)
+
+        viewed_tuples = (
+            viewed_tuple(versioned_tuple, relation)
+            for versioned_tuple in versioned_tuples
+        )
 
         async with self.shared_horizon as horizon:
-            horizon.start_transaction(time, xid, isolation_level)
+            for viewed_tuple_ in viewed_tuples:
+                time = await self.clock
+                horizon.include(time, xid, viewed_tuple_)

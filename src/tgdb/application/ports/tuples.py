@@ -9,7 +9,7 @@ from tgdb.entities.relation.tuple import Tuple
 
 class Tuples(ABC):
     @abstractmethod
-    async def tuples(
+    async def tuples_with_attribute(
         self,
         relation_number: Number,
         attribute_number: Number,
@@ -18,3 +18,8 @@ class Tuples(ABC):
 
     @abstractmethod
     async def map(self, effects: Sequence[TransactionEffect], /) -> None: ...
+
+    @abstractmethod
+    async def map_idempotently(
+        self, effects: Sequence[TransactionEffect], /
+    ) -> None: ...

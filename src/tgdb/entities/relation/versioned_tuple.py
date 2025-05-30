@@ -32,3 +32,7 @@ class VersionedTuple:
 
         tid_set = frozenset(version.tid for version in self.map.values())
         assert_(len(tid_set) == 1, else_=HeterogeneousVersionedTupleError)
+
+
+def versioned_tuple(tuple: Tuple) -> VersionedTuple:
+    return VersionedTuple({Number(0): tuple})

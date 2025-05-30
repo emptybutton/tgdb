@@ -21,9 +21,9 @@ from tgdb.entities.horizon.transaction import (
 from tgdb.entities.relation.tuple_effect import (
     DeletedTuple,
     InvalidTuple,
-    MigratedTuple,
     MutatedTuple,
     NewTuple,
+    ViewedTuple,
 )
 from tgdb.entities.time.logic_time import LogicTime
 from tgdb.entities.tools.assert_ import assert_
@@ -42,16 +42,11 @@ class HorizonAlwaysWithoutTransactionsError(Exception): ...
 class NotMonotonicTimeError(Exception): ...
 
 
-@dataclass(frozen=True)
-class InvalidTupleError(Exception):
-    tuple: InvalidTuple
-
-
 class InvalidEffectsError(Exception): ...
 
 
 type HorizonWriteEffect = (
-    NewTuple | MutatedTuple | DeletedTuple | InvalidTuple | Claim
+    NewTuple | MutatedTuple | DeletedTuple | Claim
 )
 
 
@@ -115,7 +110,7 @@ class Horizon:
         self,
         time: LogicTime,
         xid: XID,
-        effect: NewTuple | MigratedTuple | InvalidTuple,
+        effect: ViewedTuple,
     ) -> None:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
@@ -128,12 +123,7 @@ class Horizon:
         transaction = self._transaction(
             xid, SerializableTransactionState.active
         )
-
-        if isinstance(effect, InvalidTuple):
-            transaction.rollback()
-            del self._transaction_map(transaction)[transaction.xid()]
-        else:
-            transaction.include(effect)
+        transaction.include(effect)
 
     def rollback_transaction(self, time: LogicTime, xid: XID) -> None:
         """
@@ -157,8 +147,6 @@ class Horizon:
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
-        :raises tgdb.entities.horizon.horizon.InvalidTupleError:
-        :raises tgdb.entities.horizon.horizon.InvalidEffectsError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
         :raises tgdb.entities.horizon.transaction.NonSerializableWriteTransactionError:
         """  # noqa: E501
@@ -169,17 +157,7 @@ class Horizon:
             xid, SerializableTransactionState.active
         )
 
-        if not effects:
-            transaction.rollback()
-            del self._transaction_map(transaction)[xid]
-            raise InvalidEffectsError
-
         for effect in effects:
-            if isinstance(effect, InvalidTuple):
-                transaction.rollback()
-                del self._transaction_map(transaction)[xid]
-                raise InvalidTupleError(effect)
-
             transaction.include(effect)
 
         try:

@@ -2,12 +2,12 @@ from typing import Literal, NoReturn, overload
 
 
 def not_none[ValueT](
-    value: ValueT | None, *, error: Exception | type[Exception] = ValueError
+    value: ValueT | None, else_: Exception | type[Exception] = ValueError
 ) -> ValueT:
     if value is not None:
         return value
 
-    raise error
+    raise else_
 
 
 @overload

@@ -17,6 +17,7 @@ class RollbackTransaction:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         """
 
+        time = await self.clock
+
         async with self.shared_horizon as horizon:
-            time = await self.clock
             horizon.rollback_transaction(time, xid)
