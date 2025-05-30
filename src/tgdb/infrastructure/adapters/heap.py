@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from in_memory_db import InMemoryDb
 
-from tgdb.application.ports.heap import Heap
+from tgdb.application.common.ports.heap import Heap
 from tgdb.entities.message import Message
 from tgdb.entities.row import (
     DeletedRow,

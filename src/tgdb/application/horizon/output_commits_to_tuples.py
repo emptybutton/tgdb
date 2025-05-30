@@ -1,8 +1,8 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from tgdb.application.ports.queque import Queque
-from tgdb.application.ports.tuples import Tuples
+from tgdb.application.common.ports.queque import Queque
+from tgdb.application.common.ports.tuples import Tuples
 from tgdb.entities.horizon.transaction import PreparedCommit
 
 

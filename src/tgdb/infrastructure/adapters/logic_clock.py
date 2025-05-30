@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.logic_clock import LogicClock
+from tgdb.application.common.ports.logic_clock import LogicClock
 from tgdb.entities.logic_time import LogicTime
 
 

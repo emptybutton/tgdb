@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.operator_serialization import OperatorSerialization
+from tgdb.application.common.ports.operator_serialization import OperatorSerialization
 from tgdb.entities.operator import Operator
 from tgdb.presentation.fastapi.schemas.entity import EntitySchema
 

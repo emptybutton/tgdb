@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
-from tgdb.application.ports.queque import Queque
+from tgdb.application.common.ports.queque import Queque
 from tgdb.infrastructure.async_queque import AsyncQueque
 
 

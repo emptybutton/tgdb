@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from types import TracebackType
 from typing import Self
 
-from tgdb.application.ports.buffer import Buffer
+from tgdb.application.common.ports.buffer import Buffer
 from tgdb.entities.transaction import TransactionCommit
 from tgdb.infrastructure.pydantic.commit_encoding import (
     TransactionCommitListSchema,

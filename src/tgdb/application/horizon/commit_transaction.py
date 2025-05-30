@@ -2,18 +2,18 @@ from asyncio import gather
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from tgdb.application.ports.buffer import Buffer
-from tgdb.application.ports.channel import Channel
-from tgdb.application.ports.clock import Clock
-from tgdb.application.ports.operator import (
+from tgdb.application.common.operator import (
     DeletedTupleOperator,
     MutatedTupleOperator,
     NewTupleOperator,
     Operator,
 )
-from tgdb.application.ports.relations import Relations
-from tgdb.application.ports.shared_horizon import SharedHorizon
-from tgdb.application.ports.uuids import UUIDs
+from tgdb.application.common.ports.buffer import Buffer
+from tgdb.application.common.ports.channel import Channel
+from tgdb.application.common.ports.clock import Clock
+from tgdb.application.common.ports.relations import Relations
+from tgdb.application.common.ports.shared_horizon import SharedHorizon
+from tgdb.application.common.ports.uuids import UUIDs
 from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.horizon.transaction import XID, Commit, PreparedCommit
 from tgdb.entities.relation.tuple_effect import (
@@ -39,7 +39,7 @@ class CommitTransaction:
         self, xid: XID, operators: Sequence[Operator]
     ) -> None:
         """
-        :raises tgdb.application.ports.relations.NoRelationError:
+        :raises tgdb.application.common.ports.relations.NoRelationError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
@@ -66,7 +66,7 @@ class CommitTransaction:
         self, operator: Operator
     ) -> NewTuple | MutatedTuple | DeletedTuple | Claim:
         """
-        :raises tgdb.application.ports.relations.NoRelationError:
+        :raises tgdb.application.common.ports.relations.NoRelationError:
         """
 
         match operator:

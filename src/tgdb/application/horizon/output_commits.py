@@ -1,11 +1,11 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from tgdb.application.ports.buffer import Buffer
-from tgdb.application.ports.channel import Channel
-from tgdb.application.ports.clock import Clock
-from tgdb.application.ports.queque import Queque
-from tgdb.application.ports.shared_horizon import SharedHorizon
+from tgdb.application.common.ports.buffer import Buffer
+from tgdb.application.common.ports.channel import Channel
+from tgdb.application.common.ports.clock import Clock
+from tgdb.application.common.ports.queque import Queque
+from tgdb.application.common.ports.shared_horizon import SharedHorizon
 from tgdb.entities.horizon.horizon import (
     InvalidTransactionStateError,
     NoTransactionError,

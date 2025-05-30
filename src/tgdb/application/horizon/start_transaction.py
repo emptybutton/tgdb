@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.clock import Clock
-from tgdb.application.ports.shared_horizon import SharedHorizon
-from tgdb.application.ports.uuids import UUIDs
+from tgdb.application.common.ports.clock import Clock
+from tgdb.application.common.ports.shared_horizon import SharedHorizon
+from tgdb.application.common.ports.uuids import UUIDs
 from tgdb.entities.horizon.transaction import (
     IsolationLevel,
 )

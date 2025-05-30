@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.relations import Relations
+from tgdb.application.common.ports.relations import Relations
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.relation import Relation
 from tgdb.entities.relation.schema import Schema
@@ -14,7 +14,7 @@ class CreateRelation:
         self, relation_number: Number, relation_schema: Schema
     ) -> None:
         """
-        :raises tgdb.application.ports.relations.NotUniqueRelationNumberError:
+        :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
         """
 
         new_relation = Relation.new(relation_number, relation_schema)

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from tgdb.application.ports.relation_views import RelationViews
+from tgdb.application.common.ports.relation_views import RelationViews
 
 
 @dataclass(frozen=True)

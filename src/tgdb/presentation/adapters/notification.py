@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from tgdb.application.ports.channel import Channel
+from tgdb.application.common.ports.channel import Channel
 from tgdb.entities.transaction import TransactionCommit
 from tgdb.presentation.async_map import AsyncMap
 
