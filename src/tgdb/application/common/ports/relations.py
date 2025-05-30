@@ -26,4 +26,4 @@ class Relations(ABC):
     async def add(self, relation: Relation) -> None:
         """
         :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
-        """
+        """  # noqa: E501

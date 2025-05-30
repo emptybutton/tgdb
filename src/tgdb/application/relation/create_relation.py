@@ -15,7 +15,7 @@ class CreateRelation:
     ) -> None:
         """
         :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
-        """
+        """  # noqa: E501
 
         new_relation = Relation.new(relation_number, relation_schema)
         await self.relations.add(new_relation)

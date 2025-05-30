@@ -20,7 +20,6 @@ from tgdb.entities.horizon.transaction import (
 )
 from tgdb.entities.relation.tuple_effect import (
     DeletedTuple,
-    InvalidTuple,
     MutatedTuple,
     NewTuple,
     ViewedTuple,

@@ -1,17 +1,14 @@
 from dataclasses import dataclass
 
 from tgdb.application.common.ports.clock import Clock
-from tgdb.application.common.ports.relations import NoRelationError, Relations
+from tgdb.application.common.ports.relations import Relations
 from tgdb.application.common.ports.shared_horizon import SharedHorizon
 from tgdb.application.common.ports.tuples import Tuples
 from tgdb.entities.horizon.transaction import XID
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple_effect import viewed_tuple
-from tgdb.entities.relation.versioned_tuple import (
-    versioned_tuple,
-)
-from tgdb.entities.tools.assert_ import not_none
+from tgdb.entities.relation.versioned_tuple import versioned_tuple
 
 
 @dataclass(frozen=True)
@@ -38,9 +35,7 @@ class ViewTuples:
             relation_number, attribute_number, scalar
         )
         versioned_tuples = map(versioned_tuple, tuples)
-
         relation = await self.relartions.relation(relation_number)
-        relation = not_none(relation, else_=NoRelationError)
 
         viewed_tuples = (
             viewed_tuple(versioned_tuple, relation)
