@@ -8,8 +8,9 @@ from telethon.hints import TotalList
 
 from tgdb.infrastructure.primitive_encoding import (
     Primitive,
-    decoded_primitive,
-    encoded_primitive,
+    decoded_primitive_without_type,
+    empty_table,
+    encoded_primitive_without_type,
 )
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 from tgdb.infrastructure.telethon.vacuum import AutoVacuum
@@ -47,7 +48,7 @@ class InTelegramPrimitive[PrimitiveT: Primitive](Awaitable[PrimitiveT | None]):
         client = self._pool_to_insert()
 
         last_message = await client.send_message(
-            self._chat_id, encoded_primitive(value),
+            self._chat_id, encoded_primitive_without_type(value, empty_table),
         )
 
         self._auto_vacuum.update_horizon(last_message.id)
@@ -72,6 +73,6 @@ class InTelegramPrimitive[PrimitiveT: Primitive](Awaitable[PrimitiveT | None]):
         last_message = messages[-1]
 
         self._auto_vacuum.update_horizon(last_message.id)
-        self._cached_value = decoded_primitive(
-            last_message.raw_text, self._value_type
+        self._cached_value = decoded_primitive_without_type(
+            last_message.raw_text, empty_table, self._value_type
         )

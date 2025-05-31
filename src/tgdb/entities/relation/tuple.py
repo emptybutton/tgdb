@@ -1,5 +1,6 @@
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
+from typing import Any, overload
 from uuid import UUID
 
 from tgdb.entities.numeration.number import Number
@@ -12,7 +13,7 @@ type TID = UUID
 
 
 @dataclass(frozen=True)
-class Tuple:
+class Tuple(Sequence[Scalar]):
     tid: TID
     relation_version_id: RelationVersionID
     scalars: tuple[Scalar, ...]
@@ -31,6 +32,18 @@ class Tuple:
             scalar in domain
             for scalar, domain in zip(self, schema, strict=True)
         )
+
+    @overload
+    def __getitem__(self, index: int, /) -> Scalar: ...
+
+    @overload
+    def __getitem__(self, sclice: "slice[Any, Any, Any]", /) -> Sequence[Scalar]:
+        ...
+
+    def __getitem__(
+        self, key: "int | slice[Any, Any, Any]", /
+    ) -> Scalar | Sequence[Scalar]:
+        return self.scalars[key]
 
 
 def tuple_(

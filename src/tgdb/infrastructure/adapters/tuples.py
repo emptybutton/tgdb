@@ -5,141 +5,127 @@ from dataclasses import dataclass
 from in_memory_db import InMemoryDb
 
 from tgdb.application.common.ports.tuples import Tuples
-from tgdb.entities.row import (
-    DeletedRow,
-    MutatedRow,
-    NewRow,
-    Row,
+from tgdb.entities.horizon.transaction import (
+    TransactionEffect,
+    TransactionScalarEffect,
 )
-from tgdb.entities.transaction import TransactionEffect, TransactionScalarEffect
-from tgdb.infrastructure.heap_row_encoding import encoded_heap_row
+from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.scalar import Scalar
+from tgdb.entities.relation.tuple import Tuple
+from tgdb.entities.relation.tuple_effect import (
+    DeletedTuple,
+    MigratedTuple,
+    MutatedTuple,
+    NewTuple,
+)
+from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
+from tgdb.infrastructure.telethon.in_telegram_heap import InTelegramHeap
 from tgdb.infrastructure.telethon.lazy_message_map import LazyMessageMap
-from tgdb.infrastructure.telethon.mapping import message
 
 
 @dataclass(frozen=True, unsafe_hash=False)
 class InMemoryTuples(Tuples):
-    _db: InMemoryDb[Row]
+    _db: InMemoryDb[Tuple]
+
+    async def tuples_with_attribute(
+        self,
+        relation_number: Number,
+        attribute_number: Number,
+        attribute_scalar: Scalar,
+    ) -> Sequence[Tuple]:
+        return self._db.select_many(lambda it: (
+            it.relation_version_id.relation_number == relation_number
+            and len(it) >= int(attribute_number)
+            and it[int(attribute_number)] == attribute_scalar
+        ))
 
     async def map(self, effects: Sequence[TransactionEffect]) -> None:
         await gather(*map(self._map_one, effects))
 
-    async def map_as_duplicate(
+    async def map_idempotently(
         self, effects: Sequence[TransactionEffect]
     ) -> None:
-        await gather(*map(self._map_one_as_duplicate, effects))
+        await gather(*map(self._map_one_idempotently, effects))
 
     async def _map_one(self, effect: TransactionEffect) -> None:
-        for row_with_effect in effect:
-            prevous_row = self._db.select_one(
-                lambda row: row.id == row_with_effect.id  # noqa: B023
+        for tuple_effect in effect:
+            prevous_tuple = self._db.select_one(
+                lambda it: it.tid == tuple_effect.tid  # noqa: B023
             )
 
-            match row_with_effect, prevous_row:
-                case DeletedRow(), Row():
-                    self._db.remove(prevous_row)
+            match tuple_effect, prevous_tuple:
+                case DeletedTuple(), Tuple():
+                    self._db.remove(prevous_tuple)
 
-                case NewRow(next_row), _:
-                    self._db.insert(next_row)
+                case NewTuple(next_tuple), _:
+                    self._db.insert(next_tuple)
 
-                case MutatedRow(next_row), Row():
-                    self._db.remove(prevous_row)
-                    self._db.insert(next_row)
+                case (
+                    MutatedTuple(next_tuple) | MigratedTuple(next_tuple),
+                    Tuple(),
+                ):
+                    self._db.remove(prevous_tuple)
+                    self._db.insert(next_tuple)
 
                 case _: ...
 
-    async def _map_one_as_duplicate(self, effect: TransactionEffect) -> None:
-        for row_with_effect in effect:
-            prevous_row = self._db.select_one(
-                lambda row: row.id == row_with_effect.id  # noqa: B023
+    async def _map_one_idempotently(self, effect: TransactionEffect) -> None:
+        for tuple_effect in effect:
+            prevous_tuple = self._db.select_one(
+                lambda it: it.tid == tuple_effect.tid  # noqa: B023
             )
 
-            match row_with_effect, prevous_row:
-                case DeletedRow(), Row():
-                    self._db.remove(prevous_row)
+            match tuple_effect, prevous_tuple:
+                case DeletedTuple(), Tuple():
+                    self._db.remove(prevous_tuple)
 
-                case NewRow(next_row) | MutatedRow(next_row), Row():
-                    self._db.remove(prevous_row)
-                    self._db.insert(next_row)
+                case NewTuple(next_tuple) | MutatedTuple(next_tuple), Tuple():
+                    self._db.remove(prevous_tuple)
+                    self._db.insert(next_tuple)
 
                 case _: ...
 
 
 @dataclass(frozen=True)
-class InTelegramHeap(Heap):
-    _pool_to_insert: TelegramClientPool
-    _pool_to_select: TelegramClientPool
-    _pool_to_edit: TelegramClientPool
-    _pool_to_delete: TelegramClientPool
-    _heap_id: int
-    _message_map: LazyMessageMap
+class InTelegramHeapTuples(Tuples):
+    _heap: InTelegramHeap
+
+    async def tuples_with_attribute(
+        self,
+        relation_number: Number,
+        attribute_number: Number,
+        attribute_scalar: Scalar,
+    ) -> Sequence[Tuple]:
+        
 
     async def map(
         self, transaction_effects: Sequence[TransactionEffect]
     ) -> None:
         await gather(*(
-            self._map_scalar_effect(row_effect, is_duplicate=False)
+            self._map_scalar_effect(tuple_effect, idempotently=False)
             for transaction_effect in transaction_effects
-            for row_effect in transaction_effect
+            for tuple_effect in transaction_effect
         ))
 
-    async def map_as_duplicate(
+    async def map_idempotently(
         self, transaction_effects: Sequence[TransactionEffect]
     ) -> None:
         await gather(*(
-            self._map_scalar_effect(row_effect, is_duplicate=True)
+            self._map_scalar_effect(tuple_effect, idempotently=True)
             for transaction_effect in transaction_effects
-            for row_effect in transaction_effect
+            for tuple_effect in transaction_effect
         ))
 
     async def _map_scalar_effect(
-        self, scalar_effect: TransactionScalarEffect, *, is_duplicate: bool
+        self, scalar_effect: TransactionScalarEffect, idempotently: bool
     ) -> None:
-        match scalar_effect:
-            case NewRow() as row:
-                await self._insert(row, is_duplicate)
-            case MutatedRow() as row:
-                await self._update(row)
-            case DeletedRow() as row:
-                await self._delete(row)
-
-    async def _insert(self, new_row: NewRow, is_duplicate: bool) -> None:
-        if is_duplicate:
-            message_ = await self._message_map[new_row.row.id]
-
-            if message_ is not None:
-                return
-
-        tg_new_message = await self._pool_to_insert().send_message(
-            self._heap_id, encoded_heap_row(new_row.row)
-        )
-        self._message_map[new_row.row.id] = message(tg_new_message)  # type: ignore[arg-type]
-
-    async def _update(self, mutated_row: MutatedRow) -> None:
-        message = await self._message(mutated_row)
-
-        if message is None:
-            return
-
-        await self._pool_to_edit(message.author_id).edit_message(
-            self._heap_id, message.id, encoded_heap_row(mutated_row.row)
-        )
-
-    async def _delete(self, deleted_row: DeletedRow) -> None:
-        message = await self._message(deleted_row)
-
-        if message is None:
-            return
-
-        await self._pool_to_delete().delete_messages(
-            self._heap_id, [message.id]
-        )
-
-    async def _message(
-        self, row_with_effect: MutatedRow | DeletedRow
-    ) -> Message | None:
-        if row_with_effect.message is not None:
-            return row_with_effect.message
-
-        return await self._message_map[row_with_effect.id]
+        match scalar_effect, idempotently:
+            case NewTuple(tuple), True:
+                await self._heap.insert(tuple)
+            case NewTuple(tuple), False:
+                await self._heap.insert_idempotently(tuple)
+            case MutatedTuple(tuple) | MigratedTuple(tuple), _:
+                await self._heap.update(tuple)
+            case DeletedTuple(tid), _:
+                await self._heap.delete_tuple_with_tid(tid)

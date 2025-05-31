@@ -1,3 +1,4 @@
+import pickle
 from asyncio import Event, wait_for
 from collections import deque
 from collections.abc import AsyncIterator, Sequence
@@ -8,10 +9,7 @@ from typing import Self
 
 from tgdb.application.common.ports.buffer import Buffer
 from tgdb.entities.horizon.transaction import PreparedCommit
-from tgdb.infrastructure.pydantic.commit_encoding import (
-    PreparedCommitListSchema,
-)
-from tgdb.infrastructure.telethon.in_telegram_big_text import InTelegramBigText
+from tgdb.infrastructure.telethon.in_telegram_bytes import InTelegramBytes
 
 
 @dataclass(frozen=True, unsafe_hash=False)
@@ -49,7 +47,7 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
 @dataclass(frozen=True)
 class InTelegramReplicablePreparedCommitBuffer(Buffer[PreparedCommit]):
     _buffer: Buffer[PreparedCommit]
-    _in_tg_encoded_commits: InTelegramBigText
+    _in_tg_encoded_commits: InTelegramBytes
 
     async def __aenter__(self) -> Self:
         encoded_commits = await self._in_tg_encoded_commits
@@ -57,10 +55,15 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[PreparedCommit]):
         if encoded_commits is None:
             return self
 
-        commit_list_schema = (
-            PreparedCommitListSchema.model_validate_json(encoded_commits)
-        )
-        for commit in commit_list_schema.commits:
+        commits = pickle.loads(encoded_commits)
+
+        if not isinstance(commits, list):
+            raise TypeError(str(commits))
+
+        for commit in commits:
+            if not isinstance(commit, PreparedCommit):
+                raise TypeError(str(commits))
+
             await self._buffer.add(commit)
 
         return self
@@ -77,9 +80,7 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[PreparedCommit]):
 
     async def __aiter__(self) -> AsyncIterator[Sequence[PreparedCommit]]:
         async for commits in self._buffer:
-            commit_list_schema = PreparedCommitListSchema(commits=commits)
-            encoded_encoded_commits = commit_list_schema.model_dump_json()
-
-            await self._in_tg_encoded_commits.set(encoded_encoded_commits)
+            encoded_commits = pickle.dumps(list(commits))
+            await self._in_tg_encoded_commits.set(encoded_commits)
 
             yield commits

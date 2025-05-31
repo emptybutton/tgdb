@@ -14,6 +14,7 @@ class Tuples(ABC):
         relation_number: Number,
         attribute_number: Number,
         attribute_scalar: Scalar,
+        /,
     ) -> Sequence[Tuple]: ...
 
     @abstractmethod

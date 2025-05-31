@@ -12,14 +12,14 @@ from tgdb.infrastructure.telethon.vacuum import AutoVacuum
 
 
 @dataclass
-class InTelegramBigText(Awaitable[str | None]):
+class InTelegramBytes(Awaitable[bytes | None]):
     _pool_to_insert: TelegramClientPool
     _pool_to_select: TelegramClientPool
     _chat_id: int
     _auto_vacuum: AutoVacuum
 
     _tasks: TaskGroup = field(init=False, default_factory=TaskGroup)
-    _cached_stored_text: str | None = field(init=False, default=None)
+    _cached_stored_bytes: bytes | None = field(init=False, default=None)
 
     async def __aenter__(self) -> Self:
         await self._tasks.__aenter__()
@@ -35,26 +35,26 @@ class InTelegramBigText(Awaitable[str | None]):
     ) -> None:
         return await self._tasks.__aexit__(error_type, error, traceback)
 
-    def __await__(self) -> Generator[Any, Any, str | None]:
+    def __await__(self) -> Generator[Any, Any, bytes | None]:
         return self._get().__await__()
 
-    async def set(self, text: str) -> None:
+    async def set(self, bytes: bytes) -> None:
         client = self._pool_to_insert()
 
         last_message = await client.send_message(
-            self._chat_id, file=text.encode()
+            self._chat_id, file=bytes
         )
 
         self._auto_vacuum.update_horizon(last_message.id)
-        self._cached_stored_text = text
+        self._cached_stored_bytes = bytes
 
-    async def _get(self) -> str | None:
-        if self._cached_stored_text is not None:
-            return self._cached_stored_text
+    async def _get(self) -> bytes | None:
+        if self._cached_stored_bytes is not None:
+            return self._cached_stored_bytes
 
         await self._refresh()
 
-        return self._cached_stored_text
+        return self._cached_stored_bytes
 
     async def _refresh(self) -> None:
         messages = await self._pool_to_select().get_messages(
@@ -69,7 +69,7 @@ class InTelegramBigText(Awaitable[str | None]):
 
         with BytesIO() as stream:
             await self._pool_to_select().download_file(last_message, stream)
-            encoded_text = stream.getvalue()
+            stored_bytes = stream.getvalue()
 
         self._auto_vacuum.update_horizon(last_message.id)
-        self._cached_stored_text = encoded_text.decode()
+        self._cached_stored_bytes = stored_bytes

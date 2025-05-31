@@ -3,9 +3,7 @@ from typing import cast
 from telethon.hints import TotalList
 from telethon.tl.types import Message
 
-from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID
-from tgdb.infrastructure.heap_query import row_with_id_query
 from tgdb.infrastructure.lazy_map import LazyMap
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 
@@ -26,8 +24,6 @@ def lazy_message_map(
         if not messages:
             return None
 
-        telethon_message = messages[0]
-
-        return message(telethon_message)
+        return messages[0]
 
     return LazyMap(computed_map_max_len, message_of_row)
