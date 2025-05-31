@@ -4,6 +4,7 @@ from telethon.hints import TotalList
 from telethon.tl.types import Message
 
 from tgdb.entities.relation.tuple import TID
+from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
 from tgdb.infrastructure.lazy_map import LazyMap
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 
@@ -14,16 +15,16 @@ type LazyMessageMap = LazyMap[TID, Message]
 def lazy_message_map(
     chat_id: int, pool: TelegramClientPool, computed_map_max_len: int
 ) -> LazyMessageMap:
-    async def message_of_row(tid: TID) -> Message | None:
-        query = row_with_id_query(tid)
+    async def tuple_message(tid: TID) -> Message | None:
+        search = HeapTupleEncoding.id_of_encoded_tuple_with_tid(tid)
 
         messages = cast(TotalList, await pool().get_messages(
-            chat_id, search=query, limit=1
+            chat_id, search=search, limit=1
         ))
 
         if not messages:
             return None
 
-        return messages[0]
+        return cast(Message | None, messages[0])
 
-    return LazyMap(computed_map_max_len, message_of_row)
+    return LazyMap(computed_map_max_len, tuple_message)

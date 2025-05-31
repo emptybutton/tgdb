@@ -18,10 +18,7 @@ from tgdb.entities.relation.tuple_effect import (
     MutatedTuple,
     NewTuple,
 )
-from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
-from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 from tgdb.infrastructure.telethon.in_telegram_heap import InTelegramHeap
-from tgdb.infrastructure.telethon.lazy_message_map import LazyMessageMap
 
 
 @dataclass(frozen=True, unsafe_hash=False)
@@ -97,7 +94,9 @@ class InTelegramHeapTuples(Tuples):
         attribute_number: Number,
         attribute_scalar: Scalar,
     ) -> Sequence[Tuple]:
-        
+        return await self._heap.tuples_with_attribute(
+            relation_number, attribute_number, attribute_scalar
+        )
 
     async def map(
         self, transaction_effects: Sequence[TransactionEffect]

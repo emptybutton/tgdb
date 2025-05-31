@@ -37,7 +37,9 @@ class Tuple(Sequence[Scalar]):
     def __getitem__(self, index: int, /) -> Scalar: ...
 
     @overload
-    def __getitem__(self, sclice: "slice[Any, Any, Any]", /) -> Sequence[Scalar]:
+    def __getitem__(
+        self, sclice: "slice[Any, Any, Any]", /
+    ) -> Sequence[Scalar]:
         ...
 
     def __getitem__(

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 @dataclass(frozen=True, unsafe_hash=False)
 class LazyMap[KeyT, ValueT]:
     _computed_map_max_len: int
-    value_by_key: Callable[[KeyT], Awaitable[ValueT | None]]
+    _external_value: Callable[[KeyT], Awaitable[ValueT | None]]
     _computed_map: OrderedDict[KeyT, ValueT] = field(
         init=False, default_factory=OrderedDict
     )
@@ -16,7 +16,7 @@ class LazyMap[KeyT, ValueT]:
         with suppress(KeyError):
             return self._computed_map[key]
 
-        value = await self.value_by_key(key)
+        value = await self._external_value(key)
 
         if value is None:
             return None

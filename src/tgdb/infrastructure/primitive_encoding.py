@@ -1,7 +1,7 @@
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 
 
@@ -127,7 +127,7 @@ def decoded_none(encoded_value: str) -> None:
         raise ValueError(encoded_value)
 
 
-_decoded_body_func_by_type = {
+_decoded_body_func_by_type: dict[type[Any], Callable[[str], Primitive]] = {
     bool: decoded_bool,
     int: decoded_int,
     str: decoded_str,

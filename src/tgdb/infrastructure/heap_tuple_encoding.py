@@ -16,8 +16,9 @@ from tgdb.infrastructure.primitive_encoding import (
 
 
 class Separator(Enum):
-    first_level = "\uffff"
-    second_level = "\ufffe"
+    top_tuple = "\uffff"
+    top_metadata = "\ufffe"
+    top_attribute = "\ufffd"
 
 
 heap_tuple_table = ReversibleTranslationTable({
@@ -28,9 +29,13 @@ heap_tuple_table = ReversibleTranslationTable({
 class HeapTupleEncoding:
     @staticmethod
     def encoded_tuple(tuple_: Tuple) -> str:
-        encoded_metadata = HeapTupleMetadataEncoding.encoded_metadata(tuple_)
+        encoded_metadata = _HeapTupleMetadataEncoding.encoded_metadata(
+            int(tuple_.relation_version_id.relation_version_number),
+            int(tuple_.relation_version_id.relation_number),
+            tuple_.tid,
+        )
         encoded_attributes = (
-            HeapTupleAttributeEncoding.encoded_attribute(
+            _HeapTupleAttributeEncoding.encoded_attribute(
                 int(tuple_.relation_version_id.relation_number),
                 attribute_number,
                 tuple_[attribute_number],
@@ -38,22 +43,21 @@ class HeapTupleEncoding:
             for attribute_number in range(len(tuple_))
         )
 
-        encoded_tuple_without_end = Separator.first_level.value.join(
+        return Separator.top_tuple.value.join(
             (encoded_metadata, *encoded_attributes)
         )
-        return f"{encoded_tuple_without_end}{Separator.first_level.value}"
 
     @staticmethod
     def decoded_tuple(encoded_tuple: str) -> Tuple:
         encoded_metadata, *encoded_attributes = (
-            encoded_tuple.split(Separator.first_level.value)
+            encoded_tuple.split(Separator.top_tuple.value)
         )
 
-        tid, relation_version_id = HeapTupleMetadataEncoding.decoded_metadata(
+        tid, relation_version_id = _HeapTupleMetadataEncoding.decoded_metadata(
             encoded_metadata
         )
         scalars = tuple(map(
-            HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes
+            _HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes
         ))
 
         return Tuple(tid, relation_version_id, scalars)
@@ -64,35 +68,35 @@ class HeapTupleEncoding:
         attribute_number: int,
         attribute_scalar: Scalar,
     ) -> str:
-        encoded_attribute = HeapTupleAttributeEncoding.encoded_attribute(
+        return _HeapTupleAttributeEncoding.encoded_attribute(
             relation_number,
             attribute_number,
             attribute_scalar
         )
 
-        return (
-            f"{Separator.first_level.value}"
-            f"{encoded_attribute}"
-            f"{Separator.first_level.value}"
-        )
-
-
-type HeapTupleMetadata = tuple[TID, RelationVersionID]
-
-
-class HeapTupleMetadataEncoding:
     @staticmethod
-    def encoded_metadata(tuple: Tuple) -> str:
-        return Separator.second_level.value.join((
-            encoded_int(int(tuple.relation_version_id.relation_version_number)),
-            encoded_int(int(tuple.relation_version_id.relation_number)),
-            encoded_uuid(tuple.tid),
+    def id_of_encoded_tuple_with_tid(tid: TID) -> str:
+        return _HeapTupleMetadataEncoding.id_of_encoded_tuple_with_tid(tid)
+
+
+type _HeapTupleMetadata = tuple[TID, RelationVersionID]
+
+
+class _HeapTupleMetadataEncoding:
+    @staticmethod
+    def encoded_metadata(
+        relation_number: int, relation_version_number: int, tid: TID
+    ) -> str:
+        return Separator.top_metadata.value.join((
+            encoded_int(relation_version_number),
+            encoded_int(relation_number),
+            encoded_uuid(tid),
         ))
 
     @staticmethod
-    def decoded_metadata(encoded_metadata: str) -> HeapTupleMetadata:
+    def decoded_metadata(encoded_metadata: str) -> _HeapTupleMetadata:
         encoded_version_number, encoded_relation_number, encoded_tid = (
-            encoded_metadata.split(Separator.second_level.value)
+            encoded_metadata.split(Separator.top_metadata.value)
         )
 
         relation_version_number = (Number(decoded_int(encoded_version_number)))
@@ -103,15 +107,19 @@ class HeapTupleMetadataEncoding:
 
         return tid, version_id
 
+    @staticmethod
+    def id_of_encoded_tuple_with_tid(tid: TID) -> str:
+        return f"{Separator.top_metadata.value}{encoded_uuid(tid)}"
 
-class HeapTupleAttributeEncoding:
+
+class _HeapTupleAttributeEncoding:
     @staticmethod
     def encoded_attribute(
         relation_number: int,
         attribute_number: int,
         scalar: Scalar,
     ) -> str:
-        return Separator.second_level.value.join((
+        return Separator.top_attribute.value.join((
             encoded_int(relation_number),
             encoded_int(attribute_number),
             encoded_primitive_with_type(scalar, heap_tuple_table),
@@ -120,7 +128,7 @@ class HeapTupleAttributeEncoding:
     @staticmethod
     def decoded_scalar(encoded_attribute: str) -> Scalar:
         _, _, encoded_scalar = encoded_attribute.split(
-            Separator.second_level.value
+            Separator.top_attribute.value
         )
 
         return decoded_primitive_with_type(encoded_scalar, heap_tuple_table)

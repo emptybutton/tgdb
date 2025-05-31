@@ -140,7 +140,7 @@ class Horizon:
         self,
         time: LogicTime,
         xid: XID,
-        effects: Sequence[HorizonWriteEffect] | None,
+        effects: Sequence[HorizonWriteEffect],
     ) -> Commit | PreparedCommit:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:

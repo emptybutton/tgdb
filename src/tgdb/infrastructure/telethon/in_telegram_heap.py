@@ -56,7 +56,7 @@ class InTelegramHeap:
 
     async def insert(self, tuple: Tuple) -> None:
         new_message = await self._pool_to_insert().send_message(
-            self._heap_id, HeapTupleEncoding.encoded_tuple(tuple.tuple)
+            self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
         )
         self._message_map[tuple.tid] = new_message
 
@@ -66,7 +66,7 @@ class InTelegramHeap:
         if message is None:
             return
 
-        await self._pool_to_edit(message.sender_id).edit_message(
+        await self._pool_to_edit(message.sender_id).edit_message(  # type: ignore[attr-defined]
             self._heap_id, message.id, HeapTupleEncoding.encoded_tuple(tuple)
         )
 
