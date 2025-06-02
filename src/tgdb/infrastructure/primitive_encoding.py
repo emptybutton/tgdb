@@ -9,10 +9,11 @@ type Primitive = None | bool | int | str | datetime | UUID  # noqa: RUF036
 
 
 _decoded_primitive_type_map = dict[str, type[Primitive]](
+    n=type(None),
+    b=bool,
     i=int,
     s=str,
     d=datetime,
-    n=type(None),
     u=UUID,
 )
 _encoded_primitive_type_map = dict(zip(

@@ -30,8 +30,8 @@ class HeapTupleEncoding:
     @staticmethod
     def encoded_tuple(tuple_: Tuple) -> str:
         encoded_metadata = _HeapTupleMetadataEncoding.encoded_metadata(
-            int(tuple_.relation_version_id.relation_version_number),
             int(tuple_.relation_version_id.relation_number),
+            int(tuple_.relation_version_id.relation_version_number),
             tuple_.tid,
         )
         encoded_attributes = (
