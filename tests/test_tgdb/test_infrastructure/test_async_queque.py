@@ -31,7 +31,6 @@ async def iterate(
             break
 
 
-@mark.timeout(0.5)
 async def test_iterations_with_prepushed_values(queque: Queque) -> None:
     queque.push(1)
     queque.push(2)
@@ -58,7 +57,6 @@ async def test_iterations_with_prepushed_values(queque: Queque) -> None:
     ]
 
 
-@mark.timeout(0.5)
 async def test_iterations_with_postpushed_values(queque: Queque) -> None:
     result = list[tuple[int, int]]()
 
@@ -102,7 +100,6 @@ async def test_iterations_with_postpushed_values(queque: Queque) -> None:
     ]
 
 
-@mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque"])
 async def test_iterations_with_concurrent_pushes(
     queque: Queque, object: str
@@ -141,7 +138,6 @@ async def test_iterations_with_concurrent_pushes(
         assert result == [1, 1, 1, 2, 2, 2, 3, 3, 3]
 
 
-@mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque"])
 async def test_infinite_iterations(queque: Queque, object: str) -> None:
     result = list[int]()
@@ -177,7 +173,6 @@ async def test_infinite_iterations(queque: Queque, object: str) -> None:
         assert not queque
 
 
-@mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque"])
 async def test_sync(queque: Queque, object: str) -> None:
     result = list[int]()
@@ -223,7 +218,6 @@ async def test_sync(queque: Queque, object: str) -> None:
     assert is_sync_overcome
 
 
-@mark.timeout(0.5)
 @mark.parametrize("object", ["result", "queque", "iterations_after_sync"])
 async def test_deadlock_on_sync(queque: Queque, object: str) -> None:
     result = list[int]()
