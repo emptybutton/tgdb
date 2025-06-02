@@ -1,7 +1,7 @@
 from enum import Enum
 
 from tgdb.entities.numeration.number import Number
-from tgdb.entities.relation.relation import RelationVersionID
+from tgdb.entities.relation.relation import RelationSchemaID
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID, Tuple
 from tgdb.infrastructure.primitive_encoding import (
@@ -30,13 +30,13 @@ class HeapTupleEncoding:
     @staticmethod
     def encoded_tuple(tuple_: Tuple) -> str:
         encoded_metadata = _HeapTupleMetadataEncoding.encoded_metadata(
-            int(tuple_.relation_version_id.relation_number),
-            int(tuple_.relation_version_id.relation_version_number),
+            int(tuple_.relation_schema_id.relation_number),
+            int(tuple_.relation_schema_id.relation_version_number),
             tuple_.tid,
         )
         encoded_attributes = (
             _HeapTupleAttributeEncoding.encoded_attribute(
-                int(tuple_.relation_version_id.relation_number),
+                int(tuple_.relation_schema_id.relation_number),
                 attribute_number,
                 tuple_[attribute_number],
             )
@@ -53,14 +53,14 @@ class HeapTupleEncoding:
             encoded_tuple.split(Separator.top_tuple.value)
         )
 
-        tid, relation_version_id = _HeapTupleMetadataEncoding.decoded_metadata(
+        tid, relation_schema_id = _HeapTupleMetadataEncoding.decoded_metadata(
             encoded_metadata
         )
         scalars = tuple(map(
             _HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes
         ))
 
-        return Tuple(tid, relation_version_id, scalars)
+        return Tuple(tid, relation_schema_id, scalars)
 
     @staticmethod
     def id_of_encoded_tuple_with_attribute(
@@ -79,7 +79,7 @@ class HeapTupleEncoding:
         return _HeapTupleMetadataEncoding.id_of_encoded_tuple_with_tid(tid)
 
 
-type _HeapTupleMetadata = tuple[TID, RelationVersionID]
+type _HeapTupleMetadata = tuple[TID, RelationSchemaID]
 
 
 class _HeapTupleMetadataEncoding:
@@ -103,9 +103,9 @@ class _HeapTupleMetadataEncoding:
         relation_number = Number(decoded_int(encoded_relation_number))
         tid = decoded_uuid(encoded_tid)
 
-        version_id = RelationVersionID(relation_number, relation_version_number)
+        schema_id = RelationSchemaID(relation_number, relation_version_number)
 
-        return tid, version_id
+        return tid, schema_id
 
     @staticmethod
     def id_of_encoded_tuple_with_tid(tid: TID) -> str:

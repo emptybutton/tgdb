@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from tgdb.entities.numeration.number import Number
-from tgdb.entities.relation.relation import Relation, RelationVersionID
+from tgdb.entities.relation.relation import Relation, RelationSchemaID
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID, Tuple
 from tgdb.entities.relation.versioned_tuple import VersionedTuple
@@ -127,7 +127,7 @@ def constructed_relation_tuple(
     """
 
     relation_last_version = relation.last_version()
-    relation_last_version_id = RelationVersionID(
+    relation_last_version_id = RelationSchemaID(
         relation.number(), relation_last_version.number
     )
 

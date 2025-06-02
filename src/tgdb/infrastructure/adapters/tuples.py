@@ -32,7 +32,7 @@ class InMemoryTuples(Tuples):
         attribute_scalar: Scalar,
     ) -> Sequence[Tuple]:
         return self._db.select_many(lambda it: (
-            it.relation_version_id.relation_number == relation_number
+            it.relation_schema_id.relation_number == relation_number
             and len(it) >= int(attribute_number)
             and it[int(attribute_number)] == attribute_scalar
         ))

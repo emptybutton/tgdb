@@ -21,7 +21,7 @@ class DerivativeRelationVersion:
 
 
 @dataclass(frozen=True)
-class RelationVersionID:
+class RelationSchemaID:
     relation_number: Number
     relation_version_number: Number
 
@@ -72,8 +72,8 @@ class Relation:
             else self._inital_version
         )
 
-    def last_version_id(self) -> RelationVersionID:
-        return RelationVersionID(self._number, self.last_version().number)
+    def last_version_id(self) -> RelationSchemaID:
+        return RelationSchemaID(self._number, self.last_version().number)
 
     def recent_versions(
         self, current_version_number: Number

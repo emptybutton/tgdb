@@ -4,7 +4,7 @@ from typing import Any, overload
 from uuid import UUID
 
 from tgdb.entities.numeration.number import Number
-from tgdb.entities.relation.relation import RelationVersionID
+from tgdb.entities.relation.relation import RelationSchemaID
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.schema import Schema
 
@@ -15,7 +15,7 @@ type TID = UUID
 @dataclass(frozen=True)
 class Tuple(Sequence[Scalar]):
     tid: TID
-    relation_version_id: RelationVersionID
+    relation_schema_id: RelationSchemaID
     scalars: tuple[Scalar, ...]
 
     def __iter__(self) -> Iterator[Scalar]:
@@ -51,9 +51,9 @@ class Tuple(Sequence[Scalar]):
 def tuple_(
     *scalars: Scalar,
     tid: TID,
-    relation_version_id: RelationVersionID = RelationVersionID(  # noqa: B008
+    relation_schema_id: RelationSchemaID = RelationSchemaID(  # noqa: B008
         Number(0),  # noqa: B008
         Number(0),  # noqa: B008
     ),
 ) -> Tuple:
-    return Tuple(tid, relation_version_id, scalars)
+    return Tuple(tid, relation_schema_id, scalars)

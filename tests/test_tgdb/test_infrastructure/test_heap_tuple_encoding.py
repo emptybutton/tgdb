@@ -3,7 +3,7 @@ from uuid import UUID
 from pytest import mark
 
 from tgdb.entities.numeration.number import Number
-from tgdb.entities.relation.relation import RelationVersionID
+from tgdb.entities.relation.relation import RelationSchemaID
 from tgdb.entities.relation.tuple import Tuple, tuple_
 from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
 
@@ -22,8 +22,8 @@ from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
         tuple_(
             None,
             tid=UUID(int=100000),
-            relation_version_id=RelationVersionID(
-                Number(1000), Number(200000)
+            relation_schema_id=RelationSchemaID(
+                Number(1000), Number(200_000)
         )),
     ]
 )
