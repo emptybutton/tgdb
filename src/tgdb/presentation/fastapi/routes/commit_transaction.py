@@ -1,19 +1,15 @@
-from uuid import UUID
 
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-from tgdb.application.input_operator import InputOperator
-from tgdb.entities.transaction import (
-    NoTransaction,
-    TransactionCommit,
-    TransactionConflict,
-    TransactionCommit,
-)
-from tgdb.presentation.async_map import AsyncMap
-from tgdb.presentation.fastapi.schemas.entity import StartOperatorSchema
+from tgdb.application.common.operator import Operator
+from tgdb.application.horizon.commit_transaction import CommitTransaction
+from tgdb.application.horizon.start_transaction import StartTransaction
+from tgdb.entities.horizon.horizon import InvalidTransactionStateError
+from tgdb.entities.horizon.transaction import XID, NonSerializableWriteTransactionError
+from tgdb.presentation.fastapi.schemas.errors import InvalidTransactionStateSchema
 from tgdb.presentation.fastapi.schemas.output import (
     NoTransactionSchema,
     TransactionConflictSchema,
@@ -22,7 +18,6 @@ from tgdb.presentation.fastapi.tags import Tag
 
 
 commit_transaction_router = APIRouter()
-
 
 description = """
 Write down all a transaction statements and commit it.
@@ -36,12 +31,22 @@ Therefore, in case of any negative response, you should retry transactions in fu
 """  # noqa: E501
 
 
+class CommitTransactionSchema(BaseModel):
+    operators: tuple[Operator, ...]
+
+
 @commit_transaction_router.post(
-    "/transactions/commit",
+    "/transactions/{xid}/commit",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_204_NO_CONTENT: {"content": None},
         status.HTTP_404_NOT_FOUND: {"model": NoTransactionSchema},
+        status.HTTP_400_BAD_REQUEST: {
+            "model": (
+                InvalidTransactionStateSchema
+                | NonSerializableWriteTransactionError
+            )
+        },
         status.HTTP_409_CONFLICT: {"content": TransactionConflictSchema},
     },
     summary="Commit transaction",
@@ -50,34 +55,9 @@ Therefore, in case of any negative response, you should retry transactions in fu
 )
 @inject
 async def _(
-    input_operator: FromDishka[InputOperator[StartOperatorSchema]],
-    commit_map: FromDishka[AsyncMap[UUID, TransactionCommit]],
-    request_body: StartOperatorSchema,
+    commit_transaction: FromDishka[CommitTransaction],
+    xid: XID,
+    request_body: CommitTransactionSchema,
 ) -> Response:
-    async_commit = commit_map[request_body.xid]
-
-    await input_operator(request_body)
-    commit = await async_commit
-
-    if isinstance(commit, TransactionCommit):
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    match commit.reason:
-        case NoTransaction():
-            response_body_schema: BaseModel = NoTransactionSchema()
-            response_body = response_body_schema.model_dump(
-                mode="json", by_alias=True
-            )
-
-            return JSONResponse(
-                response_body, status_code=status.HTTP_404_NOT_FOUND
-            )
-        case TransactionConflict() as conflict:
-            response_body_schema = TransactionConflictSchema.of(conflict)
-            response_body = response_body_schema.model_dump(
-                mode="json", by_alias=True
-            )
-
-            return JSONResponse(
-                response_body, status_code=status.HTTP_409_CONFLICT
-            )
+    await commit_transaction(xid, request_body.operators)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

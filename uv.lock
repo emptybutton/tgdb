@@ -274,6 +274,15 @@ wheels = [
 ]
 
 [[package]]
+name = "plotext"
+version = "5.2.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/d7/58f5ec766e41f8338f04ec47dbd3465db04fbe2a6107bca5f0670ced253a/plotext-5.2.8.tar.gz", hash = "sha256:319a287baabeb8576a711995f973a2eba631c887aa6b0f33ab016f12c50ffebe", size = 58233 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/de/82df3f400392b586d18a8bd90714309c7e1fcf74c0f2e42a4f8abc347634/plotext-5.2.8-py3-none-any.whl", hash = "sha256:7364cf72e6c9bffaf96158340fd2e0058faf404edbbc1e7a2aed421c8638d475", size = 60210 },
+]
+
+[[package]]
 name = "pluggy"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -510,6 +519,7 @@ dev = [
     { name = "httpx" },
     { name = "httpx-ws" },
     { name = "mypy", extra = ["faster-cache"] },
+    { name = "plotext" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -526,6 +536,7 @@ requires-dist = [
     { name = "httpx-ws", marker = "extra == 'dev'", specifier = "==0.7.2" },
     { name = "in-memory-db", specifier = ">=0.3.0" },
     { name = "mypy", extras = ["faster-cache"], marker = "extra == 'dev'", specifier = "==1.15.0" },
+    { name = "plotext", marker = "extra == 'dev'", specifier = "==5.2.8" },
     { name = "pydantic", specifier = ">=2.11.4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==8.3.4" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==0.25.3" },

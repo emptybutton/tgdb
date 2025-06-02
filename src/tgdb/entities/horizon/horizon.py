@@ -87,7 +87,7 @@ class Horizon:
         """
 
         assert_(
-            xid not in chain(*self._transaction_maps()),
+            all(xid not in map for map in self._transaction_maps()),
             else_=InvalidTransactionStateError,
         )
 

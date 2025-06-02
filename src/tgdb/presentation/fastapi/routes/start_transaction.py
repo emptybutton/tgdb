@@ -1,31 +1,49 @@
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, status
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, Field
 
-from tgdb.application.input_operator import InputOperator
-from tgdb.presentation.fastapi.schemas.entity import StartOperatorSchema
+from tgdb.application.horizon.start_transaction import StartTransaction
+from tgdb.entities.horizon.transaction import XID
+from tgdb.presentation.fastapi.schemas.errors import (
+    InvalidTransactionStateSchema,
+)
+from tgdb.presentation.fastapi.schemas.isolation_level import (
+    EncodableIsolationLevel,
+)
 from tgdb.presentation.fastapi.tags import Tag
 
 
 start_transaction_router = APIRouter()
 
 
+class StartTransactionSchema(BaseModel):
+    isolation_level: EncodableIsolationLevel = Field(alias="isolationLevel")
+
+
+class StartedTransactionSchema(BaseModel):
+    xid: XID
+
+
 @start_transaction_router.post(
     "/transactions",
     status_code=status.HTTP_201_CREATED,
-    responses={status.HTTP_201_CREATED: {"content": None}},
+    responses={
+        status.HTTP_201_CREATED: {"model": StartedTransactionSchema},
+        status.HTTP_400_BAD_REQUEST: {"model": InvalidTransactionStateSchema},
+    },
     summary="Start transaction",
-    description=(
-        "Start transaction. Only after successful completion can you start"
-        " reading, even if non-serializable reading is used."
-    ),
+    description="Start transaction.",
     tags=[Tag.transaction],
 )
 @inject
 async def _(
-    input_operator: FromDishka[InputOperator[StartOperatorSchema]],
-    request_body: StartOperatorSchema,
+    start_transaction: FromDishka[StartTransaction],
+    request_body: StartTransactionSchema,
 ) -> Response:
-    await input_operator(request_body)
+    xid = await start_transaction(request_body.isolation_level)
 
-    return Response(status_code=status.HTTP_201_CREATED)
+    response_body_model = StartedTransactionSchema(xid=xid)
+    response_body = response_body_model.model_dump(mode="json", by_alias=True)
+
+    return JSONResponse(response_body, status_code=status.HTTP_201_CREATED)

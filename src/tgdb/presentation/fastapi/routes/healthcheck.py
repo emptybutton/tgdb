@@ -14,5 +14,5 @@ healthcheck_router = APIRouter()
     description="Checking if the server can accept requests.",
     tags=[Tag.monitoring],
 )
-def healthcheck() -> Response:
+def _() -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from tgdb.application.common.ports.clock import Clock
@@ -7,6 +8,7 @@ from tgdb.application.common.ports.tuples import Tuples
 from tgdb.entities.horizon.transaction import XID
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar
+from tgdb.entities.relation.tuple import Tuple
 from tgdb.entities.relation.tuple_effect import viewed_tuple
 from tgdb.entities.relation.versioned_tuple import versioned_tuple
 
@@ -24,7 +26,7 @@ class ViewTuples:
         relation_number: Number,
         attribute_number: Number,
         scalar: Scalar,
-    ) -> None:
+    ) -> Sequence[Tuple]:
         """
         :raises tgdb.application.common.ports.relations.NoRelationError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
@@ -46,3 +48,5 @@ class ViewTuples:
             for viewed_tuple_ in viewed_tuples:
                 time = await self.clock
                 horizon.include(time, xid, viewed_tuple_)
+
+        return tuples

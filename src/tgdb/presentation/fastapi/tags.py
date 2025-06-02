@@ -2,8 +2,9 @@ from enum import Enum
 
 
 class Tag(Enum):
-    transaction = "User"
-    monitoring = "Transaction"
+    monitoring = "Monitoring"
+    transaction = "Transaction"
+    relation = "Relation"
 
 
 tags_metadata = [
@@ -14,5 +15,9 @@ tags_metadata = [
     {
         "name": Tag.transaction.value,
         "description": "Transaction endpoints.",
+    },
+    {
+        "name": Tag.relation.value,
+        "description": "Relation endpoints.",
     },
 ]

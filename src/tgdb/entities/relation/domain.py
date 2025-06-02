@@ -55,7 +55,7 @@ class StrDomain(Domain):
 
 
 @dataclass(frozen=True)
-class SetDomain[T: bool | int | str | datetime | UUID](Domain):
+class SetDomain[T: int | str | datetime | UUID](Domain):
     values: tuple[T, ...]
     _type: type[T]
     _is_nonable: bool
