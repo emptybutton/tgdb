@@ -7,11 +7,11 @@ from pydantic import PositiveInt
 
 from tgdb.application.relation.view_relation import ViewRelation
 from tgdb.entities.numeration.number import Number
-from tgdb.presentation.fastapi.schemas.relation.relation import (
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.relation.schemas.relation import (
     RelationListSchema,
     RelationSchema,
 )
-from tgdb.presentation.fastapi.tags import Tag
 
 
 view_relation_router = APIRouter()

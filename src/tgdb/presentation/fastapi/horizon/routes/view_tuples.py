@@ -11,13 +11,13 @@ from tgdb.entities.horizon.transaction import XID
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import Tuple
-from tgdb.presentation.fastapi.schemas.error import NoRelationSchema
-from tgdb.presentation.fastapi.schemas.horizon.error import (
+from tgdb.presentation.fastapi.common.schemas.error import NoRelationSchema
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.horizon.schemas.error import (
     InvalidTransactionStateSchema,
     NoTransactionSchema,
 )
-from tgdb.presentation.fastapi.schemas.relation.tuple import TupleSchema
-from tgdb.presentation.fastapi.tags import Tag
+from tgdb.presentation.fastapi.relation.schemas.tuple import TupleSchema
 
 
 view_tuples_router = APIRouter()
@@ -34,7 +34,7 @@ class ViewedTuplesSchema(BaseModel):
 
 
 @view_tuples_router.post(
-    "/relations/{relation_number}/tuples/views",
+    "/transactions/{xid}/viewed-tuples",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": ViewedTuplesSchema},

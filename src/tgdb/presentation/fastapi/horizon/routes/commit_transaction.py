@@ -1,4 +1,3 @@
-
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, status
 from fastapi.responses import Response
@@ -10,12 +9,12 @@ from tgdb.entities.horizon.transaction import (
     XID,
     NonSerializableWriteTransactionError,
 )
-from tgdb.presentation.fastapi.schemas.horizon.error import (
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.horizon.schemas.error import (
     InvalidTransactionStateSchema,
     NoTransactionSchema,
     TransactionConflictSchema,
 )
-from tgdb.presentation.fastapi.tags import Tag
 
 
 commit_transaction_router = APIRouter()

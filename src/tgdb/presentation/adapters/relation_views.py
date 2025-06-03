@@ -6,7 +6,7 @@ from in_memory_db import InMemoryDb
 from tgdb.application.common.ports.relation_views import RelationViews
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.relation import Relation
-from tgdb.presentation.fastapi.schemas.relation.relation import (
+from tgdb.presentation.fastapi.relation.schemas.relation import (
     RelationListSchema,
     RelationSchema,
 )

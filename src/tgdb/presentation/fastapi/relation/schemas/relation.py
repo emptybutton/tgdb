@@ -8,7 +8,7 @@ from tgdb.entities.relation.relation import (
     InitialRelationVersion,
     Relation,
 )
-from tgdb.presentation.fastapi.schemas.relation.schema import SchemaSchema
+from tgdb.presentation.fastapi.relation.schemas.schema import SchemaSchema
 
 
 class InitialRelationVersionSchema(BaseModel):

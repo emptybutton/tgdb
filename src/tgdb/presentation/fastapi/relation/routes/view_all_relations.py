@@ -3,17 +3,17 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse, Response
 
 from tgdb.application.relation.view_all_relations import ViewAllRelations
-from tgdb.presentation.fastapi.schemas.relation.relation import (
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.relation.schemas.relation import (
     RelationListSchema,
     RelationSchema,
 )
-from tgdb.presentation.fastapi.tags import Tag
 
 
-view_relation_router = APIRouter()
+view_all_relations_router = APIRouter()
 
 
-@view_relation_router.get(
+@view_all_relations_router.get(
     "/relations",
     status_code=status.HTTP_200_OK,
     responses={

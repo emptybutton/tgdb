@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from tgdb.entities.relation.schema import Schema
-from tgdb.presentation.fastapi.schemas.relation.domain import (
+from tgdb.presentation.fastapi.relation.schemas.domain import (
     DomainSchema,
     domain_schema,
 )

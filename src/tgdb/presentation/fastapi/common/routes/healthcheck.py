@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
 from fastapi.responses import Response
 
-from tgdb.presentation.fastapi.tags import Tag
+from tgdb.presentation.fastapi.common.tags import Tag
 
 
 healthcheck_router = APIRouter()

@@ -4,8 +4,8 @@ from fastapi.responses import Response
 
 from tgdb.application.horizon.rollback_transaction import RollbackTransaction
 from tgdb.entities.horizon.transaction import XID
-from tgdb.presentation.fastapi.schemas.horizon.error import NoTransactionSchema
-from tgdb.presentation.fastapi.tags import Tag
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.horizon.schemas.error import NoTransactionSchema
 
 
 rollback_transaction_router = APIRouter()

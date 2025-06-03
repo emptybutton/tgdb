@@ -5,13 +5,13 @@ from pydantic import BaseModel, Field
 
 from tgdb.application.horizon.start_transaction import StartTransaction
 from tgdb.entities.horizon.transaction import XID
-from tgdb.presentation.fastapi.schemas.horizon.error import (
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.horizon.schemas.error import (
     InvalidTransactionStateSchema,
 )
-from tgdb.presentation.fastapi.schemas.horizon.isolation_level import (
+from tgdb.presentation.fastapi.horizon.schemas.isolation_level import (
     IsolationLevelSchema,
 )
-from tgdb.presentation.fastapi.tags import Tag
 
 
 start_transaction_router = APIRouter()

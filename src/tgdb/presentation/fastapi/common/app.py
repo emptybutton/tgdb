@@ -5,7 +5,7 @@ from dishka import AsyncContainer
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import APIRouter, FastAPI
 
-from tgdb.presentation.fastapi.tags import tags_metadata
+from tgdb.presentation.fastapi.common.tags import tags_metadata
 
 
 type FastAPIAppRouters = Iterable[APIRouter]
