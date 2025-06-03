@@ -6,25 +6,8 @@ from uuid import UUID
 from tgdb.entities.relation.scalar import Scalar
 
 
-class Domain(ABC):
-    @abstractmethod
-    def type(self) -> type[bool | int | str | datetime | UUID]: ...
-
-    @abstractmethod
-    def is_nonable(self) -> bool: ...
-
-    @abstractmethod
-    def __contains__(self, scalar: Scalar) -> bool: ...
-
-    @abstractmethod
-    def __eq__(self, other: object) -> bool: ...
-
-    @abstractmethod
-    def __hash__(self) -> int: ...
-
-
 @dataclass(frozen=True)
-class IntDomain(Domain):
+class IntDomain:
     min: int
     max: int
     _is_nonable: bool
@@ -36,11 +19,14 @@ class IntDomain(Domain):
         return self._is_nonable
 
     def __contains__(self, scalar: Scalar) -> bool:
+        if scalar is None:
+            return self._is_nonable
+
         return isinstance(scalar, int) and self.min <= scalar <= self.max
 
 
 @dataclass(frozen=True)
-class StrDomain(Domain):
+class StrDomain:
     max_len: int
     _is_nonable: bool
 
@@ -51,31 +37,37 @@ class StrDomain(Domain):
         return self._is_nonable
 
     def __contains__(self, scalar: Scalar) -> bool:
+        if scalar is None:
+            return self._is_nonable
+
         return isinstance(scalar, str) and len(scalar) <= self.max_len
 
 
 @dataclass(frozen=True)
-class SetDomain[T: int | str | datetime | UUID](Domain):
+class SetDomain[T: int | str | datetime | UUID]:
     values: tuple[T, ...]
     _type: type[T]
     _is_nonable: bool
 
-    def type(self) -> type[T]:  # type: ignore[override]
+    def type(self) -> type[T]:
         return self._type
 
     def is_nonable(self) -> bool:
         return self._is_nonable
 
     def __contains__(self, scalar: Scalar) -> bool:
+        if scalar is None:
+            return self._is_nonable
+
         return scalar in self.values
 
 
 @dataclass(frozen=True)
-class TypeDomain(Domain):
-    _type: type[bool | datetime | UUID]
+class TypeDomain[T: bool | datetime | UUID]:
+    _type: type[T]
     _is_nonable: bool
 
-    def type(self) -> type[bool | datetime | UUID]:
+    def type(self) -> type[T]:
         return self._type
 
     def is_nonable(self) -> bool:
@@ -86,3 +78,16 @@ class TypeDomain(Domain):
             return self._is_nonable
 
         return isinstance(scalar, self._type)
+
+
+type Domain = (
+    IntDomain
+    | StrDomain
+    | SetDomain[int]
+    | SetDomain[str]
+    | SetDomain[datetime]
+    | SetDomain[UUID]
+    | TypeDomain[bool]
+    | TypeDomain[datetime]
+    | TypeDomain[UUID]
+)

@@ -5,8 +5,8 @@ from pathlib import Path
 
 @dataclass(frozen=True, kw_only=True)
 class TelegramSecrets:
-    app_api_id: int
-    app_api_hash: str
+    api_id: int
+    api_hash: str
 
     @classmethod
     def load(cls, secrets_file_path: Path) -> "TelegramSecrets":
@@ -14,6 +14,6 @@ class TelegramSecrets:
             raw_secrets = tomllib.load(secrets_file)
 
             return TelegramSecrets(
-                app_api_id=raw_secrets["app_api_id"],
-                app_api_hash=raw_secrets["app_api_hash"],
+                api_id=raw_secrets["api_id"],
+                api_hash=raw_secrets["api_hash"],
             )

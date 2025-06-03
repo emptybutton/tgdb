@@ -2,7 +2,6 @@ from collections import OrderedDict
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
-from itertools import chain
 
 from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.horizon.transaction import (

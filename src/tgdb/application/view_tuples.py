@@ -25,7 +25,7 @@ class ViewTuples:
         xid: XID,
         relation_number: Number,
         attribute_number: Number,
-        scalar: Scalar,
+        attribute_scalar: Scalar,
     ) -> Sequence[Tuple]:
         """
         :raises tgdb.application.common.ports.relations.NoRelationError:
@@ -34,7 +34,7 @@ class ViewTuples:
         """
 
         tuples = await self.tuples.tuples_with_attribute(
-            relation_number, attribute_number, scalar
+            relation_number, attribute_number, attribute_scalar
         )
         versioned_tuples = map(versioned_tuple, tuples)
         relation = await self.relartions.relation(relation_number)

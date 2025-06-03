@@ -1,7 +1,7 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import Field, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 
 from tgdb.application.common.operator import (
     DeletedTupleOperator,
@@ -13,10 +13,9 @@ from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID
-from tgdb.presentation.fastapi.schemas.encoding import EncodingSchema
 
 
-class InsertOperatorSchema(EncodingSchema[NewTupleOperator]):
+class InsertOperatorSchema(BaseModel):
     action: Literal["insert"] = "insert"
     relation_number: PositiveInt = Field(alias="relationNumber")
     scalars: tuple[Scalar, ...]
@@ -25,7 +24,7 @@ class InsertOperatorSchema(EncodingSchema[NewTupleOperator]):
         return NewTupleOperator(Number(self.relation_number), self.scalars)
 
 
-class UpdateOperatorSchema(EncodingSchema[MutatedTupleOperator]):
+class UpdateOperatorSchema(BaseModel):
     action: Literal["update"] = "update"
     relation_number: PositiveInt = Field(alias="relationNumber")
     tid: TID
@@ -37,7 +36,7 @@ class UpdateOperatorSchema(EncodingSchema[MutatedTupleOperator]):
         )
 
 
-class DeleteOperatorSchema(EncodingSchema[DeletedTupleOperator]):
+class DeleteOperatorSchema(BaseModel):
     action: Literal["delete"] = "delete"
     tid: TID
 
@@ -45,7 +44,7 @@ class DeleteOperatorSchema(EncodingSchema[DeletedTupleOperator]):
         return DeletedTupleOperator(self.tid)
 
 
-class ClaimOperatorSchema(EncodingSchema[Claim]):
+class ClaimOperatorSchema(BaseModel):
     action: Literal["claim"] = "claim"
     id: UUID
     object: str
@@ -62,7 +61,7 @@ type OperatorSchema = (
 )
 
 
-class OperatorListSchema(EncodingSchema[tuple[Operator, ...]]):
+class OperatorListSchema(BaseModel):
     operators: tuple[OperatorSchema, ...]
 
     def decoded(self) -> tuple[Operator, ...]:

@@ -1,10 +1,11 @@
 from uuid import UUID
 
+from pydantic import BaseModel
+
 from tgdb.entities.horizon.claim import Claim
-from tgdb.presentation.fastapi.schemas.encoding import EncodingSchema
 
 
-class ClaimSchema(EncodingSchema[Claim]):
+class ClaimSchema(BaseModel):
     id: UUID
     object: str
 

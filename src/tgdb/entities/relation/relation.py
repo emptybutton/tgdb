@@ -39,7 +39,7 @@ class Relation:
     """
 
     _number: Number
-    _inital_version: InitialRelationVersion
+    _initial_version: InitialRelationVersion
     _intermediate_versions: list[DerivativeRelationVersion]
 
     def __post_init__(self) -> None:
@@ -51,14 +51,14 @@ class Relation:
         return len(self._intermediate_versions) + 1
 
     def __iter__(self) -> Iterator[RelationVersion]:
-        yield self._inital_version
+        yield self._initial_version
         yield from self._intermediate_versions
 
     def number(self) -> Number:
         return self._number
 
-    def inital_version(self) -> InitialRelationVersion | None:
-        return self._inital_version
+    def initial_version(self) -> InitialRelationVersion:
+        return self._initial_version
 
     def intermediate_versions(
         self,
@@ -69,7 +69,7 @@ class Relation:
         return (
             self._intermediate_versions[-1]
             if self._intermediate_versions
-            else self._inital_version
+            else self._initial_version
         )
 
     def last_version_id(self) -> RelationSchemaID:
@@ -78,10 +78,10 @@ class Relation:
     def recent_versions(
         self, current_version_number: Number
     ) -> Sequence[DerivativeRelationVersion]:
-        if current_version_number < self._inital_version.number:
+        if current_version_number < self._initial_version.number:
             return tuple()
 
-        if current_version_number == self._inital_version.number:
+        if current_version_number == self._initial_version.number:
             return self._intermediate_versions
 
         if current_version_number >= self._intermediate_versions[-1].number:
@@ -115,11 +115,11 @@ class Relation:
         )
         del self._intermediate_versions[:count_to_remove_intermediate_versions]
 
-        version_to_make_inital = self._intermediate_versions[0]
+        version_to_make_initial = self._intermediate_versions[0]
 
-        self._inital_version = InitialRelationVersion(
-            version_to_make_inital.number,
-            version_to_make_inital.schema,
+        self._initial_version = InitialRelationVersion(
+            version_to_make_initial.number,
+            version_to_make_initial.schema,
         )
         del self._intermediate_versions[0]
 

@@ -4,7 +4,7 @@ from fastapi.responses import Response
 
 from tgdb.application.horizon.rollback_transaction import RollbackTransaction
 from tgdb.entities.horizon.transaction import XID
-from tgdb.presentation.fastapi.schemas.errors import NoTransactionSchema
+from tgdb.presentation.fastapi.schemas.horizon.error import NoTransactionSchema
 from tgdb.presentation.fastapi.tags import Tag
 
 

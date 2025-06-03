@@ -1,7 +1,7 @@
 import pickle
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from types import TracebackType
-from typing import Self, cast
+from typing import Self
 
 from in_memory_db import InMemoryDb
 
@@ -50,13 +50,11 @@ class InMemoryRelations(Relations):
 @dataclass
 class InTelegramReplicableRelations(Relations):
     _in_telegram_encoded_relations: InTelegramBytes
-    _cached_relations: InMemoryDb[Relation] | None = field(
-        init=False, default=None
-    )
+    _cached_relations: InMemoryDb[Relation]
 
     async def __aenter__(self) -> Self:
-        loaded_relations = await self._loaded_relations()
-        self._cached_relations = loaded_relations
+        for loaded_relation in await self._loaded_relations():
+            self._cached_relations.insert(loaded_relation)
 
         return self
 
@@ -72,9 +70,6 @@ class InTelegramReplicableRelations(Relations):
         :raises tgdb.application.common.ports.relations.NoRelationError:
         """
 
-        if self._cached_relations is None:
-            raise ValueError
-
         relation = self._cached_relations.select_one(
             lambda it: it.number() == relation_number
         )
@@ -89,9 +84,6 @@ class InTelegramReplicableRelations(Relations):
         :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
         """  # noqa: E501
 
-        if self._cached_relations is None:
-            raise ValueError
-
         selected_relation = self._cached_relations.select_one(
             lambda it: it.number() == relation.number()
         )
@@ -101,24 +93,22 @@ class InTelegramReplicableRelations(Relations):
 
         self._cached_relations.insert(relation)
 
-        encoded_cached_relations = pickle.dumps(self._cached_relations)
+        encoded_cached_relations = pickle.dumps(tuple(self._cached_relations))
         await self._in_telegram_encoded_relations.set(encoded_cached_relations)
 
-    async def _loaded_relations(self) -> InMemoryDb[Relation]:
+    async def _loaded_relations(self) -> tuple[Relation, ...]:
         encoded_relations = await self._in_telegram_encoded_relations
 
         if encoded_relations is None:
-            return InMemoryDb()
+            return tuple()
 
         relations = pickle.loads(encoded_relations)
 
-        if relations is None:
-            return InMemoryDb()
-        if not isinstance(relations, InMemoryDb):
+        if not isinstance(relations, tuple):
             raise TypeError(relations)
 
         for relation in relations:
             if not isinstance(relation, Relation):
                 raise TypeError(relation)
 
-        return cast(InMemoryDb[Relation], relations)
+        return relations

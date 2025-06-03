@@ -5,11 +5,11 @@ from pydantic import BaseModel, Field
 
 from tgdb.application.horizon.start_transaction import StartTransaction
 from tgdb.entities.horizon.transaction import XID
-from tgdb.presentation.fastapi.schemas.errors import (
+from tgdb.presentation.fastapi.schemas.horizon.error import (
     InvalidTransactionStateSchema,
 )
-from tgdb.presentation.fastapi.schemas.isolation_level import (
-    EncodableIsolationLevel,
+from tgdb.presentation.fastapi.schemas.horizon.isolation_level import (
+    IsolationLevelSchema,
 )
 from tgdb.presentation.fastapi.tags import Tag
 
@@ -18,7 +18,7 @@ start_transaction_router = APIRouter()
 
 
 class StartTransactionSchema(BaseModel):
-    isolation_level: EncodableIsolationLevel = Field(alias="isolationLevel")
+    isolation_level: IsolationLevelSchema = Field(alias="isolationLevel")
 
 
 class StartedTransactionSchema(BaseModel):
@@ -41,7 +41,7 @@ async def _(
     start_transaction: FromDishka[StartTransaction],
     request_body: StartTransactionSchema,
 ) -> Response:
-    xid = await start_transaction(request_body.isolation_level)
+    xid = await start_transaction(request_body.isolation_level.decoded())
 
     response_body_model = StartedTransactionSchema(xid=xid)
     response_body = response_body_model.model_dump(mode="json", by_alias=True)

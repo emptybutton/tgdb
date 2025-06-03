@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from tgdb.entities.horizon.transaction import ConflictError
-from tgdb.presentation.fastapi.schemas.claim import ClaimSchema
+from tgdb.presentation.fastapi.schemas.horizon.claim import ClaimSchema
 
 
 class TransactionConflictSchema(BaseModel):
