@@ -8,4 +8,8 @@ class NoRelationSchema(BaseModel):
     Relation was not created.
     """
 
-    type: Literal["NoRelation"] = "NoRelation"
+    type: Literal["noRelation"] = "noRelation"
+
+
+class NotUniqueRelationNumberSchema(BaseModel):
+    type: Literal["notUniqueRelationNumber"] = "notUniqueRelationNumber"
