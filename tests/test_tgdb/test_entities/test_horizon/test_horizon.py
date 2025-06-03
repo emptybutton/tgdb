@@ -1,5 +1,6 @@
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
+from weakref import WeakSet
 
 from pytest import fixture, mark, raises
 
@@ -574,47 +575,25 @@ def test_no_memory_leak(horizon: Horizon) -> None:
         ...
     """
 
-    transaction_counter = 0
-
-    old_transaction_init = SerializableTransaction.__init__
-
-    def new_transaction_init(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401
-        old_transaction_init(*args, **kwargs)
-
-        nonlocal transaction_counter
-        transaction_counter += 1
-
-    def transaction_del(self: Transaction, *args: Any, **kwargs: Any) -> None:  # noqa: ARG001,ANN401
-        nonlocal transaction_counter
-        transaction_counter -= 1
-
-    SerializableTransaction.__init__ = new_transaction_init  # type: ignore[method-assign]
-    SerializableTransaction.__del__ = transaction_del  # type: ignore[attr-defined]
+    total = 100
 
     time = 0
 
-    for xid_int in range(1, 101):
+    for xid_int in range(1, total + 1):
         time += 1
 
         horizon.start_transaction(
             time, UUID(int=xid_int), IsolationLevel.serializable_read_and_write
         )
 
-    assert transaction_counter == 100
+    live_transactions = WeakSet(horizon._serializable_transaction_map.values())  # noqa: SLF001
+    assert len(live_transactions) == total
 
-    for xid in reversed(range(1, 101)):
+    for xid in reversed(range(1, total + 1)):
         time += 1
         commit = horizon.commit_transaction(time, UUID(int=xid), [])
 
         time += 1
         horizon.complete_commit(time, commit.xid)
 
-    time += 1
-    horizon.start_transaction(
-        time, UUID(int=200), IsolationLevel.serializable_read_and_write
-    )
-
-    SerializableTransaction.__init__ = old_transaction_init  # type: ignore[method-assign]
-    del SerializableTransaction.__del__  # type: ignore[attr-defined]
-
-    assert transaction_counter == 1
+    assert not live_transactions
