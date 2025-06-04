@@ -20,29 +20,21 @@ class InMemoryRelations(Relations):
     _db: InMemoryDb[Relation]
 
     async def relation(self, relation_number: Number) -> Relation:
-        """
-        :raises tgdb.application.common.ports.relations.NoRelationError:
-        """
-
         relation = self._db.select_one(
             lambda it: it.number() == relation_number
         )
         if relation is None:
-            raise NoRelationError(relation_number)
+            raise NoRelationError
 
         return relation
 
     async def add(self, relation: Relation) -> None:
-        """
-        :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
-        """  # noqa: E501
-
         selected_relation = self._db.select_one(
             lambda it: it.number() == relation.number()
         )
 
         if selected_relation is not None:
-            raise NotUniqueRelationNumberError(relation.number())
+            raise NotUniqueRelationNumberError
 
         self._db.insert(relation)
 
@@ -75,7 +67,7 @@ class InTelegramReplicableRelations(Relations):
         )
 
         if relation is None:
-            raise NoRelationError(relation_number)
+            raise NoRelationError
 
         return relation
 
@@ -89,7 +81,7 @@ class InTelegramReplicableRelations(Relations):
         )
 
         if selected_relation is not None:
-            raise NotUniqueRelationNumberError(relation.number())
+            raise NotUniqueRelationNumberError
 
         self._cached_relations.insert(relation)
 

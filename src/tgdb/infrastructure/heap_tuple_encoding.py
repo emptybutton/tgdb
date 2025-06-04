@@ -1,8 +1,19 @@
+from datetime import datetime, timedelta, timezone
 from enum import Enum
+from uuid import UUID
 
 from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.domain import (
+    BoolDomain,
+    DatetimeDomain,
+    Domain,
+    IntDomain,
+    StrDomain,
+    UuidDomain,
+)
 from tgdb.entities.relation.relation import RelationSchemaID
 from tgdb.entities.relation.scalar import Scalar
+from tgdb.entities.relation.schema import Schema
 from tgdb.entities.relation.tuple import TID, Tuple
 from tgdb.infrastructure.primitive_encoding import (
     ReversibleTranslationTable,
@@ -11,6 +22,7 @@ from tgdb.infrastructure.primitive_encoding import (
     decoded_uuid,
     encoded_int,
     encoded_primitive_with_type,
+    encoded_primitive_without_type,
     encoded_uuid,
 )
 
@@ -27,6 +39,16 @@ heap_tuple_table = ReversibleTranslationTable({
 
 
 class HeapTupleEncoding:
+    @staticmethod
+    def largest_tuple(
+        schema: Schema,
+        schema_id: RelationSchemaID,
+    ) -> Tuple:
+        xid, schema_id = _HeapTupleMetadataEncoding.largest_metadata(schema_id)
+        scalars = map(_HeapTupleAttributeEncoding.largest_scalar, schema)
+
+        return Tuple(xid, schema_id, tuple(scalars))
+
     @staticmethod
     def encoded_tuple(tuple_: Tuple) -> str:
         encoded_metadata = _HeapTupleMetadataEncoding.encoded_metadata(
@@ -111,6 +133,10 @@ class _HeapTupleMetadataEncoding:
     def id_of_encoded_tuple_with_tid(tid: TID) -> str:
         return f"{Separator.top_metadata.value}{encoded_uuid(tid)}"
 
+    @staticmethod
+    def largest_metadata(schema_id: RelationSchemaID) -> _HeapTupleMetadata:
+        return UUID(int=0), schema_id
+
 
 class _HeapTupleAttributeEncoding:
     @staticmethod
@@ -132,3 +158,25 @@ class _HeapTupleAttributeEncoding:
         )
 
         return decoded_primitive_with_type(encoded_scalar, heap_tuple_table)
+
+    @staticmethod
+    def largest_scalar(domain: Domain) -> Scalar:
+        match domain:
+            case IntDomain():
+                return max(domain.min, domain.max, key=lambda it: len(str(it)))
+            case StrDomain():
+                return "x" * domain.max_len
+            case BoolDomain():
+                return True
+            case DatetimeDomain():
+                tzinfo = timezone(timedelta(hours=14))
+                return datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=tzinfo)
+            case UuidDomain():
+                return UUID(int=0)
+            case tuple():
+                return max(
+                    domain,
+                    key=lambda it: (
+                        encoded_primitive_without_type(it, heap_tuple_table)
+                    )
+                )

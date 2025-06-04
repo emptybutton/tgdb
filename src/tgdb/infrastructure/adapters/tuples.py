@@ -4,12 +4,16 @@ from dataclasses import dataclass
 
 from in_memory_db import InMemoryDb
 
-from tgdb.application.common.ports.tuples import Tuples
+from tgdb.application.common.ports.tuples import (
+    OversizedRelationSchemaError,
+    Tuples,
+)
 from tgdb.entities.horizon.transaction import (
     TransactionEffect,
     TransactionScalarEffect,
 )
 from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.relation import Relation
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import Tuple
 from tgdb.entities.relation.tuple_effect import (
@@ -18,12 +22,18 @@ from tgdb.entities.relation.tuple_effect import (
     MutatedTuple,
     NewTuple,
 )
-from tgdb.infrastructure.telethon.in_telegram_heap import InTelegramHeap
+from tgdb.infrastructure.telethon.in_telegram_heap import (
+    InTelegramHeap,
+    UnacceptableTupleError,
+)
 
 
 @dataclass(frozen=True, unsafe_hash=False)
 class InMemoryTuples(Tuples):
     _db: InMemoryDb[Tuple]
+
+    async def assert_can_accept_tuples(self, relation: Relation) -> None:
+        ...
 
     async def tuples_with_attribute(
         self,
@@ -87,6 +97,15 @@ class InMemoryTuples(Tuples):
 @dataclass(frozen=True)
 class InTelegramHeapTuples(Tuples):
     _heap: InTelegramHeap
+
+    async def assert_can_accept_tuples(self, relation: Relation) -> None:
+        try:
+            self._heap.assert_can_accept_tuples_of_relation(relation)
+        except UnacceptableTupleError as error:
+            raise OversizedRelationSchemaError(
+                error.encoded_tuple_len,
+                self._heap.tuple_max_len(),
+            ) from error
 
     async def tuples_with_attribute(
         self,

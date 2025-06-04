@@ -5,9 +5,11 @@ from tgdb.application.common.ports.relations import (
     NoRelationError,
     NotUniqueRelationNumberError,
 )
+from tgdb.application.common.ports.tuples import OversizedRelationSchemaError
 from tgdb.presentation.fastapi.common.schemas.error import (
     NoRelationSchema,
     NotUniqueRelationNumberSchema,
+    OversizedRelationSchemaSchema,
 )
 from tgdb.presentation.fastapi.horizon.error_handling import (
     add_horizon_error_handling,
@@ -36,4 +38,13 @@ def add_common_error_handling(app: FastAPI) -> None:
         return JSONResponse(
             schema.model_dump(mode="json", by_alias=True),
             status_code=status.HTTP_409_CONFLICT,
+        )
+
+    @app.exception_handler(OversizedRelationSchemaError)
+    def _(error: OversizedRelationSchemaError) -> Response:
+        schema = OversizedRelationSchemaSchema.of(error)
+
+        return JSONResponse(
+            schema.model_dump(mode="json", by_alias=True),
+            status_code=status.HTTP_400_BAD_REQUEST,
         )

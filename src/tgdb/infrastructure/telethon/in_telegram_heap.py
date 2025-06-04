@@ -5,11 +5,18 @@ from typing import cast
 from telethon.hints import TotalList
 
 from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.relation import Relation
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID, Tuple
+from tgdb.entities.tools.assert_ import assert_
 from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 from tgdb.infrastructure.telethon.lazy_message_map import LazyMessageMap
+
+
+@dataclass(frozen=True)
+class UnacceptableTupleError(Exception):
+    encoded_tuple_len: int
 
 
 @dataclass(frozen=True, unsafe_hash=False)
@@ -19,7 +26,38 @@ class InTelegramHeap:
     _pool_to_edit: TelegramClientPool
     _pool_to_delete: TelegramClientPool
     _heap_id: int
+    _encoded_tuple_max_len: int
     _message_map: LazyMessageMap
+
+    def __post_init__(self) -> None:
+        assert_(self._encoded_tuple_max_len < 4000, ValueError)  # noqa: PLR2004
+
+    def tuple_max_len(self) -> int:
+        return self._encoded_tuple_max_len
+
+    def assert_can_accept_tuple(self, tuple: Tuple) -> None:
+        """
+        :raises tgdb.infrastructure.telethon.in_telegram_heap.UnacceptableTupleError:
+        """  # noqa: E501
+
+        encoded_largest_tuple = HeapTupleEncoding.encoded_tuple(tuple)
+
+        if len(encoded_largest_tuple) > self._encoded_tuple_max_len:
+            raise UnacceptableTupleError(len(encoded_largest_tuple))
+
+    def assert_can_accept_tuples_of_relation(
+        self, relation: Relation
+    ) -> None:
+        """
+        :raises tgdb.infrastructure.telethon.in_telegram_heap.UnacceptableTupleError:
+        """  # noqa: E501
+
+        schema = relation.last_version().schema
+        schema_id = relation.last_version_schema_id()
+
+        largest_tuple = HeapTupleEncoding.largest_tuple(schema, schema_id)
+
+        self.assert_can_accept_tuple(largest_tuple)
 
     async def tuples_with_attribute(
         self,

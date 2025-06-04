@@ -6,13 +6,11 @@ from tgdb.entities.relation.relation import Relation
 
 
 @dataclass(frozen=True)
-class NotUniqueRelationNumberError(Exception):
-    relation_number: Number
+class NotUniqueRelationNumberError(Exception): ...
 
 
 @dataclass(frozen=True)
-class NoRelationError(Exception):
-    relation_number: Number
+class NoRelationError(Exception): ...
 
 
 class Relations(ABC):

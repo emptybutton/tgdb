@@ -9,6 +9,7 @@ from tgdb.application.relation.create_relation import CreateRelation
 from tgdb.entities.numeration.number import Number
 from tgdb.presentation.fastapi.common.schemas.error import (
     NotUniqueRelationNumberSchema,
+    OversizedRelationSchemaSchema,
 )
 from tgdb.presentation.fastapi.common.tags import Tag
 from tgdb.presentation.fastapi.relation.schemas.schema import SchemaSchema
@@ -26,6 +27,7 @@ class CreateRelationSchema(BaseModel):
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"content": None},
+        status.HTTP_400_BAD_REQUEST: {"model": OversizedRelationSchemaSchema},
         status.HTTP_409_CONFLICT: {"model": NotUniqueRelationNumberSchema},
     },
     summary="Create relation",

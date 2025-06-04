@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
 
@@ -9,17 +9,11 @@ from tgdb.entities.relation.scalar import Scalar
 class IntDomain:
     min: int
     max: int
-    _is_nonable: bool
-
-    def type(self) -> type[int]:
-        return int
-
-    def is_nonable(self) -> bool:
-        return self._is_nonable
+    is_nonable: bool
 
     def __contains__(self, scalar: Scalar) -> bool:
         if scalar is None:
-            return self._is_nonable
+            return self.is_nonable
 
         return isinstance(scalar, int) and self.min <= scalar <= self.max
 
@@ -27,66 +21,50 @@ class IntDomain:
 @dataclass(frozen=True)
 class StrDomain:
     max_len: int
-    _is_nonable: bool
-
-    def type(self) -> type[str]:
-        return str
-
-    def is_nonable(self) -> bool:
-        return self._is_nonable
+    is_nonable: bool
 
     def __contains__(self, scalar: Scalar) -> bool:
         if scalar is None:
-            return self._is_nonable
+            return self.is_nonable
 
         return isinstance(scalar, str) and len(scalar) <= self.max_len
 
 
 @dataclass(frozen=True)
-class SetDomain[T: int | str | datetime | UUID]:
-    values: tuple[T, ...]
-    _type: type[T]
-    _is_nonable: bool
-
-    def type(self) -> type[T]:
-        return self._type
-
-    def is_nonable(self) -> bool:
-        return self._is_nonable
+class _TypeDomain:
+    is_nonable: bool
+    _type: type = field(init=False)
 
     def __contains__(self, scalar: Scalar) -> bool:
         if scalar is None:
-            return self._is_nonable
+            return self.is_nonable
 
-        return scalar in self.values
+        return scalar is True or scalar is False
 
 
 @dataclass(frozen=True)
-class TypeDomain[T: bool | datetime | UUID]:
-    _type: type[T]
-    _is_nonable: bool
+class BoolDomain(_TypeDomain):
+    _type = bool
 
-    def type(self) -> type[T]:
-        return self._type
 
-    def is_nonable(self) -> bool:
-        return self._is_nonable
+@dataclass(frozen=True)
+class DatetimeDomain(_TypeDomain):
+    _type = datetime
 
-    def __contains__(self, scalar: Scalar) -> bool:
-        if scalar is None:
-            return self._is_nonable
 
-        return isinstance(scalar, self._type)
+@dataclass(frozen=True)
+class UuidDomain(_TypeDomain):
+    _type = UUID
+
+
+type SetDomain = tuple[Scalar, ...]
 
 
 type Domain = (
     IntDomain
     | StrDomain
-    | SetDomain[int]
-    | SetDomain[str]
-    | SetDomain[datetime]
-    | SetDomain[UUID]
-    | TypeDomain[bool]
-    | TypeDomain[datetime]
-    | TypeDomain[UUID]
+    | BoolDomain
+    | DatetimeDomain
+    | UuidDomain
+    | SetDomain
 )

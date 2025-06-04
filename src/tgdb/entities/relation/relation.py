@@ -72,7 +72,7 @@ class Relation:
             else self._initial_version
         )
 
-    def last_version_id(self) -> RelationSchemaID:
+    def last_version_schema_id(self) -> RelationSchemaID:
         return RelationSchemaID(self._number, self.last_version().number)
 
     def recent_versions(

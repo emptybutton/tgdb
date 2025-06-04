@@ -1,10 +1,18 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from tgdb.entities.horizon.transaction import TransactionEffect
 from tgdb.entities.numeration.number import Number
+from tgdb.entities.relation.relation import Relation
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import Tuple
+
+
+@dataclass(frozen=True)
+class OversizedRelationSchemaError(Exception):
+    schema_size: int
+    schema_max_size: int
 
 
 class Tuples(ABC):
@@ -24,3 +32,9 @@ class Tuples(ABC):
     async def map_idempotently(
         self, effects: Sequence[TransactionEffect], /
     ) -> None: ...
+
+    @abstractmethod
+    async def assert_can_accept_tuples(self, relation: Relation) -> None:
+        """
+        :raises tgdb.application.common.ports.tuples.OversizedRelationSchemaError:
+        """  # noqa: E501
