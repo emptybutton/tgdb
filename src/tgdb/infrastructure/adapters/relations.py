@@ -41,7 +41,7 @@ class InMemoryRelations(Relations):
 
 @dataclass
 class InTelegramReplicableRelations(Relations):
-    _in_telegram_encoded_relations: InTelegramBytes
+    _in_tg_encoded_relations: InTelegramBytes
     _cached_relations: InMemoryDb[Relation]
 
     async def __aenter__(self) -> Self:
@@ -86,10 +86,10 @@ class InTelegramReplicableRelations(Relations):
         self._cached_relations.insert(relation)
 
         encoded_cached_relations = pickle.dumps(tuple(self._cached_relations))
-        await self._in_telegram_encoded_relations.set(encoded_cached_relations)
+        await self._in_tg_encoded_relations.set(encoded_cached_relations)
 
     async def _loaded_relations(self) -> tuple[Relation, ...]:
-        encoded_relations = await self._in_telegram_encoded_relations
+        encoded_relations = await self._in_tg_encoded_relations
 
         if encoded_relations is None:
             return tuple()

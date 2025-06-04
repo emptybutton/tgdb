@@ -14,8 +14,8 @@ from tgdb.infrastructure.telethon.in_telegram_bytes import InTelegramBytes
 
 @dataclass(frozen=True, unsafe_hash=False)
 class InMemoryBuffer[ValueT](Buffer[ValueT]):
-    _size_to_overflow: int
-    _overflow_timeout_seconds: int
+    _len_to_overflow: int
+    _overflow_timeout_seconds: int | float
     _values: deque[ValueT]
     _is_overflowed: Event = field(init=False, default_factory=Event)
 
@@ -36,11 +36,11 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
 
             yield tuple(
                 self._values.popleft()
-                for _ in range(self._size_to_overflow)
+                for _ in range(self._len_to_overflow)
             )
 
     def _refresh_overflow(self) -> None:
-        if len(self._values) >= self._size_to_overflow:
+        if len(self._values) >= self._len_to_overflow:
             self._is_overflowed.set()
 
 

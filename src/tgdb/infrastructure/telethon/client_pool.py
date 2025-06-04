@@ -72,7 +72,10 @@ def loaded_client_pool_from_farm_file(
     with farm_file_path.open() as farm_file:
         return TelegramClientPool(deque(
             TelegramClient(
-                StringSession(session_token), app_api_id, app_api_hash
+                StringSession(session_token),
+                app_api_id,
+                app_api_hash,
+                entity_cache=None,
             )
             for session_token in farm_file
             if session_token

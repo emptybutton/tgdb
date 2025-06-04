@@ -1,5 +1,7 @@
-from collections.abc import AsyncIterator, Iterable
-from contextlib import asynccontextmanager
+import asyncio
+from collections.abc import AsyncIterator, Coroutine, Iterable
+from contextlib import asynccontextmanager, suppress
+from typing import Any, cast
 
 from dishka import AsyncContainer
 from dishka.integrations.fastapi import setup_dishka
@@ -8,14 +10,22 @@ from fastapi import APIRouter, FastAPI
 from tgdb.presentation.fastapi.common.tags import tags_metadata
 
 
+type FastAPIAppCoroutines = Iterable[Coroutine[Any, Any, Any]]
 type FastAPIAppRouters = Iterable[APIRouter]
 type FastAPIAppVersion = str
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    yield
-    await app.state.dishka_container.close()
+    with suppress(asyncio.CancelledError):
+        async with asyncio.TaskGroup() as tasks:
+            for coroutine in cast(FastAPIAppCoroutines, app.state.coroutines):
+                tasks.create_task(coroutine)
+
+            yield
+
+            await app.state.dishka_container.close()
+            raise asyncio.CancelledError
 
 
 async def app_from(container: AsyncContainer) -> FastAPI:
@@ -38,6 +48,7 @@ async def app_from(container: AsyncContainer) -> FastAPI:
         docs_url="/",
     )
 
+    app.state.coroutines = await container.get(FastAPIAppCoroutines)
     routers = await container.get(FastAPIAppRouters)
 
     for router in routers:

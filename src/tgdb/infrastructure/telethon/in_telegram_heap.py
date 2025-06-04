@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
+from typing import ClassVar, cast
 
 from telethon.hints import TotalList
 
@@ -29,8 +29,19 @@ class InTelegramHeap:
     _encoded_tuple_max_len: int
     _message_map: LazyMessageMap
 
+    _page_len: ClassVar = 4000
+
+    @staticmethod
+    def encoded_tuple_max_len(page_fullness: float) -> int:
+        page_fullness = min(0, page_fullness)
+        page_fullness = max(page_fullness, 1)
+
+        return int(page_fullness * InTelegramHeap._page_len)
+
     def __post_init__(self) -> None:
-        assert_(self._encoded_tuple_max_len < 4000, ValueError)  # noqa: PLR2004
+        assert_(
+            self._encoded_tuple_max_len <= InTelegramHeap._page_len, ValueError
+        )
 
     def tuple_max_len(self) -> int:
         return self._encoded_tuple_max_len
@@ -82,7 +93,7 @@ class InTelegramHeap:
         )
 
     async def insert_idempotently(self, tuple: Tuple) -> None:
-        message_ = await self._message_map[tuple.tid]
+        message_ = await self._message_map[self._heap_id, tuple.tid]
 
         if message_ is not None:
             return
@@ -90,16 +101,16 @@ class InTelegramHeap:
         new_message = await self._pool_to_insert().send_message(
             self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
         )
-        self._message_map[tuple.tid] = new_message
+        self._message_map[self._heap_id, tuple.tid] = new_message
 
     async def insert(self, tuple: Tuple) -> None:
         new_message = await self._pool_to_insert().send_message(
             self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
         )
-        self._message_map[tuple.tid] = new_message
+        self._message_map[self._heap_id, tuple.tid] = new_message
 
     async def update(self, tuple: Tuple) -> None:
-        message = await self._message_map[tuple.tid]
+        message = await self._message_map[self._heap_id, tuple.tid]
 
         if message is None:
             return
@@ -109,7 +120,7 @@ class InTelegramHeap:
         )
 
     async def delete_tuple_with_tid(self, tid: TID) -> None:
-        message = await self._message_map[tid]
+        message = await self._message_map[self._heap_id, tid]
 
         if message is None:
             return

@@ -7,6 +7,14 @@ conf:
     bots: "/app/deploy/dev/tgdb/bots/bots.txt"
     userbots: "/app/deploy/dev/tgdb/bots/userbots.txt"
 
+  horizon:
+    max_len: 10_000
+    transaction:
+      max_age_seconds: 10
+
+  message_cache:
+    max_len: 1_000_000
+
   heap:
     chat: -1005010263669
     page:
@@ -15,6 +23,7 @@ conf:
   relations:
     chat: -1005000098156
     vacuum:
+      max_workers: 1
       window_delay_seconds: 30
       min_message_count: 1
 
@@ -25,5 +34,6 @@ conf:
       timeout_seconds: 0.1
 
     vacuum:
+      max_workers: 10
       window_delay_seconds: 10
       min_message_count: 200

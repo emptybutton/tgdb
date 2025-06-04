@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from types import TracebackType
 
 from tgdb.application.common.ports.shared_horizon import SharedHorizon
 from tgdb.entities.horizon.horizon import Horizon
 
 
+@dataclass(frozen=True)
 class InMemorySharedHorizon(SharedHorizon):
     _horizon: Horizon
 
