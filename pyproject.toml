@@ -10,13 +10,13 @@ license = { file = "LICENSE" }
 requires-python = ">=3.13"
 dependencies = [
     "telethon>=1.40.0",
-    "websockets>=15.0",
     "in-memory-db>=0.3.0",
     "typenv>=0.2.0",
     "dishka>=1.4.2",
     "fastapi>=0.115.2",
     "pydantic>=2.11.4",
     "uvicorn[standard]>=0.30.6",
+    "pyyaml>=6.0.2",
 ]
 
 [project.urls]

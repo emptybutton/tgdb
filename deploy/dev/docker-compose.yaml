@@ -12,6 +12,8 @@ services:
     volumes:
       - ../..:/app
       - tgdb-data:/run/app
+    environments:
+      CONF_PATH: /app/deploy/dev/tgdb/conf.yaml
     command: bash
 
 volumes:

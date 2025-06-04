@@ -1,0 +1,29 @@
+conf:
+  api:
+    id: 23598539
+    hash: "6d9d7305ffc6f148dab120d24541b127"
+
+  clients:
+    bots: "/app/deploy/dev/tgdb/bots/bots.txt"
+    userbots: "/app/deploy/dev/tgdb/bots/userbots.txt"
+
+  heap:
+    chat: -1005010263669
+    page:
+      fullness: 0.8
+
+  relations:
+    chat: -1005000098156
+    vacuum:
+      window_delay_seconds: 30
+      min_message_count: 1
+
+  buffer:
+    chat: -1005014396610
+    overflow:
+      len: 5000
+      timeout_seconds: 0.1
+
+    vacuum:
+      window_delay_seconds: 10
+      min_message_count: 200
