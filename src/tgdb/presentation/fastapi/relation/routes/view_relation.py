@@ -33,7 +33,7 @@ async def _(
     view_relation: FromDishka[
         ViewRelation[RelationListSchema, RelationSchema | None]
     ],
-    relation_number: Annotated[PositiveInt, Query(alias="relationNumber")],
+    relation_number: PositiveInt,
 ) -> Response:
     view = await view_relation(Number(relation_number))
 

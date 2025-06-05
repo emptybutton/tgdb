@@ -1,11 +1,15 @@
 conf:
+  uvicorn:
+    host: "0.0.0.0"
+    port: 8000
+
   api:
     id: 23598539
     hash: "6d9d7305ffc6f148dab120d24541b127"
 
   clients:
-    bots: "/app/deploy/dev/tgdb/bots/bots.txt"
-    userbots: "/app/deploy/dev/tgdb/bots/userbots.txt"
+    bots: "/app/deploy/dev/tgdb/clients/bots.txt"
+    userbots: "/app/deploy/dev/tgdb/clients/userbots.txt"
 
   horizon:
     max_len: 10_000

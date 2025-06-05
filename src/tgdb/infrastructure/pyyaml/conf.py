@@ -1,8 +1,12 @@
-from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, Field
+
+
+class UvicornConf(BaseModel):
+    host: str
+    port: int
 
 
 class APIConf(BaseModel):
@@ -60,6 +64,7 @@ class BufferConf(BaseModel):
 
 
 class Conf(BaseModel):
+    uvicorn: UvicornConf
     api: APIConf
     clients: ClientsConf
     horizon: HorizonConf

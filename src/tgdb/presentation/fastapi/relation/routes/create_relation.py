@@ -37,7 +37,7 @@ class CreateRelationSchema(BaseModel):
 @inject
 async def _(
     create_relation: FromDishka[CreateRelation],
-    relation_number: Annotated[PositiveInt, Query(alias="relationNumber")],
+    relation_number: PositiveInt,
     request_body: CreateRelationSchema,
 ) -> Response:
     await create_relation(

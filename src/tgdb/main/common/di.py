@@ -24,6 +24,7 @@ from tgdb.application.relation.create_relation import CreateRelation
 from tgdb.application.view_tuples import ViewTuples
 from tgdb.entities.horizon.horizon import Horizon, horizon
 from tgdb.entities.horizon.transaction import PreparedCommit
+from tgdb.entities.relation.relation import Relation
 from tgdb.infrastructure.adapters.buffer import (
     InMemoryBuffer,
     InTelegramReplicablePreparedCommitBuffer,
@@ -35,6 +36,7 @@ from tgdb.infrastructure.adapters.relations import InTelegramReplicableRelations
 from tgdb.infrastructure.adapters.shared_horizon import InMemorySharedHorizon
 from tgdb.infrastructure.adapters.tuples import InTelegramHeapTuples
 from tgdb.infrastructure.adapters.uuids import UUIDs4
+from tgdb.infrastructure.async_map import AsyncMap
 from tgdb.infrastructure.async_queque import AsyncQueque
 from tgdb.infrastructure.pyyaml.conf import Conf, VacuumConf
 from tgdb.infrastructure.telethon.client_pool import (
@@ -53,6 +55,8 @@ from tgdb.infrastructure.typenv.envs import Envs
 
 BotPool = NewType("BotPool", TelegramClientPool)
 UserBotPool = NewType("UserBotPool", TelegramClientPool)
+
+RelationCache = NewType("RelationCache", InMemoryDb[Relation])
 
 
 def conf_vacuum(
@@ -73,12 +77,12 @@ class CommonProvider(Provider):
     provide_clock = provide(PerfCounterClock, provides=Clock, scope=Scope.APP)
     provide_uuids = provide(UUIDs4, provides=UUIDs, scope=Scope.APP)
     provide_queque = provide(
-        lambda: InMemoryQueque(AsyncQueque()),
+        staticmethod(lambda: InMemoryQueque(AsyncQueque())),
         provides=Queque[Sequence[PreparedCommit]],
         scope=Scope.APP
     )
     provide_channel = provide(
-        AsyncMapChannel,
+        staticmethod(lambda: AsyncMapChannel(AsyncMap())),
         provides=Channel,
         scope=Scope.APP,
     )
@@ -175,19 +179,23 @@ class CommonProvider(Provider):
         return InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
 
     @provide(scope=Scope.APP)
+    def provide_relation_cache(self) -> RelationCache:
+        return RelationCache(InMemoryDb())
+
+    @provide(scope=Scope.APP)
     def provide_relations(
         self,
         conf: Conf,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
+        relation_cache: RelationCache,
     ) -> Relations:
         autovacuum = conf_vacuum(conf.relations.vacuum, bot_pool, user_bot_pool)
         in_tg_bytes = InTelegramBytes(
             bot_pool, user_bot_pool, conf.relations.chat, autovacuum
         )
-        cached_relations = InMemoryDb()
 
-        return InTelegramReplicableRelations(in_tg_bytes, cached_relations)
+        return InTelegramReplicableRelations(in_tg_bytes, relation_cache)
 
     provide_commit_transaction = provide(CommitTransaction, scope=Scope.APP)
     provide_output_commits = provide(OutputCommits, scope=Scope.APP)

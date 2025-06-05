@@ -1,7 +1,7 @@
 import asyncio
-from collections.abc import AsyncIterator, Coroutine, Iterable
+from collections.abc import AsyncIterator, Coroutine
 from contextlib import asynccontextmanager, suppress
-from typing import Any, cast
+from typing import Any, NewType, cast
 
 from dishka import AsyncContainer
 from dishka.integrations.fastapi import setup_dishka
@@ -10,9 +10,11 @@ from fastapi import APIRouter, FastAPI
 from tgdb.presentation.fastapi.common.tags import tags_metadata
 
 
-type FastAPIAppCoroutines = Iterable[Coroutine[Any, Any, Any]]
-type FastAPIAppRouters = Iterable[APIRouter]
-type FastAPIAppVersion = str
+FastAPIAppCoroutines = NewType(
+    "FastAPIAppCoroutines", tuple[Coroutine[Any, Any, Any], ...]
+)
+FastAPIAppRouters = NewType("FastAPIAppRouters", tuple[APIRouter, ...])
+FastAPIAppVersion = NewType("FastAPIAppVersion", str)
 
 
 @asynccontextmanager

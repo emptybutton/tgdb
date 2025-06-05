@@ -8,8 +8,11 @@ from types import TracebackType
 from typing import Self, cast
 
 from telethon import TelegramClient
-from telethon.sessions.string import StringSession
 from telethon.types import InputPeerUser
+
+from tgdb.infrastructure.telethon.string_session_without_entites import (
+    StringSessionWithoutEntites,
+)
 
 
 @dataclass(frozen=True, unsafe_hash=False)
@@ -21,6 +24,11 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     )
 
     async def __aenter__(self) -> Self:
+        await gather(*(
+            client.__aenter__()  # type: ignore[no-untyped-call]
+            for client in self._clients
+        ))
+
         for client in self._clients:
             client_info = (
                 cast(InputPeerUser, await client.get_me(input_peer=True))
@@ -28,11 +36,6 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
             client_id = client_info.user_id
 
             self._client_by_id[client_id] = client
-
-        await gather(*(
-            client.__aenter__()  # type: ignore[no-untyped-call]
-            for client in self._clients
-        ))
 
         return self
 
@@ -71,12 +74,19 @@ def loaded_client_pool_from_farm_file(
 ) -> TelegramClientPool:
     with farm_file_path.open() as farm_file:
         return TelegramClientPool(deque(
-            TelegramClient(
-                StringSession(session_token),
-                app_api_id,
-                app_api_hash,
-                entity_cache=None,
-            )
+            pool_client(session_token, app_api_id, app_api_hash)
             for session_token in farm_file
             if session_token
         ))
+
+
+def pool_client(
+    session_token: str, app_api_id: int, app_api_hash: str
+) -> TelegramClient:
+    print(session_token)
+    return TelegramClient(
+        StringSessionWithoutEntites(session_token),
+        app_api_id,
+        app_api_hash,
+        entity_cache_limit=0,
+    )

@@ -1,5 +1,4 @@
-from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 from weakref import WeakSet
 
 from pytest import fixture, mark, raises
@@ -17,8 +16,6 @@ from tgdb.entities.horizon.transaction import (
     ConflictError,
     IsolationLevel,
     PreparedCommit,
-    SerializableTransaction,
-    Transaction,
 )
 from tgdb.entities.relation.tuple import tuple_
 from tgdb.entities.relation.tuple_effect import MutatedTuple, NewTuple

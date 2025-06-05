@@ -12,9 +12,11 @@ services:
     volumes:
       - ../..:/app
       - tgdb-data:/run/app
-    environments:
+    environment:
       CONF_PATH: /app/deploy/dev/tgdb/conf.yaml
-    command: bash
+    ports:
+      - 8000:8000
+    command: tgdb-dev
 
 volumes:
   tgdb-data: null
