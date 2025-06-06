@@ -1,10 +1,9 @@
 from collections.abc import Iterable
-from typing import Annotated
 
 from dishka.integrations.fastapi import FromDishka, inject
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 
 from tgdb.application.relation.view_tuples import ViewTuples
 from tgdb.entities.horizon.transaction import XID
@@ -14,13 +13,18 @@ from tgdb.entities.relation.tuple import Tuple
 from tgdb.presentation.fastapi.common.schemas.error import NoRelationSchema
 from tgdb.presentation.fastapi.common.tags import Tag
 from tgdb.presentation.fastapi.horizon.schemas.error import (
-    InvalidTransactionStateSchema,
     NoTransactionSchema,
+    TransactionCommittingSchema,
 )
 from tgdb.presentation.fastapi.relation.schemas.tuple import TupleSchema
 
 
 view_tuples_router = APIRouter()
+
+
+class ViewTupleSchema(BaseModel):
+    attribute_number: PositiveInt = Field(alias="attributeNumber")
+    attribute_scalar: Scalar = Field(alias="attributeScalar")
 
 
 class ViewedTuplesSchema(BaseModel):
@@ -38,7 +42,7 @@ class ViewedTuplesSchema(BaseModel):
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": ViewedTuplesSchema},
-        status.HTTP_400_BAD_REQUEST: {"model": InvalidTransactionStateSchema},
+        status.HTTP_400_BAD_REQUEST: {"model": TransactionCommittingSchema},
         status.HTTP_404_NOT_FOUND: {
             "model": NoRelationSchema | NoTransactionSchema
         },
@@ -51,15 +55,14 @@ class ViewedTuplesSchema(BaseModel):
 async def _(
     view_tuples: FromDishka[ViewTuples],
     relation_number: PositiveInt,
-    attribute_number: Annotated[PositiveInt, Query(alias="attributeNumber")],
-    attribute_scalar: Annotated[Scalar, Query(alias="attributeScalar")],
+    request_body: ViewTupleSchema,
     xid: XID | None = None,
 ) -> Response:
     tuples = await view_tuples(
         xid,
         Number(relation_number),
-        Number(attribute_number),
-        attribute_scalar,
+        Number(request_body.attribute_number),
+        request_body.attribute_scalar,
     )
 
     response_body_model = ViewedTuplesSchema.of(tuples)

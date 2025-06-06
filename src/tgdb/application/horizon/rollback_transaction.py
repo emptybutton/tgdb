@@ -15,6 +15,7 @@ class RollbackTransaction:
     async def __call__(self, xid: XID) -> None:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
+        :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         """
 
         time = await self.clock

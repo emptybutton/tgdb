@@ -2,13 +2,13 @@ from fastapi import FastAPI, Response, status
 from fastapi.responses import JSONResponse
 
 from tgdb.entities.horizon.horizon import (
-    InvalidTransactionStateError,
     NoTransactionError,
+    TransactionCommittingError,
 )
 from tgdb.entities.horizon.transaction import ConflictError
 from tgdb.presentation.fastapi.horizon.schemas.error import (
-    InvalidTransactionStateSchema,
     NoTransactionSchema,
+    TransactionCommittingSchema,
     TransactionConflictSchema,
 )
 
@@ -30,10 +30,10 @@ def add_horizon_error_handling(app: FastAPI) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
-    @app.exception_handler(InvalidTransactionStateError)
+    @app.exception_handler(TransactionCommittingError)
     def _(_: object, __: object) -> Response:
-        schema = InvalidTransactionStateSchema()
+        schema = TransactionCommittingSchema()
         return JSONResponse(
             schema.model_dump(mode="json", by_alias=True),
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_400_BAD_REQUEST,
         )

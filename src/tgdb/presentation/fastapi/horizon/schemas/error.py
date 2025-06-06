@@ -29,10 +29,10 @@ class NoTransactionSchema(BaseModel):
     type: Literal["noTransaction"] = "noTransaction"
 
 
-class InvalidTransactionStateSchema(BaseModel):
+class TransactionCommittingSchema(BaseModel):
     """
-    The transaction exists, but the action cannot be applied because the order
-    of operations is incorrect.
+    Transaction is in the process of being committed, so it cannot be changed
+    at this time.
     """
 
-    type: Literal["invalidTransactionState"] = "invalidTransactionState"
+    type: Literal["transactionCommitting"] = "transactionCommitting"

@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from tgdb.application.horizon.ports.channel import Channel, Notification
 from tgdb.entities.horizon.horizon import (
-    InvalidTransactionStateError,
     NoTransactionError,
+    TransactionNotCommittingError,
 )
 from tgdb.entities.horizon.transaction import XID
 from tgdb.infrastructure.async_map import AsyncMap
@@ -13,14 +13,14 @@ from tgdb.infrastructure.async_map import AsyncMap
 @dataclass(frozen=True)
 class AsyncMapChannel(Channel):
     _async_map: AsyncMap[
-        XID, NoTransactionError | InvalidTransactionStateError | None
+        XID, NoTransactionError | TransactionNotCommittingError | None
     ]
 
     async def publish(
         self,
         ok_commit_xids: Sequence[XID],
         error_commit_map: Mapping[
-            XID, NoTransactionError | InvalidTransactionStateError
+            XID, NoTransactionError | TransactionNotCommittingError
         ],
     ) -> None:
         for ok_commit_xid in ok_commit_xids:

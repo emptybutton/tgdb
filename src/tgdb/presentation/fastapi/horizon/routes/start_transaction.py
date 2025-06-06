@@ -6,9 +6,6 @@ from pydantic import BaseModel, Field
 from tgdb.application.horizon.start_transaction import StartTransaction
 from tgdb.entities.horizon.transaction import XID
 from tgdb.presentation.fastapi.common.tags import Tag
-from tgdb.presentation.fastapi.horizon.schemas.error import (
-    InvalidTransactionStateSchema,
-)
 from tgdb.presentation.fastapi.horizon.schemas.isolation_level import (
     IsolationLevelSchema,
 )
@@ -30,7 +27,6 @@ class StartedTransactionSchema(BaseModel):
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {"model": StartedTransactionSchema},
-        status.HTTP_400_BAD_REQUEST: {"model": InvalidTransactionStateSchema},
     },
     summary="Start transaction",
     description="Start transaction.",

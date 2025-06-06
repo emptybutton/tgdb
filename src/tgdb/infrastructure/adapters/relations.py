@@ -24,7 +24,7 @@ class InMemoryRelations(Relations):
             lambda it: it.number() == relation_number
         )
         if relation is None:
-            raise NoRelationError
+            raise NoRelationError(relation_number)
 
         return relation
 

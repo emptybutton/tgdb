@@ -4,8 +4,8 @@ from weakref import WeakSet
 from pytest import fixture, mark, raises
 
 from tgdb.entities.horizon.horizon import (
+    DoubleStartTransactionError,
     Horizon,
-    InvalidTransactionStateError,
     NoTransactionError,
 )
 from tgdb.entities.horizon.horizon import (
@@ -128,10 +128,8 @@ def test_with_two_start(horizon: Horizon) -> None:
         2, UUID(int=1), IsolationLevel.serializable
     )
 
-    with raises(InvalidTransactionStateError):
-        horizon.start_transaction(
-            3, UUID(int=1), IsolationLevel.serializable
-        )
+    with raises(DoubleStartTransactionError):
+        horizon.start_transaction(3, UUID(int=1), IsolationLevel.serializable)
 
 
 @mark.parametrize("object", ["bool", "len"])

@@ -7,8 +7,8 @@ from tgdb.application.common.ports.queque import Queque
 from tgdb.application.horizon.ports.channel import Channel
 from tgdb.application.horizon.ports.shared_horizon import SharedHorizon
 from tgdb.entities.horizon.horizon import (
-    InvalidTransactionStateError,
     NoTransactionError,
+    TransactionNotCommittingError,
 )
 from tgdb.entities.horizon.transaction import XID, Commit, PreparedCommit
 
@@ -28,7 +28,7 @@ class OutputCommits:
 
             ok_commit_xids = list[XID]()
             error_commit_map = dict[
-                XID, NoTransactionError | InvalidTransactionStateError
+                XID, NoTransactionError | TransactionNotCommittingError
             ]()
 
             async with self.shared_horizon as horizon:
@@ -38,7 +38,7 @@ class OutputCommits:
                     try:
                         horizon.complete_commit(time, prepared_commit.xid)
                     except (
-                        NoTransactionError, InvalidTransactionStateError
+                        NoTransactionError, TransactionNotCommittingError
                     ) as error:
                         error_commit_map[prepared_commit.xid] = error
                     else:

@@ -3,15 +3,15 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from tgdb.entities.horizon.horizon import (
-    InvalidTransactionStateError,
     NoTransactionError,
+    TransactionNotCommittingError,
 )
 from tgdb.entities.horizon.transaction import XID
 
 
 @dataclass(frozen=True)
 class Notification:
-    error: NoTransactionError | InvalidTransactionStateError | None
+    error: NoTransactionError | TransactionNotCommittingError | None
 
 
 class Channel(ABC):
@@ -20,7 +20,7 @@ class Channel(ABC):
         self,
         ok_commit_xids: Sequence[XID],
         error_commit_map: Mapping[
-            XID, NoTransactionError | InvalidTransactionStateError
+            XID, NoTransactionError | TransactionNotCommittingError
         ],
         /,
     ) -> None: ...

@@ -16,10 +16,6 @@ class StartTransaction:
     clock: Clock
 
     async def __call__(self, isolation_level: IsolationLevel) -> XID:
-        """
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
-        """
-
         time = await self.clock
         xid = await self.uuids.random_uuid()
 

@@ -5,10 +5,20 @@ from fastapi.responses import Response
 from tgdb.application.horizon.rollback_transaction import RollbackTransaction
 from tgdb.entities.horizon.transaction import XID
 from tgdb.presentation.fastapi.common.tags import Tag
-from tgdb.presentation.fastapi.horizon.schemas.error import NoTransactionSchema
+from tgdb.presentation.fastapi.horizon.schemas.error import (
+    NoTransactionSchema,
+    TransactionCommittingSchema,
+)
 
 
 rollback_transaction_router = APIRouter()
+
+description = """
+Roll back the transaction as if it had never started.
+
+If the transaction cannot be rolled back, it will be rolled back automatically
+over time.
+"""
 
 
 @rollback_transaction_router.delete(
@@ -16,13 +26,11 @@ rollback_transaction_router = APIRouter()
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_204_NO_CONTENT: {"content": None},
+        status.HTTP_400_BAD_REQUEST: {"model": TransactionCommittingSchema},
         status.HTTP_404_NOT_FOUND: {"model": NoTransactionSchema},
     },
     summary="Rollback transaction",
-    description=(
-        "If you don't roll back a transaction"
-        ", it will roll back itself over time."
-    ),
+    description=description,
     tags=[Tag.transaction],
 )
 @inject

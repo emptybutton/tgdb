@@ -41,7 +41,7 @@ class CommitTransaction:
         """
         :raises tgdb.application.relation.ports.relations.NoRelationError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
         """
 

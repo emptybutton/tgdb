@@ -30,7 +30,13 @@ from tgdb.entities.tools.map import first_map_value
 class NoTransactionError(Exception): ...
 
 
-class InvalidTransactionStateError(Exception): ...
+class DoubleStartTransactionError(Exception): ...
+
+
+class TransactionCommittingError(Exception): ...
+
+
+class TransactionNotCommittingError(Exception): ...
 
 
 class HorizonAlwaysWithoutTransactionsError(Exception): ...
@@ -76,12 +82,12 @@ class Horizon:
     ) -> XID:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises tgdb.entities.horizon.horizon.DoubleStartTransactionError:
         """
 
         assert_(
             all(xid not in map for map in self._transaction_maps()),
-            else_=InvalidTransactionStateError,
+            else_=DoubleStartTransactionError,
         )
 
         started_transaction = start_transaction(
@@ -107,13 +113,15 @@ class Horizon:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         """
 
         self.move_to_future(time)
 
         transaction = self._transaction(
-            xid, SerializableTransactionState.active
+            xid,
+            SerializableTransactionState.active,
+            else_=TransactionCommittingError,
         )
         transaction.include(effect)
 
@@ -121,11 +129,16 @@ class Horizon:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
+        :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         """
 
         self.move_to_future(time)
 
-        transaction = self._transaction(xid)
+        transaction = self._transaction(
+            xid,
+            SerializableTransactionState.active,
+            else_=TransactionCommittingError,
+        )
         transaction.rollback()
         del self._transaction_map(transaction)[transaction.xid()]
 
@@ -138,14 +151,15 @@ class Horizon:
         """
         :raises tgdb.entities.horizon.horizon.NotMonotonicTimeError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
         """
 
         self.move_to_future(time)
 
         transaction = self._transaction(
-            xid, SerializableTransactionState.active
+            xid, SerializableTransactionState.active,
+            else_=TransactionCommittingError(),
         )
 
         for effect in effects:
@@ -165,7 +179,7 @@ class Horizon:
     def complete_commit(self, time: LogicTime, xid: XID) -> Commit:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises tgdb.entities.horizon.horizon.TransactionNotCommittingError:
         """
 
         self.move_to_future(time)
@@ -173,6 +187,7 @@ class Horizon:
         transaction = self._serializable_transaction(
             xid,
             SerializableTransactionState.prepared,
+            else_=TransactionNotCommittingError,
         )
 
         commit = transaction.commit()
@@ -236,10 +251,12 @@ class Horizon:
         self,
         xid: XID,
         state: SerializableTransactionState | None = None,
+        *,
+        else_: Exception | type[Exception],
     ) -> SerializableTransaction:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises else_:
         """
 
         transaction = self._serializable_transaction_map.get(xid)
@@ -251,7 +268,7 @@ class Horizon:
             transaction.rollback()
             del self._serializable_transaction_map[xid]
 
-            raise InvalidTransactionStateError
+            raise else_
 
         return transaction
 
@@ -273,16 +290,18 @@ class Horizon:
         self,
         xid: XID,
         state: SerializableTransactionState | None = None,
+        *,
+        else_: Exception | type[Exception],
     ) -> Transaction:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
-        :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
+        :raises else_:
         """
 
         with suppress(NoTransactionError):
             return self._non_serializable_read_transaction(xid)
 
-        return self._serializable_transaction(xid, state)
+        return self._serializable_transaction(xid, state, else_=else_)
 
     def _transaction_maps(self) -> Iterable[Mapping[XID, Transaction]]:
         yield self._serializable_transaction_map

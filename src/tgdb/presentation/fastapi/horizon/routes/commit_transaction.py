@@ -10,8 +10,8 @@ from tgdb.entities.horizon.transaction import (
 from tgdb.presentation.fastapi.common.schemas.operator import OperatorSchema
 from tgdb.presentation.fastapi.common.tags import Tag
 from tgdb.presentation.fastapi.horizon.schemas.error import (
-    InvalidTransactionStateSchema,
     NoTransactionSchema,
+    TransactionCommittingSchema,
     TransactionConflictSchema,
 )
 
@@ -19,14 +19,16 @@ from tgdb.presentation.fastapi.horizon.schemas.error import (
 commit_transaction_router = APIRouter()
 
 description = """
-Write down all a transaction statements and commit it.
+Record all transaction operators and commit them.
 
-Transactions can be automatically rolled back if:
-1. They violate serializability
-2. The server crashed
-3. The server ran out of space for active transactions
+A transaction may fail to commit in the following cases:
+1. It is a serializable transaction that conflicts with another serializable transaction.
+2. The server runs out of space for active transactions and rolls back your transaction.
+3. The transaction rolled back due to timeout.
+4. The server crashes.
 
-Therefore, in case of any negative response, you should retry transactions in full, and not just send a new commit.
+If the commit fails, all changes in the transaction will not be applied.
+Therefore, for any negative response, retry the entire transaction.
 """  # noqa: E501
 
 
@@ -40,9 +42,7 @@ class CommitTransactionSchema(BaseModel):
     responses={
         status.HTTP_204_NO_CONTENT: {"content": None},
         status.HTTP_404_NOT_FOUND: {"model": NoTransactionSchema},
-        status.HTTP_400_BAD_REQUEST: {
-            "model": InvalidTransactionStateSchema
-        },
+        status.HTTP_400_BAD_REQUEST: {"model": TransactionCommittingSchema},
         status.HTTP_409_CONFLICT: {"model": TransactionConflictSchema},
     },
     summary="Commit transaction",
