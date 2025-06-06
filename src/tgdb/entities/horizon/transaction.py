@@ -36,11 +36,6 @@ class ConflictError(Exception):
 
 
 @dataclass(frozen=True)
-class NonSerializableWriteTransactionError(Exception):
-    xid: XID
-
-
-@dataclass(frozen=True)
 class Commit:
     xid: XID
     effect: TransactionEffect

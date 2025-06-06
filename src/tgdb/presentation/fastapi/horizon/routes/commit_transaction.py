@@ -11,7 +11,6 @@ from tgdb.presentation.fastapi.common.schemas.operator import OperatorSchema
 from tgdb.presentation.fastapi.common.tags import Tag
 from tgdb.presentation.fastapi.horizon.schemas.error import (
     InvalidTransactionStateSchema,
-    NonSerializableWriteTransactioneSchema,
     NoTransactionSchema,
     TransactionConflictSchema,
 )
@@ -42,10 +41,7 @@ class CommitTransactionSchema(BaseModel):
         status.HTTP_204_NO_CONTENT: {"content": None},
         status.HTTP_404_NOT_FOUND: {"model": NoTransactionSchema},
         status.HTTP_400_BAD_REQUEST: {
-            "model": (
-                InvalidTransactionStateSchema
-                | NonSerializableWriteTransactioneSchema
-            )
+            "model": InvalidTransactionStateSchema
         },
         status.HTTP_409_CONFLICT: {"model": TransactionConflictSchema},
     },

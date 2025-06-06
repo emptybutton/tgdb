@@ -5,10 +5,7 @@ from tgdb.entities.horizon.horizon import (
     InvalidTransactionStateError,
     NoTransactionError,
 )
-from tgdb.entities.horizon.transaction import (
-    ConflictError,
-    NonSerializableWriteTransactionError,
-)
+from tgdb.entities.horizon.transaction import ConflictError
 from tgdb.presentation.fastapi.horizon.schemas.error import (
     InvalidTransactionStateSchema,
     NoTransactionSchema,
@@ -34,14 +31,6 @@ def add_horizon_error_handling(app: FastAPI) -> None:
         )
 
     @app.exception_handler(InvalidTransactionStateError)
-    def _(_: object, __: object) -> Response:
-        schema = InvalidTransactionStateSchema()
-        return JSONResponse(
-            schema.model_dump(mode="json", by_alias=True),
-            status_code=status.HTTP_404_NOT_FOUND,
-        )
-
-    @app.exception_handler(NonSerializableWriteTransactionError)
     def _(_: object, __: object) -> Response:
         schema = InvalidTransactionStateSchema()
         return JSONResponse(

@@ -9,7 +9,6 @@ from tgdb.entities.horizon.transaction import (
     Commit,
     ConflictError,
     IsolationLevel,
-    NonSerializableWriteTransactionError,
     PreparedCommit,
     ReadUncommitedTransaction,
     SerializableTransaction,
@@ -40,12 +39,7 @@ class HorizonAlwaysWithoutTransactionsError(Exception): ...
 class NotMonotonicTimeError(Exception): ...
 
 
-class InvalidEffectsError(Exception): ...
-
-
-type HorizonWriteEffect = (
-    NewTuple | MutatedTuple | DeletedTuple | Claim
-)
+type HorizonWriteEffect = NewTuple | MutatedTuple | DeletedTuple | Claim
 
 
 @dataclass
@@ -146,8 +140,7 @@ class Horizon:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
-        :raises tgdb.entities.horizon.transaction.NonSerializableWriteTransactionError:
-        """  # noqa: E501
+        """
 
         self.move_to_future(time)
 
@@ -165,7 +158,7 @@ class Horizon:
                 case ReadUncommitedTransaction():
                     del self._transaction_map(transaction)[xid]
                     return transaction.commit()
-        except (ConflictError, NonSerializableWriteTransactionError) as error:
+        except ConflictError as error:
             del self._transaction_map(transaction)[xid]
             raise error from error
 

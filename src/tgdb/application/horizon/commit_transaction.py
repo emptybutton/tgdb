@@ -43,8 +43,7 @@ class CommitTransaction:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
-        :raises tgdb.entities.horizon.transaction.NonSerializableWriteTransactionError:
-        """  # noqa: E501
+        """
 
         effects = await gather(*map(self._effect, operators))
         time = await self.clock

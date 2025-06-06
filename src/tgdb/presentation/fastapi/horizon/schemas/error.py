@@ -36,13 +36,3 @@ class InvalidTransactionStateSchema(BaseModel):
     """
 
     type: Literal["invalidTransactionState"] = "invalidTransactionState"
-
-
-class NonSerializableWriteTransactioneSchema(BaseModel):
-    """
-    Transaction write could not be serialized.
-    """
-
-    type: Literal["nonSerializableWriteTransaction"] = (
-        "nonSerializableWriteTransaction"
-    )
