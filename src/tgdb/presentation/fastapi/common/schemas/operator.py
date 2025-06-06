@@ -7,7 +7,6 @@ from tgdb.application.common.operator import (
     DeletedTupleOperator,
     MutatedTupleOperator,
     NewTupleOperator,
-    Operator,
 )
 from tgdb.entities.horizon.claim import Claim
 from tgdb.entities.numeration.number import Number
@@ -59,10 +58,3 @@ type OperatorSchema = (
     | DeleteOperatorSchema
     | ClaimOperatorSchema
 )
-
-
-class OperatorListSchema(BaseModel):
-    operators: tuple[OperatorSchema, ...]
-
-    def decoded(self) -> tuple[Operator, ...]:
-        return tuple(operator.decoded() for operator in self.operators)

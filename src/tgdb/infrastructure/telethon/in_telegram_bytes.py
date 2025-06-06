@@ -32,12 +32,11 @@ class InTelegramBytes(Awaitable[bytes | None]):
             return self._cached_stored_bytes
 
         await self._refresh()
-
         return self._cached_stored_bytes
 
     async def _refresh(self) -> None:
         messages = await self._pool_to_select().get_messages(
-            self._chat_id, limit=1
+            self._chat_id, limit=1, min_id=1
         )
         messages = cast(TotalList, messages)
 

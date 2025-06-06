@@ -2,7 +2,6 @@ import pickle
 from asyncio import Event, wait_for
 from collections import deque
 from collections.abc import AsyncIterator, Sequence
-from contextlib import suppress
 from dataclasses import dataclass, field
 from types import TracebackType
 from typing import Self
@@ -28,12 +27,15 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
 
     async def __aiter__(self) -> AsyncIterator[Sequence[ValueT]]:
         while True:
-            with suppress(TimeoutError):
+            try:
                 await wait_for(
                     self._is_overflowed.wait(), self._overflow_timeout_seconds
                 )
-                self._is_overflowed.clear()
+            except TimeoutError:
+                if not self._values:
+                    continue
 
+            self._is_overflowed.clear()
             yield tuple(
                 self._values.popleft()
                 for _ in range(self._len_to_overflow)

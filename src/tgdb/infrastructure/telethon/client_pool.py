@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
 from typing import Self, cast
+from warnings import filterwarnings
 
 from telethon import TelegramClient
 from telethon.types import InputPeerUser
@@ -83,6 +84,16 @@ def loaded_client_pool_from_farm_file(
 def pool_client(
     session_token: str, app_api_id: int, app_api_hash: str
 ) -> TelegramClient:
+    filterwarnings(
+        "ignore",
+        category=UserWarning,
+        module="telethon.client.updates",
+        message=(
+            "in-memory entities exceed entity_cache_limit after flushing;"
+            " consider setting a larger limit"
+        ),
+    )
+
     return TelegramClient(
         StringSessionWithoutEntites(session_token),
         app_api_id,

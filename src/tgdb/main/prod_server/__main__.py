@@ -9,14 +9,14 @@ from tgdb.presentation.fastapi.common.app import app_from
 
 async def amain() -> None:
     app = await app_from(server_container)
-    conf = await server_container.get(Conf)
+    tgdb_config = await server_container.get(Conf)
 
-    config = uvicorn.Config(
+    uvicorn_config = uvicorn.Config(
         app,
-        host=conf.uvicorn.host,
-        port=conf.uvicorn.port,
+        host=tgdb_config.uvicorn.host,
+        port=tgdb_config.uvicorn.port,
     )
-    server = uvicorn.Server(config)
+    server = uvicorn.Server(uvicorn_config)
 
     await server.serve()
 

@@ -2,7 +2,7 @@ from collections import deque
 from collections.abc import AsyncIterator, Sequence
 from typing import NewType
 
-from dishka import Provider, Scope, provide
+from dishka import Provider, Scope, make_container, provide
 from in_memory_db import InMemoryDb
 
 from tgdb.application.common.ports.buffer import Buffer
@@ -58,6 +58,14 @@ UserBotPool = NewType("UserBotPool", TelegramClientPool)
 RelationCache = NewType("RelationCache", InMemoryDb[Relation])
 
 
+class MainIOProvider(Provider):
+    provide_envs = provide(Envs.load, scope=Scope.APP)
+
+    @provide(scope=Scope.APP)
+    def provide_conf(self, envs: Envs) -> Conf:
+        return Conf.load(envs.conf_path)
+
+
 class CommonProvider(Provider):
     provide_clock = provide(PerfCounterClock, provides=Clock, scope=Scope.APP)
     provide_uuids = provide(UUIDs4, provides=UUIDs, scope=Scope.APP)
@@ -71,11 +79,6 @@ class CommonProvider(Provider):
         provides=Channel,
         scope=Scope.APP,
     )
-    provide_envs = provide(Envs.load, scope=Scope.APP)
-
-    @provide(scope=Scope.APP)
-    def provide_conf(self, envs: Envs) -> Conf:
-        return Conf.load(envs.conf_path)
 
     @provide(scope=Scope.APP)
     async def provide_bot_pool(self, conf: Conf) -> AsyncIterator[BotPool]:
@@ -200,3 +203,6 @@ class CommonProvider(Provider):
     provide_create_relations = provide(CreateRelation, scope=Scope.APP)
 
     provide_view_tuples = provide(ViewTuples, scope=Scope.APP)
+
+
+main_io_container = make_container(MainIOProvider())

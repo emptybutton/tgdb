@@ -8,7 +8,7 @@ from tgdb.application.horizon.output_commits_to_tuples import (
 )
 from tgdb.application.relation.view_all_relations import ViewAllRelations
 from tgdb.application.relation.view_relation import ViewRelation
-from tgdb.main.common.di import CommonProvider, RelationCache
+from tgdb.main.common.di import CommonProvider, MainIOProvider, RelationCache
 from tgdb.presentation.adapters.relation_views import (
     RelationSchemasFromInMemoryDbAsRelationViews,
 )
@@ -60,4 +60,6 @@ class FastAPIProvider(Provider):
         return FastAPIAppVersion(__version__)
 
 
-server_container = make_async_container(CommonProvider(), FastAPIProvider())
+server_container = make_async_container(
+    MainIOProvider(), CommonProvider(), FastAPIProvider()
+)

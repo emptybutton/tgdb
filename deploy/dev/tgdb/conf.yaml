@@ -20,7 +20,7 @@ conf:
     max_len: 1_000_000
 
   heap:
-    chat: -1005010263669
+    chat: -1005000124280
     page:
       fullness: 0.8
 
@@ -28,7 +28,7 @@ conf:
     chat: -1005000098156
 
   buffer:
-    chat: -1005014396610
+    chat: -1005000896039
     overflow:
       len: 5000
       timeout_seconds: 0.1
