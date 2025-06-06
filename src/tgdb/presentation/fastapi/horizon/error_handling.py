@@ -18,7 +18,7 @@ from tgdb.presentation.fastapi.horizon.schemas.error import (
 
 def add_horizon_error_handling(app: FastAPI) -> None:
     @app.exception_handler(ConflictError)
-    def _(conflict: ConflictError) -> Response:
+    def _(_: object, conflict: ConflictError) -> Response:
         schema = TransactionConflictSchema.of(conflict)
 
         return JSONResponse(
@@ -27,14 +27,14 @@ def add_horizon_error_handling(app: FastAPI) -> None:
         )
 
     @app.exception_handler(NoTransactionError)
-    def _(_: object) -> Response:
+    def _(_: object, __: object) -> Response:
         return JSONResponse(
             NoTransactionSchema().model_dump(mode="json", by_alias=True),
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
     @app.exception_handler(InvalidTransactionStateError)
-    def _(_: object) -> Response:
+    def _(_: object, __: object) -> Response:
         schema = InvalidTransactionStateSchema()
         return JSONResponse(
             schema.model_dump(mode="json", by_alias=True),
@@ -42,7 +42,7 @@ def add_horizon_error_handling(app: FastAPI) -> None:
         )
 
     @app.exception_handler(NonSerializableWriteTransactionError)
-    def _(_: object) -> Response:
+    def _(_: object, __: object) -> Response:
         schema = InvalidTransactionStateSchema()
         return JSONResponse(
             schema.model_dump(mode="json", by_alias=True),

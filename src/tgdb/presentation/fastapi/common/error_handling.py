@@ -23,7 +23,7 @@ def add_error_handling(app: FastAPI) -> None:
 
 def add_common_error_handling(app: FastAPI) -> None:
     @app.exception_handler(NoRelationError)
-    def _(_: object) -> Response:
+    def _(_: object, __: object) -> Response:
         schema = NoRelationSchema()
 
         return JSONResponse(
@@ -32,7 +32,7 @@ def add_common_error_handling(app: FastAPI) -> None:
         )
 
     @app.exception_handler(NotUniqueRelationNumberError)
-    def _(_: object) -> Response:
+    def _(_: object, __: object) -> Response:
         schema = NotUniqueRelationNumberSchema()
 
         return JSONResponse(
@@ -41,7 +41,7 @@ def add_common_error_handling(app: FastAPI) -> None:
         )
 
     @app.exception_handler(OversizedRelationSchemaError)
-    def _(error: OversizedRelationSchemaError) -> Response:
+    def _(_: object, error: OversizedRelationSchemaError) -> Response:
         schema = OversizedRelationSchemaSchema.of(error)
 
         return JSONResponse(

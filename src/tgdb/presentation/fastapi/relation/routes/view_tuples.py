@@ -34,7 +34,7 @@ class ViewedTuplesSchema(BaseModel):
 
 
 @view_tuples_router.post(
-    "/transactions/{xid}/viewed-tuples",
+    "/relations/{relation_number}/viewed-tuples",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": ViewedTuplesSchema},
@@ -51,7 +51,7 @@ class ViewedTuplesSchema(BaseModel):
 async def _(
     view_tuples: FromDishka[ViewTuples],
     xid: XID,
-    relation_number: Annotated[PositiveInt, Query(alias="relationNumber")],
+    relation_number: PositiveInt,
     attribute_number: Annotated[PositiveInt, Query(alias="attributeNumber")],
     attribute_scalar: Annotated[Scalar, Query(alias="attributeScalar")],
 ) -> Response:
