@@ -3,9 +3,8 @@ from typing import cast
 from telethon.hints import TotalList
 from telethon.tl.types import Message
 
-from tgdb.entities.relation.tuple import TID
 from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
-from tgdb.infrastructure.lazy_map import ExternalValue, LazyMap, NoExternalValue
+from tgdb.infrastructure.lazy_map import LazyMap
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
 from tgdb.infrastructure.telethon.index import (
     MessageIndex,

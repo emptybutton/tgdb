@@ -33,7 +33,7 @@ class CommitTransaction:
     clock: Clock
     relations: Relations
     channel: Channel
-    commit_buffer: Buffer[PreparedCommit]
+    commit_buffer: Buffer[Commit | PreparedCommit]
 
     async def __call__(
         self, xid: XID, operators: Sequence[Operator]
@@ -51,9 +51,6 @@ class CommitTransaction:
 
         async with self.shared_horizon as horizon:
             commit = horizon.commit_transaction(time, xid, effects)
-
-        if isinstance(commit, Commit):
-            return
 
         notification, _ = await gather(
             self.channel.wait(commit.xid),

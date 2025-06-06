@@ -233,11 +233,10 @@ class SerializableTransaction:
 
 
 @dataclass
-class NonSerializableReadTransaction:
+class ReadUncommitedTransaction:
     _xid: XID
     _start_time: LogicTime
-    _is_readonly: bool
-    _is_completed: bool
+    _space: dict[TID, TupleEffect]
 
     def xid(self) -> XID:
         return self._xid
@@ -249,41 +248,33 @@ class NonSerializableReadTransaction:
         return time - self._start_time
 
     def include(self, effect: ConflictableTransactionScalarEffect) -> None:
-        if self._is_readonly and not isinstance(
-            effect, JustViewedTuple | MigratedTuple
-        ):
-            self._is_readonly = False
+        if isinstance(effect, JustViewedTuple | Claim):
+            return
+
+        if effect.tid in self._space:
+            effect = self._space[effect.tid] & effect
+
+        self._space[effect.tid] = effect
 
     def rollback(self) -> None:
-        self._is_completed = True
+        ...
 
     def commit(self) -> Commit:
-        """
-        :raises tgdb.entities.horizon.transaction.NonSerializableWriteTransactionError:
-        """  # noqa: E501
-
-        self._is_completed = True
-
-        if not self._is_readonly:
-            self.rollback()
-            raise NonSerializableWriteTransactionError(self._xid)
-
         return Commit(self._xid, frozenset())
 
     @classmethod
     def start(
         cls, xid: XID, time: LogicTime
-    ) -> "NonSerializableReadTransaction":
-        return NonSerializableReadTransaction(
+    ) -> "ReadUncommitedTransaction":
+        return ReadUncommitedTransaction(
             _xid=xid,
             _start_time=time,
-            _is_readonly=True,
-            _is_completed=False,
+            _space=dict(),
         )
 
     def __eq__(self, other: object) -> bool:
         return (
-            isinstance(other, SerializableTransaction)
+            isinstance(other, ReadUncommitedTransaction)
             and self.xid() == other.xid()
         )
 
@@ -291,12 +282,12 @@ class NonSerializableReadTransaction:
         return hash(type(self)) + hash(self._xid)
 
 
-type Transaction = SerializableTransaction | NonSerializableReadTransaction
+type Transaction = SerializableTransaction | ReadUncommitedTransaction
 
 
 class IsolationLevel(Enum):
-    serializable_read_and_write = auto()
-    non_serializable_read = auto()
+    serializable = auto()
+    read_uncommited = auto()
 
 
 def start_transaction(
@@ -306,10 +297,10 @@ def start_transaction(
     serializable_transactions: Iterable[SerializableTransaction],
 ) -> Transaction:
     match isolation:
-        case IsolationLevel.serializable_read_and_write:
+        case IsolationLevel.serializable:
             return SerializableTransaction.start(
                 xid, time, serializable_transactions
             )
 
-        case IsolationLevel.non_serializable_read:
-            return NonSerializableReadTransaction.start(xid, time)
+        case IsolationLevel.read_uncommited:
+            return ReadUncommitedTransaction.start(xid, time)

@@ -10,14 +10,14 @@ from tgdb.entities.horizon.horizon import (
     InvalidTransactionStateError,
     NoTransactionError,
 )
-from tgdb.entities.horizon.transaction import XID, PreparedCommit
+from tgdb.entities.horizon.transaction import XID, Commit, PreparedCommit
 
 
 @dataclass(frozen=True)
 class OutputCommits:
-    commit_buffer: Buffer[PreparedCommit]
+    commit_buffer: Buffer[Commit | PreparedCommit]
     channel: Channel
-    output_commits: Queque[Sequence[PreparedCommit]]
+    output_commits: Queque[Sequence[Commit | PreparedCommit]]
     shared_horizon: SharedHorizon
     clock: Clock
 

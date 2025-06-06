@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 from tgdb.application.common.ports.queque import Queque
 from tgdb.application.relation.ports.tuples import Tuples
-from tgdb.entities.horizon.transaction import PreparedCommit
+from tgdb.entities.horizon.transaction import Commit, PreparedCommit
 
 
 @dataclass(frozen=True)
 class OutputCommitsToTuples:
     tuples: Tuples
-    output_commits: Queque[Sequence[PreparedCommit]]
+    output_commits: Queque[Sequence[Commit | PreparedCommit]]
 
     async def __call__(self) -> None:
         is_previous_map_partial = True

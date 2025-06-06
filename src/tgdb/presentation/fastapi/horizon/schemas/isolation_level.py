@@ -4,26 +4,24 @@ from typing import Literal
 from tgdb.entities.horizon.transaction import IsolationLevel
 
 
-type _EncodedIsolationLevel = Literal[
-    "serializableReadAndWrite", "nonSerializableRead"
-]
+type _EncodedIsolationLevel = Literal["serializable", "readUncommited"]
 
 
 class IsolationLevelSchema(StrEnum):
-    serializable_read_and_write = "serializableReadAndWrite"
-    non_serializable_read = "nonSerializableRead"
+    serializable = "serializable"
+    read_uncommited = "readUncommited"
 
     def decoded(self) -> IsolationLevel:
         match self:
-            case IsolationLevelSchema.serializable_read_and_write:
-                return IsolationLevel.serializable_read_and_write
-            case IsolationLevelSchema.non_serializable_read:
-                return IsolationLevel.non_serializable_read
+            case IsolationLevelSchema.serializable:
+                return IsolationLevel.serializable
+            case IsolationLevelSchema.read_uncommited:
+                return IsolationLevel.read_uncommited
 
     @classmethod
     def of(cls, level: IsolationLevel) -> "IsolationLevelSchema":
         match level:
-            case IsolationLevel.serializable_read_and_write:
-                return IsolationLevelSchema.serializable_read_and_write
-            case IsolationLevel.non_serializable_read:
-                return IsolationLevelSchema.non_serializable_read
+            case IsolationLevel.serializable:
+                return IsolationLevelSchema.serializable
+            case IsolationLevel.read_uncommited:
+                return IsolationLevelSchema.read_uncommited

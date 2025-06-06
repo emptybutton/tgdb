@@ -7,7 +7,7 @@ from types import TracebackType
 from typing import Self
 
 from tgdb.application.common.ports.buffer import Buffer
-from tgdb.entities.horizon.transaction import PreparedCommit
+from tgdb.entities.horizon.transaction import Commit, PreparedCommit
 from tgdb.infrastructure.telethon.in_telegram_bytes import InTelegramBytes
 
 
@@ -47,8 +47,8 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
 
 
 @dataclass(frozen=True)
-class InTelegramReplicablePreparedCommitBuffer(Buffer[PreparedCommit]):
-    _buffer: Buffer[PreparedCommit]
+class InTelegramReplicablePreparedCommitBuffer(Buffer[Commit | PreparedCommit]):
+    _buffer: Buffer[Commit | PreparedCommit]
     _in_tg_encoded_commits: InTelegramBytes
 
     async def __aenter__(self) -> Self:
@@ -77,10 +77,12 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[PreparedCommit]):
         traceback: TracebackType | None,
     ) -> None: ...
 
-    async def add(self, commit: PreparedCommit, /) -> None:
+    async def add(self, commit: Commit | PreparedCommit, /) -> None:
         await self._buffer.add(commit)
 
-    async def __aiter__(self) -> AsyncIterator[Sequence[PreparedCommit]]:
+    async def __aiter__(
+        self
+    ) -> AsyncIterator[Sequence[Commit | PreparedCommit]]:
         async for commits in self._buffer:
             encoded_commits = pickle.dumps(list(commits))
             await self._in_tg_encoded_commits.set(encoded_commits)

@@ -9,9 +9,9 @@ from tgdb.entities.horizon.transaction import (
     Commit,
     ConflictError,
     IsolationLevel,
-    NonSerializableReadTransaction,
     NonSerializableWriteTransactionError,
     PreparedCommit,
+    ReadUncommitedTransaction,
     SerializableTransaction,
     SerializableTransactionState,
     Transaction,
@@ -58,8 +58,8 @@ class Horizon:
     _max_len: int
     _max_transaction_age: LogicTime
     _serializable_transaction_map: OrderedDict[XID, SerializableTransaction]
-    _non_serializable_read_transaction_map: OrderedDict[
-        XID, NonSerializableReadTransaction
+    _read_uncommited_transaction_map: OrderedDict[
+        XID, ReadUncommitedTransaction
     ]
 
     def __post_init__(self) -> None:
@@ -162,7 +162,8 @@ class Horizon:
             match transaction:
                 case SerializableTransaction():
                     return transaction.prepare_commit()
-                case NonSerializableReadTransaction():
+                case ReadUncommitedTransaction():
+                    del self._transaction_map(transaction)[xid]
                     return transaction.commit()
         except (ConflictError, NonSerializableWriteTransactionError) as error:
             del self._transaction_map(transaction)[xid]
@@ -263,12 +264,12 @@ class Horizon:
 
     def _non_serializable_read_transaction(
         self, xid: XID
-    ) -> NonSerializableReadTransaction:
+    ) -> ReadUncommitedTransaction:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         """
 
-        transaction = self._non_serializable_read_transaction_map.get(xid)
+        transaction = self._read_uncommited_transaction_map.get(xid)
 
         if transaction is None:
             raise NoTransactionError
@@ -292,14 +293,14 @@ class Horizon:
 
     def _transaction_maps(self) -> Iterable[Mapping[XID, Transaction]]:
         yield self._serializable_transaction_map
-        yield self._non_serializable_read_transaction_map
+        yield self._read_uncommited_transaction_map
 
     def _transaction_map[TransactionT: Transaction](
         self, transaction: TransactionT
     ) -> OrderedDict[XID, TransactionT]:
         match transaction:
-            case NonSerializableReadTransaction():
-                return self._non_serializable_read_transaction_map  # type: ignore[return-value]
+            case ReadUncommitedTransaction():
+                return self._read_uncommited_transaction_map  # type: ignore[return-value]
             case SerializableTransaction():
                 return self._serializable_transaction_map  # type: ignore[return-value]
 
@@ -316,5 +317,5 @@ def horizon(
         _max_len=max_len,
         _max_transaction_age=max_transaction_age,
         _serializable_transaction_map=OrderedDict(),
-        _non_serializable_read_transaction_map=OrderedDict(),
+        _read_uncommited_transaction_map=OrderedDict(),
     )

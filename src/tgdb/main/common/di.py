@@ -23,7 +23,7 @@ from tgdb.application.relation.ports.relations import Relations
 from tgdb.application.relation.ports.tuples import Tuples
 from tgdb.application.relation.view_tuples import ViewTuples
 from tgdb.entities.horizon.horizon import Horizon, horizon
-from tgdb.entities.horizon.transaction import PreparedCommit
+from tgdb.entities.horizon.transaction import Commit, PreparedCommit
 from tgdb.entities.relation.relation import Relation
 from tgdb.infrastructure.adapters.buffer import (
     InMemoryBuffer,
@@ -71,7 +71,7 @@ class CommonProvider(Provider):
     provide_uuids = provide(UUIDs4, provides=UUIDs, scope=Scope.APP)
     provide_queque = provide(
         staticmethod(lambda: InMemoryQueque(AsyncQueque())),
-        provides=Queque[Sequence[PreparedCommit]],
+        provides=Queque[Sequence[Commit | PreparedCommit]],
         scope=Scope.APP
     )
     provide_channel = provide(
@@ -163,8 +163,8 @@ class CommonProvider(Provider):
         conf: Conf,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
-        buffer: InMemoryBuffer[PreparedCommit]
-    ) -> AsyncIterator[Buffer[PreparedCommit]]:
+        buffer: InMemoryBuffer[Commit | PreparedCommit]
+    ) -> AsyncIterator[Buffer[Commit | PreparedCommit]]:
         in_tg_bytes = InTelegramBytes(bot_pool, user_bot_pool, conf.buffer.chat)
 
         biffer = InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
