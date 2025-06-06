@@ -1,7 +1,9 @@
 from collections.abc import Iterable
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PositiveInt
+from annotated_types import Ge
+from pydantic import BaseModel, Field
 
 from tgdb.entities.relation.relation import (
     DerivativeRelationVersion,
@@ -12,7 +14,7 @@ from tgdb.presentation.fastapi.relation.schemas.schema import SchemaSchema
 
 
 class InitialRelationVersionSchema(BaseModel):
-    number: PositiveInt
+    number: Annotated[int, Ge(0)]
     schema_: SchemaSchema = Field(alias="schema")
 
     @classmethod
@@ -26,7 +28,7 @@ class InitialRelationVersionSchema(BaseModel):
 
 
 class DerivativeRelationVersionSchema(BaseModel):
-    number: PositiveInt
+    number: Annotated[int, Ge(0)]
     schema_: SchemaSchema = Field(alias="schema")
     migration_id: UUID = Field(alias="migrationID")
 
@@ -42,7 +44,7 @@ class DerivativeRelationVersionSchema(BaseModel):
 
 
 class RelationSchema(BaseModel):
-    number: PositiveInt
+    number: Annotated[int, Ge(0)]
     initial_version: InitialRelationVersionSchema = Field(
         alias="initialVersion"
     )
@@ -68,7 +70,9 @@ class RelationSchema(BaseModel):
 
 
 class RelationListSchema(BaseModel):
-    relation_numbers: tuple[PositiveInt, ...] = Field(alias="relationNumbers")
+    relation_numbers: tuple[Annotated[int, Ge(0)], ...] = Field(
+        alias="relationNumbers"
+    )
 
     @classmethod
     def of(cls, relations: Iterable[Relation]) -> "RelationListSchema":

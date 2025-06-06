@@ -8,7 +8,8 @@ from tgdb.application.horizon.output_commits_to_tuples import (
 from tgdb.application.relation.ports.relation_views import RelationViews
 from tgdb.application.relation.view_all_relations import ViewAllRelations
 from tgdb.application.relation.view_relation import ViewRelation
-from tgdb.main.common.di import CommonProvider, MainIOProvider, RelationCache
+from tgdb.infrastructure.adapters.relations import InTelegramReplicableRelations
+from tgdb.main.common.di import CommonProvider, MainIOProvider
 from tgdb.presentation.adapters.relation_views import (
     RelationSchemasFromInMemoryDbAsRelationViews,
 )
@@ -27,9 +28,9 @@ from tgdb.presentation.fastapi.relation.schemas.relation import (
 class FastAPIProvider(Provider):
     @provide(scope=Scope.APP)
     def provide_relation_views(
-        self, relation_cache: RelationCache
+        self, relations: InTelegramReplicableRelations
     ) -> RelationViews[RelationListSchema, RelationSchema | None]:
-        return RelationSchemasFromInMemoryDbAsRelationViews(relation_cache)
+        return RelationSchemasFromInMemoryDbAsRelationViews(relations.cache())
 
     provide_view_relation = provide(
         ViewRelation[RelationListSchema, RelationSchema | None],

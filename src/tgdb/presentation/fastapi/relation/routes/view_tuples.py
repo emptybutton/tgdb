@@ -1,9 +1,11 @@
 from collections.abc import Iterable
+from typing import Annotated
 
+from annotated_types import Ge
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic import BaseModel, Field
 
 from tgdb.application.relation.view_tuples import ViewTuples
 from tgdb.entities.horizon.transaction import XID
@@ -23,7 +25,7 @@ view_tuples_router = APIRouter()
 
 
 class ViewTupleSchema(BaseModel):
-    attribute_number: PositiveInt = Field(alias="attributeNumber")
+    attribute_number: Annotated[int, Ge(0)] = Field(alias="attributeNumber")
     attribute_scalar: Scalar = Field(alias="attributeScalar")
 
 
@@ -54,7 +56,7 @@ class ViewedTuplesSchema(BaseModel):
 @inject
 async def _(
     view_tuples: FromDishka[ViewTuples],
-    relation_number: PositiveInt,
+    relation_number: Annotated[int, Ge(0)],
     request_body: ViewTupleSchema,
     xid: XID | None = None,
 ) -> Response:

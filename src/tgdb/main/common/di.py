@@ -2,7 +2,7 @@ from collections import deque
 from collections.abc import AsyncIterator, Sequence
 from typing import NewType
 
-from dishka import Provider, Scope, make_container, provide
+from dishka import AnyOf, Provider, Scope, make_container, provide
 from in_memory_db import InMemoryDb
 
 from tgdb.application.common.ports.buffer import Buffer
@@ -69,16 +69,17 @@ class MainIOProvider(Provider):
 class CommonProvider(Provider):
     provide_clock = provide(PerfCounterClock, provides=Clock, scope=Scope.APP)
     provide_uuids = provide(UUIDs4, provides=UUIDs, scope=Scope.APP)
-    provide_queque = provide(
+    provide_commit_queque = provide(
         staticmethod(lambda: InMemoryQueque(AsyncQueque())),
         provides=Queque[Sequence[Commit | PreparedCommit]],
         scope=Scope.APP
     )
-    provide_channel = provide(
-        staticmethod(lambda: AsyncMapChannel(AsyncMap())),
-        provides=Channel,
-        scope=Scope.APP,
-    )
+
+    @provide(scope=Scope.APP)
+    def provide_channel(self, config: TgdbConfig) -> Channel:
+        return AsyncMapChannel(
+            AsyncMap(), config.horizon.transaction.max_age_seconds
+        )
 
     @provide(scope=Scope.APP)
     async def provide_bot_pool(
@@ -178,22 +179,17 @@ class CommonProvider(Provider):
         async with biffer:
             yield biffer
 
-    @provide(scope=Scope.APP)
-    def provide_relation_cache(self) -> RelationCache:
-        return RelationCache(InMemoryDb())
-
-    @provide(scope=Scope.APP)
+    @provide(scope=Scope.APP, )
     async def provide_relations(
         self,
         config: TgdbConfig,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
-        relation_cache: RelationCache,
-    ) -> AsyncIterator[Relations]:
+    ) -> AsyncIterator[AnyOf[Relations, InTelegramReplicableRelations]]:
         in_tg_bytes = InTelegramBytes(
             bot_pool, user_bot_pool, config.relations.chat
         )
-        relations = InTelegramReplicableRelations(in_tg_bytes, relation_cache)
+        relations = InTelegramReplicableRelations(in_tg_bytes, InMemoryDb())
 
         async with relations:
             yield relations

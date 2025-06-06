@@ -1,7 +1,8 @@
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, PositiveInt
+from annotated_types import Ge
+from pydantic import BaseModel, Field
 
 from tgdb.application.common.operator import (
     DeletedTupleOperator,
@@ -16,7 +17,7 @@ from tgdb.entities.relation.tuple import TID
 
 class InsertOperatorSchema(BaseModel):
     action: Literal["insert"] = "insert"
-    relation_number: PositiveInt = Field(alias="relationNumber")
+    relation_number: Annotated[int, Ge(0)] = Field(alias="relationNumber")
     scalars: tuple[Scalar, ...]
 
     def decoded(self) -> NewTupleOperator:
@@ -25,7 +26,7 @@ class InsertOperatorSchema(BaseModel):
 
 class UpdateOperatorSchema(BaseModel):
     action: Literal["update"] = "update"
-    relation_number: PositiveInt = Field(alias="relationNumber")
+    relation_number: Annotated[int, Ge(0)] = Field(alias="relationNumber")
     tid: TID
     scalars: tuple[Scalar, ...]
 

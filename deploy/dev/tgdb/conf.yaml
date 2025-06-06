@@ -14,7 +14,7 @@ conf:
   horizon:
     max_len: 10_000
     transaction:
-      max_age_seconds: 10
+      max_age_seconds: 120
 
   message_cache:
     max_len: 1_000_000

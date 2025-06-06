@@ -1,8 +1,11 @@
 
+from typing import Annotated
+
+from annotated_types import Ge
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, status
 from fastapi.responses import Response
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic import BaseModel, Field
 
 from tgdb.application.relation.create_relation import CreateRelation
 from tgdb.entities.numeration.number import Number
@@ -36,7 +39,7 @@ class CreateRelationSchema(BaseModel):
 @inject
 async def _(
     create_relation: FromDishka[CreateRelation],
-    relation_number: PositiveInt,
+    relation_number: Annotated[int, Ge(0)],
     request_body: CreateRelationSchema,
 ) -> Response:
     await create_relation(

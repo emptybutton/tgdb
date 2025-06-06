@@ -1,3 +1,4 @@
+from asyncio import wait_for
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
@@ -15,6 +16,7 @@ class AsyncMapChannel(Channel):
     _async_map: AsyncMap[
         XID, NoTransactionError | TransactionNotCommittingError | None
     ]
+    _timeout_seconds: int | float
 
     async def publish(
         self,
@@ -32,5 +34,8 @@ class AsyncMapChannel(Channel):
             del self._async_map[error_commit_xid]
 
     async def wait(self, xid: XID) -> Notification:
-        notification_error = await self._async_map[xid]
+        notification_error = await wait_for(
+            self._async_map[xid], self._timeout_seconds
+        )
+
         return Notification(notification_error)

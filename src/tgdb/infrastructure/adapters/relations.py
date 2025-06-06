@@ -24,7 +24,7 @@ class InMemoryRelations(Relations):
             lambda it: it.number() == relation_number
         )
         if relation is None:
-            raise NoRelationError(relation_number)
+            raise NoRelationError
 
         return relation
 
@@ -56,6 +56,9 @@ class InTelegramReplicableRelations(Relations):
         error: BaseException | None,
         traceback: TracebackType | None,
     ) -> None: ...
+
+    def cache(self) -> InMemoryDb[Relation]:
+        return self._cached_relations
 
     async def relation(self, relation_number: Number) -> Relation:
         """
