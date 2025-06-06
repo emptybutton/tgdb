@@ -38,7 +38,7 @@ from tgdb.infrastructure.adapters.tuples import InTelegramHeapTuples
 from tgdb.infrastructure.adapters.uuids import UUIDs4
 from tgdb.infrastructure.async_map import AsyncMap
 from tgdb.infrastructure.async_queque import AsyncQueque
-from tgdb.infrastructure.pyyaml.conf import Conf, VacuumConf
+from tgdb.infrastructure.pyyaml.conf import Conf
 from tgdb.infrastructure.telethon.client_pool import (
     TelegramClientPool,
     loaded_client_pool_from_farm_file,
@@ -49,7 +49,6 @@ from tgdb.infrastructure.telethon.lazy_message_map import (
     LazyMessageMap,
     lazy_message_map,
 )
-from tgdb.infrastructure.telethon.vacuum import AutoVacuum, Vacuum
 from tgdb.infrastructure.typenv.envs import Envs
 
 
@@ -57,20 +56,6 @@ BotPool = NewType("BotPool", TelegramClientPool)
 UserBotPool = NewType("UserBotPool", TelegramClientPool)
 
 RelationCache = NewType("RelationCache", InMemoryDb[Relation])
-
-
-def conf_vacuum(
-    conf: VacuumConf, bot_pool: BotPool, user_bot_pool: UserBotPool
-) -> AutoVacuum:
-    vacuum = Vacuum(bot_pool, conf.max_workers)
-
-    return AutoVacuum(
-        user_bot_pool,
-        vacuum,
-        conf.window_delay_seconds,
-        conf.min_message_count,
-        None,
-    )
 
 
 class CommonProvider(Provider):
@@ -171,10 +156,7 @@ class CommonProvider(Provider):
         user_bot_pool: UserBotPool,
         buffer: InMemoryBuffer[PreparedCommit]
     ) -> Buffer[PreparedCommit]:
-        autovacuum = conf_vacuum(conf.buffer.vacuum, bot_pool, user_bot_pool)
-        in_tg_bytes = InTelegramBytes(
-            bot_pool, user_bot_pool, conf.buffer.chat, autovacuum
-        )
+        in_tg_bytes = InTelegramBytes(bot_pool, user_bot_pool, conf.buffer.chat)
 
         return InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
 
@@ -190,9 +172,8 @@ class CommonProvider(Provider):
         user_bot_pool: UserBotPool,
         relation_cache: RelationCache,
     ) -> Relations:
-        autovacuum = conf_vacuum(conf.relations.vacuum, bot_pool, user_bot_pool)
         in_tg_bytes = InTelegramBytes(
-            bot_pool, user_bot_pool, conf.relations.chat, autovacuum
+            bot_pool, user_bot_pool, conf.relations.chat
         )
 
         return InTelegramReplicableRelations(in_tg_bytes, relation_cache)

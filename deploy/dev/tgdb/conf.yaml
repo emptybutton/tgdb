@@ -26,18 +26,9 @@ conf:
 
   relations:
     chat: -1005000098156
-    vacuum:
-      max_workers: 1
-      window_delay_seconds: 30
-      min_message_count: 1
 
   buffer:
     chat: -1005014396610
     overflow:
       len: 5000
       timeout_seconds: 0.1
-
-    vacuum:
-      max_workers: 10
-      window_delay_seconds: 10
-      min_message_count: 200

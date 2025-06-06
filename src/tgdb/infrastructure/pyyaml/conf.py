@@ -41,15 +41,8 @@ class HeapConf(BaseModel):
     page: PageConf
 
 
-class VacuumConf(BaseModel):
-    window_delay_seconds: int | float
-    min_message_count: int
-    max_workers: int
-
-
 class RelationsConf(BaseModel):
     chat: int
-    vacuum: VacuumConf
 
 
 class OverflowConf(BaseModel):
@@ -60,7 +53,6 @@ class OverflowConf(BaseModel):
 class BufferConf(BaseModel):
     chat: int
     overflow: OverflowConf
-    vacuum: VacuumConf
 
 
 class Conf(BaseModel):
