@@ -45,9 +45,9 @@ from tgdb.infrastructure.telethon.client_pool import (
 )
 from tgdb.infrastructure.telethon.in_telegram_bytes import InTelegramBytes
 from tgdb.infrastructure.telethon.in_telegram_heap import InTelegramHeap
-from tgdb.infrastructure.telethon.lazy_message_map import (
-    LazyMessageMap,
-    lazy_message_map,
+from tgdb.infrastructure.telethon.lazy_map import (
+    MessageIndexLazyMap,
+    message_index_lazy_map,
 )
 from tgdb.infrastructure.typenv.envs import Envs
 
@@ -119,8 +119,8 @@ class CommonProvider(Provider):
         self,
         user_bot_pool: UserBotPool,
         conf: Conf,
-    ) -> LazyMessageMap:
-        return lazy_message_map(user_bot_pool, conf.message_cache.max_len)
+    ) -> MessageIndexLazyMap:
+        return message_index_lazy_map(user_bot_pool, conf.message_cache.max_len)
 
     @provide(scope=Scope.APP)
     def provide_in_telegram_heap(
@@ -128,7 +128,7 @@ class CommonProvider(Provider):
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
         conf: Conf,
-        lazy_message_map: LazyMessageMap,
+        message_index_lazy_map: MessageIndexLazyMap,
     ) -> InTelegramHeap:
         return InTelegramHeap(
             bot_pool,
@@ -137,7 +137,7 @@ class CommonProvider(Provider):
             bot_pool,
             conf.heap.chat,
             InTelegramHeap.encoded_tuple_max_len(conf.heap.page.fullness),
-            lazy_message_map,
+            message_index_lazy_map,
         )
 
     provide_tuples = provide(

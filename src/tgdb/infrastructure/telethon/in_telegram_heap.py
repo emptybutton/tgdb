@@ -10,8 +10,13 @@ from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import TID, Tuple
 from tgdb.entities.tools.assert_ import assert_
 from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
+from tgdb.infrastructure.lazy_map import LazyMap
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
-from tgdb.infrastructure.telethon.lazy_message_map import LazyMessageMap
+from tgdb.infrastructure.telethon.index import (
+    MessageIndex,
+    TupleIndex,
+    message_index,
+)
 
 
 @dataclass(frozen=True)
@@ -27,7 +32,7 @@ class InTelegramHeap:
     _pool_to_delete: TelegramClientPool
     _heap_id: int
     _encoded_tuple_max_len: int
-    _message_map: LazyMessageMap
+    _index_map: LazyMap[TupleIndex, MessageIndex | None]
 
     _page_len: ClassVar = 4000
 
@@ -93,38 +98,42 @@ class InTelegramHeap:
         )
 
     async def insert_idempotently(self, tuple: Tuple) -> None:
-        message_ = await self._message_map[self._heap_id, tuple.tid]
+        message_index_ = await self._index_map[self._heap_id, tuple.tid]
 
-        if message_ is not None:
+        if message_index_ is not None:
             return
 
         new_message = await self._pool_to_insert().send_message(
             self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
         )
-        self._message_map[self._heap_id, tuple.tid] = new_message
+        self._index_map[self._heap_id, tuple.tid] = message_index(new_message)
 
     async def insert(self, tuple: Tuple) -> None:
         new_message = await self._pool_to_insert().send_message(
             self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
         )
-        self._message_map[self._heap_id, tuple.tid] = new_message
+        self._index_map[self._heap_id, tuple.tid] = message_index(new_message)
 
     async def update(self, tuple: Tuple) -> None:
-        message = await self._message_map[self._heap_id, tuple.tid]
+        message_index = await self._index_map[self._heap_id, tuple.tid]
 
-        if message is None:
+        if message_index is None:
             return
 
-        await self._pool_to_edit(message.sender_id).edit_message(  # type: ignore[attr-defined]
-            self._heap_id, message.id, HeapTupleEncoding.encoded_tuple(tuple)
+        message_id, sender_id = message_index
+
+        await self._pool_to_edit(sender_id).edit_message(
+            self._heap_id, message_id, HeapTupleEncoding.encoded_tuple(tuple)
         )
 
     async def delete_tuple_with_tid(self, tid: TID) -> None:
-        message = await self._message_map[self._heap_id, tid]
+        message_index = await self._index_map[self._heap_id, tid]
 
-        if message is None:
+        if message_index is None:
             return
 
+        message_id, _ = message_index
+
         await self._pool_to_delete().delete_messages(
-            self._heap_id, [message.id]
+            self._heap_id, [message_id]
         )

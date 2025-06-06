@@ -7,29 +7,31 @@ from tgdb.entities.relation.tuple import TID
 from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
 from tgdb.infrastructure.lazy_map import ExternalValue, LazyMap, NoExternalValue
 from tgdb.infrastructure.telethon.client_pool import TelegramClientPool
+from tgdb.infrastructure.telethon.index import (
+    MessageIndex,
+    TupleIndex,
+    message_index,
+)
 
 
-type ChatID = int
-type LazyMessageMap = LazyMap[tuple[ChatID, TID], Message]
+type MessageIndexLazyMap = LazyMap[TupleIndex, MessageIndex | None]
 
 
-def lazy_message_map(
+def message_index_lazy_map(
     pool: TelegramClientPool, cache_map_max_len: int
-) -> LazyMessageMap:
-    async def tuple_message(
-        chat_id_and_tid: tuple[ChatID, TID]
-    ) -> ExternalValue[Message]:
-        chat_id, tid = chat_id_and_tid
+) -> LazyMap[TupleIndex, MessageIndex | None]:
+    async def tuple_message(tuple_index: TupleIndex) -> MessageIndex | None:
+        chat_id, tid = tuple_index
 
         search = HeapTupleEncoding.id_of_encoded_tuple_with_tid(tid)
-
         messages = cast(TotalList, await pool().get_messages(
             chat_id, search=search, limit=1
         ))
 
         if not messages:
-            return NoExternalValue()
+            return None
 
-        return cast(Message, messages[0])
+        message = cast(Message, messages[0])
+        return message_index(message)
 
     return LazyMap(cache_map_max_len, tuple_message)
