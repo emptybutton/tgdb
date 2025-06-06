@@ -1,11 +1,11 @@
 import uvicorn
 
-from tgdb.infrastructure.pyyaml.conf import Conf
+from tgdb.infrastructure.pyyaml.config import TgdbConfig
 from tgdb.main.common.di import main_io_container
 
 
 def main() -> None:
-    tgdb_config = main_io_container.get(Conf)
+    tgdb_config = main_io_container.get(TgdbConfig)
 
     uvicorn.run(
         "tgdb.main.dev_server.asgi:app",

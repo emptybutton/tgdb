@@ -38,7 +38,7 @@ from tgdb.infrastructure.adapters.tuples import InTelegramHeapTuples
 from tgdb.infrastructure.adapters.uuids import UUIDs4
 from tgdb.infrastructure.async_map import AsyncMap
 from tgdb.infrastructure.async_queque import AsyncQueque
-from tgdb.infrastructure.pyyaml.conf import Conf
+from tgdb.infrastructure.pyyaml.config import TgdbConfig
 from tgdb.infrastructure.telethon.client_pool import (
     TelegramClientPool,
     loaded_client_pool_from_farm_file,
@@ -62,8 +62,8 @@ class MainIOProvider(Provider):
     provide_envs = provide(Envs.load, scope=Scope.APP)
 
     @provide(scope=Scope.APP)
-    def provide_conf(self, envs: Envs) -> Conf:
-        return Conf.load(envs.conf_path)
+    def provide_conf(self, envs: Envs) -> TgdbConfig:
+        return TgdbConfig.load(envs.conf_path)
 
 
 class CommonProvider(Provider):
@@ -81,33 +81,35 @@ class CommonProvider(Provider):
     )
 
     @provide(scope=Scope.APP)
-    async def provide_bot_pool(self, conf: Conf) -> AsyncIterator[BotPool]:
+    async def provide_bot_pool(
+        self, config: TgdbConfig
+    ) -> AsyncIterator[BotPool]:
         pool = BotPool(loaded_client_pool_from_farm_file(
-            conf.clients.bots,
-            conf.api.id,
-            conf.api.hash,
+            config.clients.bots,
+            config.api.id,
+            config.api.hash,
         ))
         async with pool:
             yield pool
 
     @provide(scope=Scope.APP)
     async def provide_userbot_pool(
-        self, conf: Conf
+        self, config: TgdbConfig
     ) -> AsyncIterator[UserBotPool]:
         pool = UserBotPool(loaded_client_pool_from_farm_file(
-            conf.clients.userbots,
-            conf.api.id,
-            conf.api.hash,
+            config.clients.userbots,
+            config.api.id,
+            config.api.hash,
         ))
         async with pool:
             yield pool
 
     @provide(scope=Scope.APP)
-    def provide_horizon(self, conf: Conf) -> Horizon:
+    def provide_horizon(self, config: TgdbConfig) -> Horizon:
         return horizon(
             0,
-            conf.horizon.max_len,
-            int(conf.horizon.transaction.max_age_seconds * 1_000_000_000),
+            config.horizon.max_len,
+            int(config.horizon.transaction.max_age_seconds * 1_000_000_000),
         )
 
     @provide(scope=Scope.APP)
@@ -118,16 +120,18 @@ class CommonProvider(Provider):
     def provide_lazy_message_map(
         self,
         user_bot_pool: UserBotPool,
-        conf: Conf,
+        config: TgdbConfig,
     ) -> MessageIndexLazyMap:
-        return message_index_lazy_map(user_bot_pool, conf.message_cache.max_len)
+        return message_index_lazy_map(
+            user_bot_pool, config.message_cache.max_len
+        )
 
     @provide(scope=Scope.APP)
     def provide_in_telegram_heap(
         self,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
-        conf: Conf,
+        config: TgdbConfig,
         message_index_lazy_map: MessageIndexLazyMap,
     ) -> InTelegramHeap:
         return InTelegramHeap(
@@ -135,8 +139,8 @@ class CommonProvider(Provider):
             user_bot_pool,
             bot_pool,
             bot_pool,
-            conf.heap.chat,
-            InTelegramHeap.encoded_tuple_max_len(conf.heap.page.fullness),
+            config.heap.chat,
+            InTelegramHeap.encoded_tuple_max_len(config.heap.page.fullness),
             message_index_lazy_map,
         )
 
@@ -149,23 +153,25 @@ class CommonProvider(Provider):
     @provide(scope=Scope.APP)
     def provide_in_memory_buffer[ValueT](
         self,
-        conf: Conf,
+        config: TgdbConfig,
     ) -> InMemoryBuffer[ValueT]:
         return InMemoryBuffer(
-           conf.buffer.overflow.len,
-           conf.buffer.overflow.timeout_seconds,
+           config.buffer.overflow.len,
+           config.buffer.overflow.timeout_seconds,
            deque(),
         )
 
     @provide(scope=Scope.APP)
     async def provide_buffer(
         self,
-        conf: Conf,
+        config: TgdbConfig,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
         buffer: InMemoryBuffer[Commit | PreparedCommit]
     ) -> AsyncIterator[Buffer[Commit | PreparedCommit]]:
-        in_tg_bytes = InTelegramBytes(bot_pool, user_bot_pool, conf.buffer.chat)
+        in_tg_bytes = InTelegramBytes(
+            bot_pool, user_bot_pool, config.buffer.chat
+        )
 
         biffer = InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
 
@@ -179,13 +185,13 @@ class CommonProvider(Provider):
     @provide(scope=Scope.APP)
     async def provide_relations(
         self,
-        conf: Conf,
+        config: TgdbConfig,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
         relation_cache: RelationCache,
     ) -> AsyncIterator[Relations]:
         in_tg_bytes = InTelegramBytes(
-            bot_pool, user_bot_pool, conf.relations.chat
+            bot_pool, user_bot_pool, config.relations.chat
         )
         relations = InTelegramReplicableRelations(in_tg_bytes, relation_cache)
 

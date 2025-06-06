@@ -2,14 +2,14 @@ import asyncio
 
 import uvicorn
 
-from tgdb.infrastructure.pyyaml.conf import Conf
+from tgdb.infrastructure.pyyaml.config import TgdbConfig
 from tgdb.main.server.di import server_container
 from tgdb.presentation.fastapi.common.app import app_from
 
 
 async def amain() -> None:
     app = await app_from(server_container)
-    tgdb_config = await server_container.get(Conf)
+    tgdb_config = await server_container.get(TgdbConfig)
 
     uvicorn_config = uvicorn.Config(
         app,
