@@ -6,11 +6,11 @@ from pydantic import BaseModel, Field, PositiveInt
 
 from tgdb.application.relation.create_relation import CreateRelation
 from tgdb.entities.numeration.number import Number
-from tgdb.presentation.fastapi.common.schemas.error import (
+from tgdb.presentation.fastapi.common.tags import Tag
+from tgdb.presentation.fastapi.relation.schemas.error import (
     NotUniqueRelationNumberSchema,
     OversizedRelationSchemaSchema,
 )
-from tgdb.presentation.fastapi.common.tags import Tag
 from tgdb.presentation.fastapi.relation.schemas.schema import SchemaSchema
 
 

@@ -10,7 +10,7 @@ from tgdb.entities.horizon.transaction import XID
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar
 from tgdb.entities.relation.tuple import Tuple
-from tgdb.presentation.fastapi.common.schemas.error import NoRelationSchema
+from tgdb.presentation.fastapi.relation.schemas.error import NoRelationSchema
 from tgdb.presentation.fastapi.common.tags import Tag
 from tgdb.presentation.fastapi.horizon.schemas.error import (
     NoTransactionSchema,
