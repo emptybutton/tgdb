@@ -1,11 +1,11 @@
 from dishka import Provider, Scope, make_async_container, provide
 
 from tgdb import __version__
-from tgdb.application.common.ports.relation_views import RelationViews
 from tgdb.application.horizon.output_commits import OutputCommits
 from tgdb.application.horizon.output_commits_to_tuples import (
     OutputCommitsToTuples,
 )
+from tgdb.application.relation.ports.relation_views import RelationViews
 from tgdb.application.relation.view_all_relations import ViewAllRelations
 from tgdb.application.relation.view_relation import ViewRelation
 from tgdb.main.common.di import CommonProvider, MainIOProvider, RelationCache

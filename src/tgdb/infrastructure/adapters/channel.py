@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from tgdb.application.common.ports.channel import Channel, Notification
+from tgdb.application.horizon.ports.channel import Channel, Notification
 from tgdb.entities.horizon.horizon import (
     InvalidTransactionStateError,
     NoTransactionError,

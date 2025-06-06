@@ -17,11 +17,11 @@ class Relations(ABC):
     @abstractmethod
     async def relation(self, relation_number: Number) -> Relation:
         """
-        :raises tgdb.application.common.ports.relations.NoRelationError:
+        :raises tgdb.application.relation.ports.relations.NoRelationError:
         """
 
     @abstractmethod
     async def add(self, relation: Relation) -> None:
         """
-        :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
+        :raises tgdb.application.relation.ports.relations.NotUniqueRelationNumberError:
         """  # noqa: E501

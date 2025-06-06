@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Response, status
 from fastapi.responses import JSONResponse
 
-from tgdb.application.common.ports.relations import (
+from tgdb.application.relation.ports.relations import (
     NoRelationError,
     NotUniqueRelationNumberError,
 )
-from tgdb.application.common.ports.tuples import OversizedRelationSchemaError
+from tgdb.application.relation.ports.tuples import OversizedRelationSchemaError
 from tgdb.presentation.fastapi.common.schemas.error import (
     NoRelationSchema,
     NotUniqueRelationNumberSchema,

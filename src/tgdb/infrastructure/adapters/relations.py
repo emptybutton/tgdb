@@ -5,7 +5,7 @@ from typing import Self
 
 from in_memory_db import InMemoryDb
 
-from tgdb.application.common.ports.relations import (
+from tgdb.application.relation.ports.relations import (
     NoRelationError,
     NotUniqueRelationNumberError,
     Relations,
@@ -59,7 +59,7 @@ class InTelegramReplicableRelations(Relations):
 
     async def relation(self, relation_number: Number) -> Relation:
         """
-        :raises tgdb.application.common.ports.relations.NoRelationError:
+        :raises tgdb.application.relation.ports.relations.NoRelationError:
         """
 
         relation = self._cached_relations.select_one(
@@ -73,7 +73,7 @@ class InTelegramReplicableRelations(Relations):
 
     async def add(self, relation: Relation) -> None:
         """
-        :raises tgdb.application.common.ports.relations.NotUniqueRelationNumberError:
+        :raises tgdb.application.relation.ports.relations.NotUniqueRelationNumberError:
         """  # noqa: E501
 
         selected_relation = self._cached_relations.select_one(

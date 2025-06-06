@@ -7,14 +7,10 @@ from tgdb.presentation.fastapi.horizon.routes.rollback_transaction import (
 from tgdb.presentation.fastapi.horizon.routes.start_transaction import (
     start_transaction_router,
 )
-from tgdb.presentation.fastapi.horizon.routes.view_tuples import (
-    view_tuples_router,
-)
 
 
 horizon_routers = (
     start_transaction_router,
-    view_tuples_router,
     rollback_transaction_router,
     commit_transaction_router,
 )

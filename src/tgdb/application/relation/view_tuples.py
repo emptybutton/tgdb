@@ -2,9 +2,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from tgdb.application.common.ports.clock import Clock
-from tgdb.application.common.ports.relations import Relations
-from tgdb.application.common.ports.shared_horizon import SharedHorizon
-from tgdb.application.common.ports.tuples import Tuples
+from tgdb.application.horizon.ports.shared_horizon import SharedHorizon
+from tgdb.application.relation.ports.relations import Relations
+from tgdb.application.relation.ports.tuples import Tuples
 from tgdb.entities.horizon.transaction import XID
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar
@@ -28,7 +28,7 @@ class ViewTuples:
         attribute_scalar: Scalar,
     ) -> Sequence[Tuple]:
         """
-        :raises tgdb.application.common.ports.relations.NoRelationError:
+        :raises tgdb.application.relation.ports.relations.NoRelationError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.InvalidTransactionStateError:
         """

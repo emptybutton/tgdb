@@ -7,10 +7,14 @@ from tgdb.presentation.fastapi.relation.routes.view_all_relations import (
 from tgdb.presentation.fastapi.relation.routes.view_relation import (
     view_relation_router,
 )
+from tgdb.presentation.fastapi.relation.routes.view_tuples import (
+    view_tuples_router,
+)
 
 
 relation_routers = (
     create_relation_router,
     view_all_relations_router,
     view_relation_router,
+    view_tuples_router,
 )

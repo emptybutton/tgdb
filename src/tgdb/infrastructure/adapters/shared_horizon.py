@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from types import TracebackType
 
-from tgdb.application.common.ports.shared_horizon import SharedHorizon
+from tgdb.application.horizon.ports.shared_horizon import SharedHorizon
 from tgdb.entities.horizon.horizon import Horizon
 
 

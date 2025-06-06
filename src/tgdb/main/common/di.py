@@ -6,22 +6,22 @@ from dishka import Provider, Scope, make_container, provide
 from in_memory_db import InMemoryDb
 
 from tgdb.application.common.ports.buffer import Buffer
-from tgdb.application.common.ports.channel import Channel
 from tgdb.application.common.ports.clock import Clock
 from tgdb.application.common.ports.queque import Queque
-from tgdb.application.common.ports.relations import Relations
-from tgdb.application.common.ports.shared_horizon import SharedHorizon
-from tgdb.application.common.ports.tuples import Tuples
 from tgdb.application.common.ports.uuids import UUIDs
 from tgdb.application.horizon.commit_transaction import CommitTransaction
 from tgdb.application.horizon.output_commits import OutputCommits
 from tgdb.application.horizon.output_commits_to_tuples import (
     OutputCommitsToTuples,
 )
+from tgdb.application.horizon.ports.channel import Channel
+from tgdb.application.horizon.ports.shared_horizon import SharedHorizon
 from tgdb.application.horizon.rollback_transaction import RollbackTransaction
 from tgdb.application.horizon.start_transaction import StartTransaction
 from tgdb.application.relation.create_relation import CreateRelation
-from tgdb.application.view_tuples import ViewTuples
+from tgdb.application.relation.ports.relations import Relations
+from tgdb.application.relation.ports.tuples import Tuples
+from tgdb.application.relation.view_tuples import ViewTuples
 from tgdb.entities.horizon.horizon import Horizon, horizon
 from tgdb.entities.horizon.transaction import PreparedCommit
 from tgdb.entities.relation.relation import Relation

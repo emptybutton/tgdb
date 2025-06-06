@@ -36,5 +36,5 @@ class Tuples(ABC):
     @abstractmethod
     async def assert_can_accept_tuples(self, relation: Relation) -> None:
         """
-        :raises tgdb.application.common.ports.tuples.OversizedRelationSchemaError:
+        :raises tgdb.application.relation.ports.relations.OversizedRelationSchemaError:
         """  # noqa: E501

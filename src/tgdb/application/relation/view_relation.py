@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from tgdb.application.common.ports.relation_views import RelationViews
+from tgdb.application.relation.ports.relation_views import RelationViews
 from tgdb.entities.numeration.number import Number
 
 

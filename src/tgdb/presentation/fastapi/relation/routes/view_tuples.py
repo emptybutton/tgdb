@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, status
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, PositiveInt
 
-from tgdb.application.view_tuples import ViewTuples
+from tgdb.application.relation.view_tuples import ViewTuples
 from tgdb.entities.horizon.transaction import XID
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.scalar import Scalar

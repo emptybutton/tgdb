@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from tgdb.application.common.ports.tuples import OversizedRelationSchemaError
+from tgdb.application.relation.ports.tuples import OversizedRelationSchemaError
 
 
 class NoRelationSchema(BaseModel):

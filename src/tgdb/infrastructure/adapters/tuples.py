@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from in_memory_db import InMemoryDb
 
-from tgdb.application.common.ports.tuples import (
+from tgdb.application.relation.ports.tuples import (
     OversizedRelationSchemaError,
     Tuples,
 )
