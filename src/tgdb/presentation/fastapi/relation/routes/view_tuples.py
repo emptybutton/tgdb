@@ -45,15 +45,15 @@ class ViewedTuplesSchema(BaseModel):
     },
     summary="View tuples",
     description="View tuples in an active transaction.",
-    tags=[Tag.relation, Tag.transaction],
+    tags=[Tag.relation],
 )
 @inject
 async def _(
     view_tuples: FromDishka[ViewTuples],
-    xid: XID,
     relation_number: PositiveInt,
     attribute_number: Annotated[PositiveInt, Query(alias="attributeNumber")],
     attribute_scalar: Annotated[Scalar, Query(alias="attributeScalar")],
+    xid: XID | None = None,
 ) -> Response:
     tuples = await view_tuples(
         xid,

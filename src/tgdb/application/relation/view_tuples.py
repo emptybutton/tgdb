@@ -22,7 +22,7 @@ class ViewTuples:
 
     async def __call__(
         self,
-        xid: XID,
+        xid: XID | None,
         relation_number: Number,
         attribute_number: Number,
         attribute_scalar: Scalar,
@@ -44,9 +44,10 @@ class ViewTuples:
             for versioned_tuple in versioned_tuples
         )
 
-        async with self.shared_horizon as horizon:
-            for viewed_tuple_ in viewed_tuples:
-                time = await self.clock
-                horizon.include(time, xid, viewed_tuple_)
+        if xid is not None:
+            async with self.shared_horizon as horizon:
+                for viewed_tuple_ in viewed_tuples:
+                    time = await self.clock
+                    horizon.include(time, xid, viewed_tuple_)
 
         return tuples
