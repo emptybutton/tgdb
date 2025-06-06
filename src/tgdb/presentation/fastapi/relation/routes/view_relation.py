@@ -1,7 +1,6 @@
-from typing import Annotated
 
 from dishka.integrations.fastapi import FromDishka, inject
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse, Response
 from pydantic import PositiveInt
 
