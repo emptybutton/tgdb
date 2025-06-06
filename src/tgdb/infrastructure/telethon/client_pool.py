@@ -75,7 +75,7 @@ def loaded_client_pool_from_farm_file(
     with farm_file_path.open() as farm_file:
         return TelegramClientPool(deque(
             pool_client(session_token, app_api_id, app_api_hash)
-            for session_token in farm_file
+            for session_token in map(_clean_line, farm_file)
             if session_token
         ))
 
@@ -83,10 +83,13 @@ def loaded_client_pool_from_farm_file(
 def pool_client(
     session_token: str, app_api_id: int, app_api_hash: str
 ) -> TelegramClient:
-    print(session_token)
     return TelegramClient(
         StringSessionWithoutEntites(session_token),
         app_api_id,
         app_api_hash,
         entity_cache_limit=0,
     )
+
+
+def _clean_line(line: str) -> str:
+    return line.strip("\n ")
