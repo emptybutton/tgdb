@@ -1,5 +1,5 @@
 from collections import deque
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import NewType
 
 from dishka import Provider, Scope, provide
@@ -78,20 +78,26 @@ class CommonProvider(Provider):
         return Conf.load(envs.conf_path)
 
     @provide(scope=Scope.APP)
-    def provide_bot_pool(self, conf: Conf) -> BotPool:
-        return BotPool(loaded_client_pool_from_farm_file(
+    async def provide_bot_pool(self, conf: Conf) -> AsyncIterator[BotPool]:
+        pool = BotPool(loaded_client_pool_from_farm_file(
             conf.clients.bots,
             conf.api.id,
             conf.api.hash,
         ))
+        async with pool:
+            yield pool
 
     @provide(scope=Scope.APP)
-    def provide_userbot_pool(self, conf: Conf) -> UserBotPool:
-        return UserBotPool(loaded_client_pool_from_farm_file(
+    async def provide_userbot_pool(
+        self, conf: Conf
+    ) -> AsyncIterator[UserBotPool]:
+        pool = UserBotPool(loaded_client_pool_from_farm_file(
             conf.clients.userbots,
             conf.api.id,
             conf.api.hash,
         ))
+        async with pool:
+            yield pool
 
     @provide(scope=Scope.APP)
     def provide_horizon(self, conf: Conf) -> Horizon:
@@ -149,34 +155,39 @@ class CommonProvider(Provider):
         )
 
     @provide(scope=Scope.APP)
-    def provide_buffer(
+    async def provide_buffer(
         self,
         conf: Conf,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
         buffer: InMemoryBuffer[PreparedCommit]
-    ) -> Buffer[PreparedCommit]:
+    ) -> AsyncIterator[Buffer[PreparedCommit]]:
         in_tg_bytes = InTelegramBytes(bot_pool, user_bot_pool, conf.buffer.chat)
 
-        return InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
+        biffer = InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
+
+        async with biffer:
+            yield biffer
 
     @provide(scope=Scope.APP)
     def provide_relation_cache(self) -> RelationCache:
         return RelationCache(InMemoryDb())
 
     @provide(scope=Scope.APP)
-    def provide_relations(
+    async def provide_relations(
         self,
         conf: Conf,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
         relation_cache: RelationCache,
-    ) -> Relations:
+    ) -> AsyncIterator[Relations]:
         in_tg_bytes = InTelegramBytes(
             bot_pool, user_bot_pool, conf.relations.chat
         )
+        relations = InTelegramReplicableRelations(in_tg_bytes, relation_cache)
 
-        return InTelegramReplicableRelations(in_tg_bytes, relation_cache)
+        async with relations:
+            yield relations
 
     provide_commit_transaction = provide(CommitTransaction, scope=Scope.APP)
     provide_output_commits = provide(OutputCommits, scope=Scope.APP)
