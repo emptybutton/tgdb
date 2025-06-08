@@ -13,7 +13,12 @@ from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
     [
         tuple_(1, 2, 3, tid=UUID(int=0)),
         tuple_(
-            -1, "-1", True, 1, None, UUID(int=1234567098765432),
+            -1,
+            "-1",
+            True,
+            1,
+            None,
+            UUID(int=1234567098765432),
             tid=UUID(int=0),
         ),
         tuple_(tid=UUID(int=0)),
@@ -22,14 +27,13 @@ from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
         tuple_(
             None,
             tid=UUID(int=100000),
-            relation_schema_id=RelationSchemaID(
-                Number(1000), Number(200_000)
-        )),
-    ]
+            relation_schema_id=RelationSchemaID(Number(1000), Number(200_000)),
+        ),
+    ],
 )
 def test_isomorphism(tuple: Tuple) -> None:
-    decoded_tuple = (
-        HeapTupleEncoding.decoded_tuple(HeapTupleEncoding.encoded_tuple(tuple))
+    decoded_tuple = HeapTupleEncoding.decoded_tuple(
+        HeapTupleEncoding.encoded_tuple(tuple)
     )
 
     assert decoded_tuple == tuple

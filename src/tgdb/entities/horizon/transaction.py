@@ -251,16 +251,13 @@ class ReadUncommitedTransaction:
 
         self._space[effect.tid] = effect
 
-    def rollback(self) -> None:
-        ...
+    def rollback(self) -> None: ...
 
     def commit(self) -> Commit:
         return Commit(self._xid, frozenset(self._space.values()))
 
     @classmethod
-    def start(
-        cls, xid: XID, time: LogicTime
-    ) -> "ReadUncommitedTransaction":
+    def start(cls, xid: XID, time: LogicTime) -> "ReadUncommitedTransaction":
         return ReadUncommitedTransaction(
             _xid=xid,
             _start_time=time,

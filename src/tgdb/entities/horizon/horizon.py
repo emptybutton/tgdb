@@ -158,7 +158,8 @@ class Horizon:
         self.move_to_future(time)
 
         transaction = self._transaction(
-            xid, SerializableTransactionState.active,
+            xid,
+            SerializableTransactionState.active,
             else_=TransactionCommittingError(),
         )
 
@@ -243,7 +244,7 @@ class Horizon:
     ) -> bool:
         return (
             not isinstance(transaction, SerializableTransaction)
-            or transaction.state is not SerializableTransactionState.prepared
+            or transaction.state() is not SerializableTransactionState.prepared
         )
 
     def _oldest_transaction(self) -> Transaction | None:

@@ -5,9 +5,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True, unsafe_hash=False)
 class AsyncMap[KeyT, ValueT]:
-    _map: dict[KeyT, Future[ValueT]] = field(
-        init=False, default_factory=dict
-    )
+    _map: dict[KeyT, Future[ValueT]] = field(init=False, default_factory=dict)
 
     def __iter__(self) -> Iterator[KeyT]:
         return iter(self._map)

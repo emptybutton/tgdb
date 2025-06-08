@@ -37,7 +37,8 @@ class OutputCommits:
                     try:
                         horizon.complete_commit(time, commit.xid)
                     except (
-                        NoTransactionError, TransactionNotCommittingError
+                        NoTransactionError,
+                        TransactionNotCommittingError,
                     ) as error:
                         await self.channel.publish(commit.xid, error)
                     else:

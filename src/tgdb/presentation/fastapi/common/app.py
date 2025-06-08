@@ -40,7 +40,8 @@ class LefespanBackground:
             task.cancel()
 
     def add(
-        self, func: Callable[[], Coroutine[Any, Any, Any]],
+        self,
+        func: Callable[[], Coroutine[Any, Any, Any]],
     ) -> None:
         decorated_func = self._decorator(func)
         self._create_task(decorated_func())

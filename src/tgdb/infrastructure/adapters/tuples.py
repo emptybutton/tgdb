@@ -32,8 +32,7 @@ from tgdb.infrastructure.telethon.in_telegram_heap import (
 class InMemoryTuples(Tuples):
     _db: InMemoryDb[Tuple]
 
-    async def assert_can_accept_tuples(self, relation: Relation) -> None:
-        ...
+    async def assert_can_accept_tuples(self, relation: Relation) -> None: ...
 
     async def tuples_with_attribute(
         self,
@@ -41,11 +40,13 @@ class InMemoryTuples(Tuples):
         attribute_number: Number,
         attribute_scalar: Scalar,
     ) -> Sequence[Tuple]:
-        return self._db.select_many(lambda it: (
-            it.relation_schema_id.relation_number == relation_number
-            and len(it) >= int(attribute_number)
-            and it[int(attribute_number)] == attribute_scalar
-        ))
+        return self._db.select_many(
+            lambda it: (
+                it.relation_schema_id.relation_number == relation_number
+                and len(it) >= int(attribute_number)
+                and it[int(attribute_number)] == attribute_scalar
+            )
+        )
 
     async def map(self, effects: Sequence[TransactionEffect]) -> None:
         await gather(*map(self._map_one, effects))
@@ -75,7 +76,8 @@ class InMemoryTuples(Tuples):
                     self._db.remove(prevous_tuple)
                     self._db.insert(next_tuple)
 
-                case _: ...
+                case _:
+                    ...
 
     async def _map_one_idempotently(self, effect: TransactionEffect) -> None:
         for tuple_effect in effect:
@@ -91,7 +93,8 @@ class InMemoryTuples(Tuples):
                     self._db.remove(prevous_tuple)
                     self._db.insert(next_tuple)
 
-                case _: ...
+                case _:
+                    ...
 
 
 @dataclass(frozen=True)
@@ -120,20 +123,24 @@ class InTelegramHeapTuples(Tuples):
     async def map(
         self, transaction_effects: Sequence[TransactionEffect]
     ) -> None:
-        await gather(*(
-            self._map_scalar_effect(tuple_effect, idempotently=False)
-            for transaction_effect in transaction_effects
-            for tuple_effect in transaction_effect
-        ))
+        await gather(
+            *(
+                self._map_scalar_effect(tuple_effect, idempotently=False)
+                for transaction_effect in transaction_effects
+                for tuple_effect in transaction_effect
+            )
+        )
 
     async def map_idempotently(
         self, transaction_effects: Sequence[TransactionEffect]
     ) -> None:
-        await gather(*(
-            self._map_scalar_effect(tuple_effect, idempotently=True)
-            for transaction_effect in transaction_effects
-            for tuple_effect in transaction_effect
-        ))
+        await gather(
+            *(
+                self._map_scalar_effect(tuple_effect, idempotently=True)
+                for transaction_effect in transaction_effects
+                for tuple_effect in transaction_effect
+            )
+        )
 
     async def _map_scalar_effect(
         self, scalar_effect: TransactionScalarEffect, idempotently: bool

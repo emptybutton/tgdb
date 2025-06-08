@@ -24,9 +24,9 @@ class RelationsFromInMemoryDbAsRelationViews(
     async def view_of_one_relation(
         self, relation_number: Number
     ) -> Relation | None:
-        return self._relations.select_one(lambda it: (
-            it.number() == relation_number
-        ))
+        return self._relations.select_one(
+            lambda it: (it.number() == relation_number)
+        )
 
 
 @dataclass(frozen=True, unsafe_hash=False)
@@ -41,9 +41,9 @@ class RelationSchemasFromInMemoryDbAsRelationViews(
     async def view_of_one_relation(
         self, relation_number: Number
     ) -> RelationSchema | None:
-        relation = self._relations.select_one(lambda it: (
-            it.number() == relation_number
-        ))
+        relation = self._relations.select_one(
+            lambda it: (it.number() == relation_number)
+        )
 
         if relation is None:
             return None

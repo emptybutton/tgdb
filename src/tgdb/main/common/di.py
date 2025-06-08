@@ -72,7 +72,7 @@ class CommonProvider(Provider):
     provide_commit_queque = provide(
         staticmethod(lambda: InMemoryQueque(AsyncQueque())),
         provides=Queque[Sequence[Commit | PreparedCommit]],
-        scope=Scope.APP
+        scope=Scope.APP,
     )
 
     @provide(scope=Scope.APP)
@@ -85,11 +85,13 @@ class CommonProvider(Provider):
     async def provide_bot_pool(
         self, config: TgdbConfig
     ) -> AsyncIterator[BotPool]:
-        pool = BotPool(loaded_client_pool_from_farm_file(
-            config.clients.bots,
-            config.api.id,
-            config.api.hash,
-        ))
+        pool = BotPool(
+            loaded_client_pool_from_farm_file(
+                config.clients.bots,
+                config.api.id,
+                config.api.hash,
+            )
+        )
         async with pool:
             yield pool
 
@@ -97,11 +99,13 @@ class CommonProvider(Provider):
     async def provide_userbot_pool(
         self, config: TgdbConfig
     ) -> AsyncIterator[UserBotPool]:
-        pool = UserBotPool(loaded_client_pool_from_farm_file(
-            config.clients.userbots,
-            config.api.id,
-            config.api.hash,
-        ))
+        pool = UserBotPool(
+            loaded_client_pool_from_farm_file(
+                config.clients.userbots,
+                config.api.id,
+                config.api.hash,
+            )
+        )
         async with pool:
             yield pool
 
@@ -157,9 +161,9 @@ class CommonProvider(Provider):
         config: TgdbConfig,
     ) -> InMemoryBuffer[ValueT]:
         return InMemoryBuffer(
-           config.buffer.overflow.len,
-           config.buffer.overflow.timeout_seconds,
-           deque(),
+            config.buffer.overflow.len,
+            config.buffer.overflow.timeout_seconds,
+            deque(),
         )
 
     @provide(scope=Scope.APP)
@@ -168,7 +172,7 @@ class CommonProvider(Provider):
         config: TgdbConfig,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
-        buffer: InMemoryBuffer[Commit | PreparedCommit]
+        buffer: InMemoryBuffer[Commit | PreparedCommit],
     ) -> AsyncIterator[Buffer[Commit | PreparedCommit]]:
         in_tg_bytes = InTelegramBytes(
             bot_pool, user_bot_pool, config.buffer.chat
@@ -179,7 +183,9 @@ class CommonProvider(Provider):
         async with biffer:
             yield biffer
 
-    @provide(scope=Scope.APP, )
+    @provide(
+        scope=Scope.APP,
+    )
     async def provide_relations(
         self,
         config: TgdbConfig,

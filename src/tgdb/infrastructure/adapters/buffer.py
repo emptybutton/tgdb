@@ -81,7 +81,7 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[Commit | PreparedCommit]):
         await self._buffer.add(commit)
 
     async def __aiter__(
-        self
+        self,
     ) -> AsyncIterator[Sequence[Commit | PreparedCommit]]:
         async for commits in self._buffer:
             encoded_commits = pickle.dumps(list(commits))

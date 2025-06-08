@@ -5,9 +5,7 @@ from tgdb.presentation.fastapi.horizon.routers import horizon_routers
 from tgdb.presentation.fastapi.relation.routers import relation_routers
 
 
-_monitoring_routers = (
-    healthcheck_router,
-)
+_monitoring_routers = (healthcheck_router,)
 
 
 all_routers = (

@@ -37,7 +37,9 @@ class NewTuple:
 class MutatedTuple:
     tuple: Tuple
 
-    def __and__(self, effect: "TupleEffect") -> "MutatedTuple | DeletedTuple | MigratedTuple":
+    def __and__(
+        self, effect: "TupleEffect"
+    ) -> "MutatedTuple | DeletedTuple | MigratedTuple":
         match effect:
             case JustViewedTuple():
                 return self
@@ -55,7 +57,9 @@ class MutatedTuple:
 class MigratedTuple:
     tuple: Tuple
 
-    def __and__(self, effect: "TupleEffect") -> "MutatedTuple | MigratedTuple | DeletedTuple":
+    def __and__(
+        self, effect: "TupleEffect"
+    ) -> "MutatedTuple | MigratedTuple | DeletedTuple":
         match effect:
             case JustViewedTuple():
                 return self
@@ -94,11 +98,7 @@ class InvalidRelationTupleError(Exception):
 
 
 type TupleEffect = (
-    NewTuple
-    | JustViewedTuple
-    | MutatedTuple
-    | MigratedTuple
-    | DeletedTuple
+    NewTuple | JustViewedTuple | MutatedTuple | MigratedTuple | DeletedTuple
 )
 
 

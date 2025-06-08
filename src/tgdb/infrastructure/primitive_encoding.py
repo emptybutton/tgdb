@@ -16,11 +16,13 @@ _decoded_primitive_type_map = dict[str, type[Primitive]](
     d=datetime,
     u=UUID,
 )
-_encoded_primitive_type_map = dict(zip(
-    _decoded_primitive_type_map.values(),
-    _decoded_primitive_type_map.keys(),
-    strict=True,
-))
+_encoded_primitive_type_map = dict(
+    zip(
+        _decoded_primitive_type_map.values(),
+        _decoded_primitive_type_map.keys(),
+        strict=True,
+    )
+)
 
 
 @dataclass
@@ -30,9 +32,7 @@ class ReversibleTranslationTable:
 
     def __post_init__(self) -> None:
         self._reversed_map = {
-            value: key
-            for key, value in self._map.items()
-            if value is not None
+            value: key for key, value in self._map.items() if value is not None
         }
 
     def map(self) -> Mapping[int, int | None]:
@@ -89,7 +89,8 @@ def encoded_uuid(uuid: UUID) -> str:
 
 
 def encoded_primitive_with_type(
-    primitive: Primitive, table: ReversibleTranslationTable,
+    primitive: Primitive,
+    table: ReversibleTranslationTable,
 ) -> str:
     body = encoded_primitive_without_type(primitive, table)
     header = _encoded_primitive_type_map[type(primitive)]

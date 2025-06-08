@@ -22,11 +22,7 @@ class IntDomainSchema(BaseModel):
 
     @classmethod
     def of(cls, domain: "IntDomain") -> "IntDomainSchema":
-        return cls(
-            min=domain.min,
-            max=domain.max,
-            IsNonable=domain.is_nonable
-        )
+        return cls(min=domain.min, max=domain.max, IsNonable=domain.is_nonable)
 
     def decoded(self) -> "IntDomain":
         return IntDomain(self.min, self.max, self.is_nonable)

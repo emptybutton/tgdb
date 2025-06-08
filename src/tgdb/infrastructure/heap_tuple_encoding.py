@@ -65,22 +65,23 @@ class HeapTupleEncoding:
             for attribute_number in range(len(tuple_))
         )
 
-        return Separator.top_tuple.value.join(
-            (encoded_metadata, *encoded_attributes)
-        )
+        return Separator.top_tuple.value.join((
+            encoded_metadata,
+            *encoded_attributes,
+        ))
 
     @staticmethod
     def decoded_tuple(encoded_tuple: str) -> Tuple:
-        encoded_metadata, *encoded_attributes = (
-            encoded_tuple.split(Separator.top_tuple.value)
+        encoded_metadata, *encoded_attributes = encoded_tuple.split(
+            Separator.top_tuple.value
         )
 
         tid, relation_schema_id = _HeapTupleMetadataEncoding.decoded_metadata(
             encoded_metadata
         )
-        scalars = tuple(map(
-            _HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes
-        ))
+        scalars = tuple(
+            map(_HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes)
+        )
 
         return Tuple(tid, relation_schema_id, scalars)
 
@@ -91,9 +92,7 @@ class HeapTupleEncoding:
         attribute_scalar: Scalar,
     ) -> str:
         return _HeapTupleAttributeEncoding.encoded_attribute(
-            relation_number,
-            attribute_number,
-            attribute_scalar
+            relation_number, attribute_number, attribute_scalar
         )
 
     @staticmethod
@@ -121,7 +120,7 @@ class _HeapTupleMetadataEncoding:
             encoded_metadata.split(Separator.top_metadata.value)
         )
 
-        relation_version_number = (Number(decoded_int(encoded_version_number)))
+        relation_version_number = Number(decoded_int(encoded_version_number))
         relation_number = Number(decoded_int(encoded_relation_number))
         tid = decoded_uuid(encoded_tid)
 
@@ -178,5 +177,5 @@ class _HeapTupleAttributeEncoding:
                     domain,
                     key=lambda it: (
                         encoded_primitive_without_type(it, heap_tuple_table)
-                    )
+                    ),
                 )

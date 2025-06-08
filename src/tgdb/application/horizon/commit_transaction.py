@@ -35,9 +35,7 @@ class CommitTransaction:
     channel: Channel
     commit_buffer: Buffer[Commit | PreparedCommit]
 
-    async def __call__(
-        self, xid: XID, operators: Sequence[Operator]
-    ) -> None:
+    async def __call__(self, xid: XID, operators: Sequence[Operator]) -> None:
         """
         :raises tgdb.application.relation.ports.relations.NoRelationError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:

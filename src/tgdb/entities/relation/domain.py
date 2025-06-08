@@ -61,10 +61,5 @@ type SetDomain = tuple[Scalar, ...]
 
 
 type Domain = (
-    IntDomain
-    | StrDomain
-    | BoolDomain
-    | DatetimeDomain
-    | UuidDomain
-    | SetDomain
+    IntDomain | StrDomain | BoolDomain | DatetimeDomain | UuidDomain | SetDomain
 )

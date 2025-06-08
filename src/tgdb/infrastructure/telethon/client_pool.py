@@ -25,14 +25,16 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     )
 
     async def __aenter__(self) -> Self:
-        await gather(*(
-            client.__aenter__()  # type: ignore[no-untyped-call]
-            for client in self._clients
-        ))
+        await gather(
+            *(
+                client.__aenter__()  # type: ignore[no-untyped-call]
+                for client in self._clients
+            )
+        )
 
         for client in self._clients:
-            client_info = (
-                cast(InputPeerUser, await client.get_me(input_peer=True))
+            client_info = cast(
+                InputPeerUser, await client.get_me(input_peer=True)
             )
             client_id = client_info.user_id
 
@@ -46,10 +48,12 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
         error: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        await gather(*(
-            client.__aexit__(error_type, error, traceback)  # type: ignore[no-untyped-call]
-            for client in self._clients
-        ))
+        await gather(
+            *(
+                client.__aexit__(error_type, error, traceback)  # type: ignore[no-untyped-call]
+                for client in self._clients
+            )
+        )
 
     def __call__(self, client_id: int | None = None) -> TelegramClient:
         if client_id is None:
@@ -74,11 +78,13 @@ def loaded_client_pool_from_farm_file(
     farm_file_path: Path, app_api_id: int, app_api_hash: str
 ) -> TelegramClientPool:
     with farm_file_path.open() as farm_file:
-        return TelegramClientPool(deque(
-            pool_client(session_token, app_api_id, app_api_hash)
-            for session_token in map(_clean_line, farm_file)
-            if session_token
-        ))
+        return TelegramClientPool(
+            deque(
+                pool_client(session_token, app_api_id, app_api_hash)
+                for session_token in map(_clean_line, farm_file)
+                if session_token
+            )
+        )
 
 
 def pool_client(

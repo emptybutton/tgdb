@@ -44,9 +44,7 @@ def test_with_only_start(
     |-
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
 
     if object == "bool":
         assert horizon
@@ -65,12 +63,8 @@ def test_two_concurrent_transactions(
      |-
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
 
     if object == "bool":
         assert horizon
@@ -124,9 +118,7 @@ def test_with_two_start(horizon: Horizon) -> None:
     ||-
     """
 
-    horizon.start_transaction(
-        2, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(2, UUID(int=1), IsolationLevel.serializable)
 
     with raises(DoubleStartTransactionError):
         horizon.start_transaction(3, UUID(int=1), IsolationLevel.serializable)
@@ -141,9 +133,7 @@ def test_rollback_with_transaction(
     |--|
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     horizon.rollback_transaction(2, UUID(int=1))
 
     if object == "bool":
@@ -162,9 +152,7 @@ def test_commit_with_transaction_without_transaction_effect(
     |--|-|
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     commit = horizon.commit_transaction(2, UUID(int=1), [])
 
     if object == "bool":
@@ -186,9 +174,7 @@ def test_commit_completion_with_transaction_without_transaction_effect(
     |--|-|
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     horizon.commit_transaction(2, UUID(int=1), [])
     commit = horizon.complete_commit(3, UUID(int=1))
 
@@ -230,9 +216,7 @@ def test_commit_with_transaction_with_effect(
     |--|-|
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
 
     prepared_commit = horizon.commit_transaction(
         2,
@@ -280,13 +264,9 @@ def test_horizon_movement(
          |---||
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
 
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
 
     horizon.commit_transaction(3, UUID(int=1), [])
     horizon.complete_commit(4, UUID(int=1))
@@ -294,9 +274,7 @@ def test_horizon_movement(
     if object == "len_after_commit1":
         assert len(horizon) == 1
 
-    horizon.start_transaction(
-        5, UUID(int=3), IsolationLevel.serializable
-    )
+    horizon.start_transaction(5, UUID(int=3), IsolationLevel.serializable)
 
     horizon.commit_transaction(6, UUID(int=2), [])
     horizon.complete_commit(7, UUID(int=2))
@@ -323,17 +301,13 @@ def test_with_sequential_transactions(
     |--|-| |--|-|
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     commit = horizon.commit_transaction(
         2, UUID(int=1), [MutatedTuple(tuple_("a", tid=UUID(int=1)))]
     )
     commit1 = horizon.complete_commit(3, commit.xid)
 
-    horizon.start_transaction(
-        4, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(4, UUID(int=2), IsolationLevel.serializable)
     commit = horizon.commit_transaction(
         5, UUID(int=2), [MutatedTuple(tuple_("b", tid=UUID(int=1)))]
     )
@@ -363,13 +337,9 @@ def test_conflict_by_id_with_left_transaction(
        |---|
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
 
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
 
     commit = horizon.commit_transaction(
         3, UUID(int=1), [MutatedTuple(tuple_("a", tid=UUID(int=1)))]
@@ -406,13 +376,9 @@ def test_conflict_by_id_with_subset_transaction(
        |---||
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
 
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
 
     commit2 = horizon.commit_transaction(
         3, UUID(int=2), [MutatedTuple(tuple_("b", tid=UUID(int=1)))]
@@ -461,15 +427,9 @@ def test_conflict_by_id_with_left_long_distance_transaction(
     3 mutates 1
     """
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
-    horizon.start_transaction(
-        3, UUID(int=3), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
+    horizon.start_transaction(3, UUID(int=3), IsolationLevel.serializable)
 
     commit = horizon.commit_transaction(
         4, UUID(int=2), [MutatedTuple(tuple_(tid=UUID(int=2)))]
@@ -512,19 +472,13 @@ def test_max_len() -> None:
 
     horizon = horizon_(max_len=2, time=0, max_transaction_age=1000)
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     assert len(horizon) == 1
 
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
     assert len(horizon) == 2
 
-    horizon.start_transaction(
-        3, UUID(int=3), IsolationLevel.serializable
-    )
+    horizon.start_transaction(3, UUID(int=3), IsolationLevel.serializable)
     assert len(horizon) == 2
 
 
@@ -539,19 +493,13 @@ def test_max_transaction_age() -> None:
 
     horizon = horizon_(max_len=1000, time=0, max_transaction_age=2)
 
-    horizon.start_transaction(
-        1, UUID(int=1), IsolationLevel.serializable
-    )
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     assert len(horizon) == 1
 
-    horizon.start_transaction(
-        2, UUID(int=2), IsolationLevel.serializable
-    )
+    horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
     assert len(horizon) == 2
 
-    horizon.start_transaction(
-        3, UUID(int=3), IsolationLevel.serializable
-    )
+    horizon.start_transaction(3, UUID(int=3), IsolationLevel.serializable)
     assert len(horizon) == 2
 
     horizon.start_transaction(4, UUID(int=4), IsolationLevel.serializable)

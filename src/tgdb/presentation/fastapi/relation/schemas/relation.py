@@ -18,9 +18,9 @@ class InitialRelationVersionSchema(BaseModel):
     schema_: SchemaSchema = Field(alias="schema")
 
     @classmethod
-    def of(cls, version: InitialRelationVersion) -> (
-        "InitialRelationVersionSchema"
-    ):
+    def of(
+        cls, version: InitialRelationVersion
+    ) -> "InitialRelationVersionSchema":
         return InitialRelationVersionSchema(
             number=int(version.number),
             schema=SchemaSchema.of(version.schema),
@@ -33,9 +33,9 @@ class DerivativeRelationVersionSchema(BaseModel):
     migration_id: UUID = Field(alias="migrationID")
 
     @classmethod
-    def of(cls, version: DerivativeRelationVersion) -> (
-        "DerivativeRelationVersionSchema"
-    ):
+    def of(
+        cls, version: DerivativeRelationVersion
+    ) -> "DerivativeRelationVersionSchema":
         return DerivativeRelationVersionSchema(
             number=int(version.number),
             schema=SchemaSchema.of(version.schema),
@@ -54,13 +54,15 @@ class RelationSchema(BaseModel):
 
     @classmethod
     def of(cls, relation: Relation) -> "RelationSchema":
-        initial_version = (
-            InitialRelationVersionSchema.of(relation.initial_version())
+        initial_version = InitialRelationVersionSchema.of(
+            relation.initial_version()
         )
-        intermediate_versions = tuple(map(
-            DerivativeRelationVersionSchema.of,
-            relation.intermediate_versions(),
-        ))
+        intermediate_versions = tuple(
+            map(
+                DerivativeRelationVersionSchema.of,
+                relation.intermediate_versions(),
+            )
+        )
 
         return RelationSchema(
             number=int(relation.number()),

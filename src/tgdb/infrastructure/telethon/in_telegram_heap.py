@@ -61,9 +61,7 @@ class InTelegramHeap:
         if len(encoded_largest_tuple) > self._encoded_tuple_max_len:
             raise UnacceptableTupleError(len(encoded_largest_tuple))
 
-    def assert_can_accept_tuples_of_relation(
-        self, relation: Relation
-    ) -> None:
+    def assert_can_accept_tuples_of_relation(self, relation: Relation) -> None:
         """
         :raises tgdb.infrastructure.telethon.in_telegram_heap.UnacceptableTupleError:
         """  # noqa: E501

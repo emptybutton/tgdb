@@ -23,9 +23,10 @@ def message_index_lazy_map(
         chat_id, tid = tuple_index
 
         search = HeapTupleEncoding.id_of_encoded_tuple_with_tid(tid)
-        messages = cast(TotalList, await pool().get_messages(
-            chat_id, search=search, limit=1
-        ))
+        messages = cast(
+            TotalList,
+            await pool().get_messages(chat_id, search=search, limit=1),
+        )
 
         if not messages:
             return None
