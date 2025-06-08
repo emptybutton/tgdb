@@ -1,9 +1,9 @@
-import pickle
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Self
+from typing import ClassVar, Self
 
 from in_memory_db import InMemoryDb
+from pydantic import TypeAdapter
 
 from tgdb.application.relation.ports.relations import (
     NoRelationError,
@@ -12,6 +12,7 @@ from tgdb.application.relation.ports.relations import (
 )
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.relation import Relation
+from tgdb.infrastructure.pydantic.relation.relation import EncodableRelation
 from tgdb.infrastructure.telethon.in_telegram_bytes import InTelegramBytes
 
 
@@ -43,6 +44,8 @@ class InMemoryRelations(Relations):
 class InTelegramReplicableRelations(Relations):
     _in_tg_encoded_relations: InTelegramBytes
     _cached_relations: InMemoryDb[Relation]
+
+    _adapter: ClassVar = TypeAdapter(tuple[EncodableRelation, ...])
 
     async def __aenter__(self) -> Self:
         for loaded_relation in await self._loaded_relations():
@@ -88,8 +91,11 @@ class InTelegramReplicableRelations(Relations):
 
         self._cached_relations.insert(relation)
 
-        encoded_cached_relations = pickle.dumps(tuple(self._cached_relations))
-        await self._in_tg_encoded_relations.set(encoded_cached_relations)
+        encodable_relations = (
+            tuple(map(EncodableRelation.of, self._cached_relations))
+        )
+        encoded_relations = self._adapter.dump_json(encodable_relations, by_alias=True)
+        await self._in_tg_encoded_relations.set(encoded_relations)
 
     async def _loaded_relations(self) -> tuple[Relation, ...]:
         encoded_relations = await self._in_tg_encoded_relations
@@ -97,13 +103,5 @@ class InTelegramReplicableRelations(Relations):
         if encoded_relations is None:
             return tuple()
 
-        relations = pickle.loads(encoded_relations)
-
-        if not isinstance(relations, tuple):
-            raise TypeError(relations)
-
-        for relation in relations:
-            if not isinstance(relation, Relation):
-                raise TypeError(relation)
-
-        return relations
+        encodable_relations = self._adapter.validate_json(encoded_relations)
+        return tuple(it.entity() for it in encodable_relations)

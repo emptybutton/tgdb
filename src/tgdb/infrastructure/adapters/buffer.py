@@ -1,13 +1,18 @@
-import pickle
 from asyncio import Event, wait_for
 from collections import deque
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Self
+from typing import ClassVar, Self
+
+from pydantic import TypeAdapter
 
 from tgdb.application.common.ports.buffer import Buffer
 from tgdb.entities.horizon.transaction import Commit, PreparedCommit
+from tgdb.infrastructure.pydantic.horizon.commit import (
+    EncodableCommit,
+    EncodablePreparedCommit,
+)
 from tgdb.infrastructure.telethon.in_telegram_bytes import InTelegramBytes
 
 
@@ -51,22 +56,20 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[Commit | PreparedCommit]):
     _buffer: Buffer[Commit | PreparedCommit]
     _in_tg_encoded_commits: InTelegramBytes
 
+    _adapter: ClassVar = TypeAdapter(
+        tuple[EncodableCommit | EncodablePreparedCommit, ...]
+    )
+
     async def __aenter__(self) -> Self:
         encoded_commits = await self._in_tg_encoded_commits
 
         if encoded_commits is None:
             return self
 
-        commits = pickle.loads(encoded_commits)
+        encodable_commits = self._adapter.validate_json(encoded_commits)
 
-        if not isinstance(commits, list):
-            raise TypeError(str(commits))
-
-        for commit in commits:
-            if not isinstance(commit, PreparedCommit):
-                raise TypeError(str(commits))
-
-            await self._buffer.add(commit)
+        for commit in encodable_commits:
+            await self._buffer.add(commit.entity())
 
         return self
 
@@ -84,7 +87,18 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[Commit | PreparedCommit]):
         self,
     ) -> AsyncIterator[Sequence[Commit | PreparedCommit]]:
         async for commits in self._buffer:
-            encoded_commits = pickle.dumps(list(commits))
+            encodable_commits = tuple(map(self._encodable_commit, commits))
+            encoded_commits = self._adapter.dump_json(encodable_commits)
             await self._in_tg_encoded_commits.set(encoded_commits)
 
             yield commits
+
+    def _encodable_commit(
+        self, commit: Commit | PreparedCommit
+    ) -> EncodableCommit | EncodablePreparedCommit:
+        match commit:
+            case Commit():
+                return EncodableCommit.of(commit)
+
+            case PreparedCommit():
+                return EncodablePreparedCommit.of(commit)
