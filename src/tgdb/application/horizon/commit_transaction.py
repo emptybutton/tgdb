@@ -55,8 +55,8 @@ class CommitTransaction:
             self.channel.wait(commit.xid),
             self.commit_buffer.add(commit),
         )
-        if notification.error is not None:
-            raise notification.error from notification.error
+        if notification is not None:
+            raise notification from notification
 
     async def _effect(
         self, operator: Operator

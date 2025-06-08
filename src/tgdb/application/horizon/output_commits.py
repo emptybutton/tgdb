@@ -10,7 +10,7 @@ from tgdb.entities.horizon.horizon import (
     NoTransactionError,
     TransactionNotCommittingError,
 )
-from tgdb.entities.horizon.transaction import XID, Commit, PreparedCommit
+from tgdb.entities.horizon.transaction import Commit, PreparedCommit
 
 
 @dataclass(frozen=True)
@@ -22,26 +22,23 @@ class OutputCommits:
     clock: Clock
 
     async def __call__(self) -> None:
-        async for prepared_commits in self.commit_buffer:
-            await self.output_commits.push(prepared_commits)
+        async for commits in self.commit_buffer:
+            await self.output_commits.push(commits)
             await self.output_commits.sync()
 
-            ok_commit_xids = list[XID]()
-            error_commit_map = dict[
-                XID, NoTransactionError | TransactionNotCommittingError
-            ]()
-
             async with self.shared_horizon as horizon:
-                for prepared_commit in prepared_commits:
+                for commit in commits:
+                    if isinstance(commit, Commit):
+                        await self.channel.publish(commit.xid, None)
+                        continue
+
                     time = await self.clock
 
                     try:
-                        horizon.complete_commit(time, prepared_commit.xid)
+                        horizon.complete_commit(time, commit.xid)
                     except (
                         NoTransactionError, TransactionNotCommittingError
                     ) as error:
-                        error_commit_map[prepared_commit.xid] = error
+                        await self.channel.publish(commit.xid, error)
                     else:
-                        ok_commit_xids.append(prepared_commit.xid)
-
-                await self.channel.publish(ok_commit_xids, error_commit_map)
+                        await self.channel.publish(commit.xid, None)

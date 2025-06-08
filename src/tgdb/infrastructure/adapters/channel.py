@@ -1,5 +1,4 @@
 from asyncio import wait_for
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from tgdb.application.horizon.ports.channel import Channel, Notification
@@ -20,22 +19,11 @@ class AsyncMapChannel(Channel):
 
     async def publish(
         self,
-        ok_commit_xids: Sequence[XID],
-        error_commit_map: Mapping[
-            XID, NoTransactionError | TransactionNotCommittingError
-        ],
+        xid: XID,
+        notification: Notification,
     ) -> None:
-        for ok_commit_xid in ok_commit_xids:
-            self._async_map[ok_commit_xid] = None
-            del self._async_map[ok_commit_xid]
-
-        for error_commit_xid, error in error_commit_map.items():
-            self._async_map[error_commit_xid] = error
-            del self._async_map[error_commit_xid]
+        self._async_map[xid] = notification
+        del self._async_map[xid]
 
     async def wait(self, xid: XID) -> Notification:
-        notification_error = await wait_for(
-            self._async_map[xid], self._timeout_seconds
-        )
-
-        return Notification(notification_error)
+        return await wait_for(self._async_map[xid], self._timeout_seconds)
