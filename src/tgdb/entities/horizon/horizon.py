@@ -215,6 +215,9 @@ class Horizon:
             if oldest_transaction.age(self._time) <= self._max_transaction_age:
                 break
 
+            if not self._is_transaction_autorollbackable(oldest_transaction):
+                continue
+
             oldest_transaction.rollback()
             del self._transaction_map(oldest_transaction)[
                 oldest_transaction.xid()
@@ -227,10 +230,21 @@ class Horizon:
             if oldest_transaction is None:
                 return
 
+            if not self._is_transaction_autorollbackable(oldest_transaction):
+                continue
+
             oldest_transaction.rollback()
             del self._transaction_map(oldest_transaction)[
                 oldest_transaction.xid()
             ]
+
+    def _is_transaction_autorollbackable(
+        self, transaction: Transaction
+    ) -> bool:
+        return (
+            not isinstance(transaction, SerializableTransaction)
+            or transaction.state is not SerializableTransactionState.prepared
+        )
 
     def _oldest_transaction(self) -> Transaction | None:
         first_map_tranactions = (
