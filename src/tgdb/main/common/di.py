@@ -172,16 +172,18 @@ class CommonProvider(Provider):
         config: TgdbConfig,
         bot_pool: BotPool,
         user_bot_pool: UserBotPool,
-        buffer: InMemoryBuffer[Commit | PreparedCommit],
+        in_memory_buffer: InMemoryBuffer[Commit | PreparedCommit],
     ) -> AsyncIterator[Buffer[Commit | PreparedCommit]]:
         in_tg_bytes = InTelegramBytes(
             bot_pool, user_bot_pool, config.buffer.chat
         )
 
-        biffer = InTelegramReplicablePreparedCommitBuffer(buffer, in_tg_bytes)
+        buffer = InTelegramReplicablePreparedCommitBuffer(
+            in_memory_buffer, in_tg_bytes
+        )
 
-        async with biffer:
-            yield biffer
+        async with buffer:
+            yield buffer
 
     @provide(
         scope=Scope.APP,
