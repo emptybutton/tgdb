@@ -19,7 +19,7 @@ class JustViewedTuple:
 class NewTuple:
     tuple: Tuple
 
-    def __and__(self, effect: "TupleEffect") -> "TupleEffect":
+    def __and__(self, effect: "TupleEffect") -> "NewTuple | DeletedTuple":
         match effect:
             case JustViewedTuple():
                 return self
@@ -37,7 +37,7 @@ class NewTuple:
 class MutatedTuple:
     tuple: Tuple
 
-    def __and__(self, effect: "TupleEffect") -> "TupleEffect":
+    def __and__(self, effect: "TupleEffect") -> "MutatedTuple | DeletedTuple | MigratedTuple":
         match effect:
             case JustViewedTuple():
                 return self
@@ -55,13 +55,13 @@ class MutatedTuple:
 class MigratedTuple:
     tuple: Tuple
 
-    def __and__(self, effect: "TupleEffect") -> "TupleEffect":
+    def __and__(self, effect: "TupleEffect") -> "MutatedTuple | MigratedTuple | DeletedTuple":
         match effect:
             case JustViewedTuple():
                 return self
             case NewTuple(tuple):
                 return MutatedTuple(tuple)
-            case MutatedTuple() | DeletedTuple() | MigratedTuple():
+            case MutatedTuple() | MigratedTuple() | DeletedTuple():
                 return effect
 
     @property
@@ -73,7 +73,7 @@ class MigratedTuple:
 class DeletedTuple:
     tid: TID
 
-    def __and__(self, effect: "TupleEffect") -> "TupleEffect":
+    def __and__(self, effect: "TupleEffect") -> "DeletedTuple | MutatedTuple":
         match effect:
             case (
                 JustViewedTuple()

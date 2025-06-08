@@ -590,3 +590,18 @@ def test_no_memory_leak(horizon: Horizon) -> None:
         horizon.complete_commit(time, commit.xid)
 
     assert not live_transactions
+
+
+def test_read_uncommited_commit(horizon: Horizon) -> None:
+    """
+    |--|
+    """
+
+    horizon.start_transaction(1, UUID(int=1), IsolationLevel.read_uncommited)
+    commit = horizon.commit_transaction(
+        2, UUID(int=1), [MutatedTuple(tuple_(tid=UUID(int=2)))]
+    )
+
+    assert commit == Commit(
+        UUID(int=1), frozenset({MutatedTuple(tuple_(tid=UUID(int=2)))})
+    )

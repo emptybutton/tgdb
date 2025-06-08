@@ -231,7 +231,7 @@ class SerializableTransaction:
 class ReadUncommitedTransaction:
     _xid: XID
     _start_time: LogicTime
-    _space: dict[TID, TupleEffect]
+    _space: dict[TID, TransactionScalarEffect]
 
     def xid(self) -> XID:
         return self._xid
@@ -255,7 +255,7 @@ class ReadUncommitedTransaction:
         ...
 
     def commit(self) -> Commit:
-        return Commit(self._xid, frozenset())
+        return Commit(self._xid, frozenset(self._space.values()))
 
     @classmethod
     def start(
