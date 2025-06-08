@@ -94,7 +94,7 @@ class InTelegramReplicableRelations(Relations):
         encodable_relations = (
             tuple(map(EncodableRelation.of, self._cached_relations))
         )
-        encoded_relations = self._adapter.dump_json(encodable_relations, by_alias=True)
+        encoded_relations = self._adapter.dump_json(encodable_relations)
         await self._in_tg_encoded_relations.set(encoded_relations)
 
     async def _loaded_relations(self) -> tuple[Relation, ...]:

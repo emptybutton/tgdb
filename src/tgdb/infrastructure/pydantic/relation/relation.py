@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from annotated_types import Ge
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from tgdb.entities.numeration.number import Number
 from tgdb.entities.relation.relation import (
@@ -51,7 +51,7 @@ class EncodableDerivativeRelationVersion(BaseModel):
     ) -> "EncodableDerivativeRelationVersion":
         return EncodableDerivativeRelationVersion(
             number=int(version.number),
-            schema=EncodableSchema.of(version.schema),
+            schema_=EncodableSchema.of(version.schema),
             migration_id=version.migration_id,
         )
 
