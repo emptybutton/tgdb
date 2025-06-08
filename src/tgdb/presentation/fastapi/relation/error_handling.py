@@ -6,7 +6,9 @@ from tgdb.application.relation.ports.relations import (
     NotUniqueRelationNumberError,
 )
 from tgdb.application.relation.ports.tuples import OversizedRelationSchemaError
+from tgdb.entities.relation.tuple_effect import InvalidRelationTupleError
 from tgdb.presentation.fastapi.relation.schemas.error import (
+    InvalidRelationTupleSchema,
     NoRelationSchema,
     NotUniqueRelationNumberSchema,
     OversizedRelationSchemaSchema,
@@ -35,6 +37,15 @@ def add_relation_error_handling(app: FastAPI) -> None:
     @app.exception_handler(OversizedRelationSchemaError)
     def _(_: object, error: OversizedRelationSchemaError) -> Response:
         schema = OversizedRelationSchemaSchema.of(error)
+
+        return JSONResponse(
+            schema.model_dump(mode="json", by_alias=True),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @app.exception_handler(InvalidRelationTupleError)
+    def _(_: object, error: InvalidRelationTupleError) -> Response:
+        schema = InvalidRelationTupleSchema.of(error)
 
         return JSONResponse(
             schema.model_dump(mode="json", by_alias=True),

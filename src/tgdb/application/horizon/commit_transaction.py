@@ -38,6 +38,7 @@ class CommitTransaction:
     async def __call__(self, xid: XID, operators: Sequence[Operator]) -> None:
         """
         :raises tgdb.application.relation.ports.relations.NoRelationError:
+        :raises tgdb.entities.relation.tuple_effect.InvalidRelationTupleError:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
@@ -61,6 +62,7 @@ class CommitTransaction:
     ) -> NewTuple | MutatedTuple | DeletedTuple | Claim:
         """
         :raises tgdb.application.relation.ports.relations.NoRelationError:
+        :raises tgdb.entities.relation.tuple_effect.InvalidRelationTupleError:
         """
 
         match operator:

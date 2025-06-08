@@ -14,6 +14,9 @@ from tgdb.presentation.fastapi.horizon.schemas.error import (
     TransactionCommittingSchema,
     TransactionConflictSchema,
 )
+from tgdb.presentation.fastapi.relation.schemas.error import (
+    InvalidRelationTupleSchema,
+)
 
 
 commit_transaction_router = APIRouter()
@@ -42,7 +45,9 @@ class CommitTransactionSchema(BaseModel):
     responses={
         status.HTTP_204_NO_CONTENT: {"content": None},
         status.HTTP_404_NOT_FOUND: {"model": NoTransactionSchema},
-        status.HTTP_400_BAD_REQUEST: {"model": TransactionCommittingSchema},
+        status.HTTP_400_BAD_REQUEST: {
+            "model": InvalidRelationTupleSchema | TransactionCommittingSchema
+        },
         status.HTTP_409_CONFLICT: {"model": TransactionConflictSchema},
     },
     summary="Commit transaction",
