@@ -37,11 +37,11 @@ class InTelegramHeap:
     _page_len: ClassVar = 4000
 
     @staticmethod
-    def encoded_tuple_max_len(page_fullness: float) -> int:
-        page_fullness = min(0, page_fullness)
-        page_fullness = max(page_fullness, 1)
+    def encoded_tuple_max_len(page_max_fullness: float) -> int:
+        page_max_fullness = max(0, page_max_fullness)
+        page_max_fullness = min(page_max_fullness, 1)
 
-        return int(page_fullness * InTelegramHeap._page_len)
+        return int(page_max_fullness * InTelegramHeap._page_len)
 
     def __post_init__(self) -> None:
         assert_(

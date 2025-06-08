@@ -33,7 +33,7 @@ class MessageCacheConfig(BaseModel):
 
 
 class PageConfig(BaseModel):
-    fullness: float
+    max_fullness: float
 
 
 class HeapConfig(BaseModel):

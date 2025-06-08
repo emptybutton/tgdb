@@ -139,9 +139,9 @@ class InTelegramHeapTuples(Tuples):
         self, scalar_effect: TransactionScalarEffect, idempotently: bool
     ) -> None:
         match scalar_effect, idempotently:
-            case NewTuple(tuple), True:
-                await self._heap.insert(tuple)
             case NewTuple(tuple), False:
+                await self._heap.insert(tuple)
+            case NewTuple(tuple), True:
                 await self._heap.insert_idempotently(tuple)
             case MutatedTuple(tuple) | MigratedTuple(tuple), _:
                 await self._heap.update(tuple)

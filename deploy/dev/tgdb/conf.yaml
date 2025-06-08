@@ -22,7 +22,7 @@ conf:
   heap:
     chat: -1005000124280
     page:
-      fullness: 0.8
+      max_fullness: 0.8
 
   relations:
     chat: -1005000098156

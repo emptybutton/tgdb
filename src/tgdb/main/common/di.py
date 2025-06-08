@@ -141,7 +141,7 @@ class CommonProvider(Provider):
             bot_pool,
             bot_pool,
             config.heap.chat,
-            InTelegramHeap.encoded_tuple_max_len(config.heap.page.fullness),
+            InTelegramHeap.encoded_tuple_max_len(config.heap.page.max_fullness),
             message_index_lazy_map,
         )
 

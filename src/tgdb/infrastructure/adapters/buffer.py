@@ -35,11 +35,11 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
                 if not self._values:
                     continue
 
+            values = tuple(self._values)
+            self._values.clear()
+
             self._is_overflowed.clear()
-            yield tuple(
-                self._values.popleft()
-                for _ in range(self._len_to_overflow)
-            )
+            yield values
 
     def _refresh_overflow(self) -> None:
         if len(self._values) >= self._len_to_overflow:
