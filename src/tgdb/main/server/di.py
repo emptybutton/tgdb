@@ -14,7 +14,7 @@ from tgdb.presentation.adapters.relation_views import (
     RelationSchemasFromInMemoryDbAsRelationViews,
 )
 from tgdb.presentation.fastapi.common.app import (
-    FastAPIAppCoroutines,
+    FastAPIAppBackground,
     FastAPIAppRouters,
     FastAPIAppVersion,
 )
@@ -46,10 +46,10 @@ class FastAPIProvider(Provider):
         self,
         output_commits_to_tuples: OutputCommitsToTuples,
         output_commits: OutputCommits,
-    ) -> FastAPIAppCoroutines:
-        return FastAPIAppCoroutines((
-            output_commits(),
-            output_commits_to_tuples(),
+    ) -> FastAPIAppBackground:
+        return FastAPIAppBackground((
+            output_commits,
+            output_commits_to_tuples,
         ))
 
     @provide(scope=Scope.APP)
