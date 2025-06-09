@@ -47,3 +47,16 @@ jobs:
         run: uv publish
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+  docker-hub-publish:
+    environment:
+      name: docker hub
+      url: https://hub.docker.com/r/n255/tgdb
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: login
+        run: echo ${{ secrets.DOCKER_PAT }} | docker login -u ${{ vars.DOCKER_USER }} --password-stdin
+
+      - name: build and publish
+        run: docker build . -f deploy/slim/Dockerfile -t ${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPO }}:${{ github.event.release.tag_name }}-slim --push
