@@ -22,4 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: pytest
-        run: docker compose -f deploy/dev/docker-compose.yaml run tgdb pytest tests
+        run: docker compose -f deploy/dev/docker-compose.yaml run tgdb pytest tests --cov --cov-report=xml
+
+      - name: upload coverage reports to codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
