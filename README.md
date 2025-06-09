@@ -2,11 +2,82 @@
 [![CI](https://github.com/emptybutton/tgdb/actions/workflows/ci.yml/badge.svg)](https://github.com/emptybutton/tgdb/actions?query=workflow%3ACI)
 [![CD](https://github.com/emptybutton/tgdb/actions/workflows/cd.yml/badge.svg)](https://github.com/emptybutton/tgdb/actions/workflows/cd.yaml)
 [![GitHub Release](https://img.shields.io/github/v/release/emptybutton/tgdb?style=flat&logo=github&labelColor=%23282e33&color=%237c73ff)](https://github.com/emptybutton/tgdb/releases)
-[![Lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fghloc.vercel.app%2Fapi%2Femptybutton%2Ftgdb%2Fbadge%3Ffilter%3D.py&logo=python&label=lines&color=blue)](https://github.com/search?q=repo%3Aemptybutton%2tgdb+language%3APython+&type=code)
 [![Wakatime](https://wakatime.com/badge/user/0d3b7ff5-0547-4323-a43e-2a7308d973a0/project/2e316b92-fcf1-44d8-ad77-6c81e23cdfe2.svg)](https://wakatime.com/badge/user/0d3b7ff5-0547-4323-a43e-2a7308d973a0/project/2e316b92-fcf1-44d8-ad77-6c81e23cdfe2)
+[![Lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fghloc.vercel.app%2Fapi%2Femptybutton%2Ftgdb%2Fbadge%3Ffilter%3D.py&logo=python&label=lines&color=blue)](https://github.com/search?q=repo%3Aemptybutton%2tgdb+language%3APython+&type=code)
+[![codecov](https://codecov.io/gh/emptybutton/tgdb/graph/badge.svg?token=ILGHUT1KRH)](https://codecov.io/gh/emptybutton/tgdb)
 
 РСУБД поверх Telegram.
 
 ```bash
 pip install tgdb
 ```
+
+```bash
+docker pull n255/tgdb:0.1.0-slim
+```
+
+> [!CAUTION]
+> **Не используйте этот проект с большим количеством ботов**, так как он нарушает правила Telegram-а и ухудшает его работоспособность из-за создания паразитической нагрузки.
+> 
+> В противном случае ваши данные могут быть удалены, а аккаунты забанены. 
+
+## Overview
+`tgdb` - это СУБД хранящая данные в чатах телеграмма и предоставляющая доступ к ним в виде реляционной модели и ACID транзакций.
+
+Всё взаимодействие с Telegram происходит через ботов/юзерботов, которые имеют фиксированные [лимиты](https://limits.tginfo.me/en) для отправки запросов в некотором промежутке времени и фактически являюстя арендой очень маленького кусочка инфраструктуры Telegram-а.
+
+Из-за специфичных лимитов, операции над сообщениями имеют слишком разную цену, чем у операций, которыми можно обращатся с памятью или дисковым пространством, что требует альтернативных решений даже над простыми вещами, которые имеют устоявшиеся подходы:
+- Все операции можно выполнять за константное время (обычно от 200мс до 400мс), но чтение гораздо дороже операций записи, из-за того что читать сообщения могут только юзерботы. 
+Для регистрации юзерботов нужен отдельный номер (а по закону РФ одно физ. лицо может иметь только 20 номеров любых провайдеров), когда для обычных ботов нужно только регестрация у BotFather.
+- Несмотря на сложность создания юзерботов, можно читать сразу много сообщений за одно обращение, а писать новые сообщения можно только по обращению на каждое новое сообщение.
+Обновления само по себе является записью, но для него первоначально необходимо найти то сообщение, которое нужно обновить.
+Удалять можно сразу много сообщений, которых также необходимо найти, но в отличии от обновления, удалять можно сразу много сообщений за одно обращение.
+
+## Операции
+На данный момент можно читать кортежи только до записи, а сама запись возможна только одним bulk запросом вместе с коммитом. В дальнейшем возможно сделать выполнение операторов таким же, как в обычных СУБД, но пока это не сделано.
+
+`tgdb` не использует MVCC, поэтому невозможно сделать Repeatable Read в том виде, что бы он был легче Serializable, поэтому может быть только три уровня изоляции:
+
+> `n` - количество транзакций этого уровня изоляции.
+
+<table>
+  <tr>
+    <th>Уровень изоляции</th>
+    <th>Особенности</th>
+    <th>Скорость старта</th>
+    <th>Скорость коммита</th>
+    <th>Скорость роллбека</th>
+    <th>Память</th>
+    <th>Главный Bottle Neck</th>
+  </tr>
+  <tr>
+    <td><b>Serializable</b></td>
+    <td>В лучшем случае позволяют избежать любых аномалий. Нужно ретраить транзакции по ошибке сериализуемости</td>
+    <td>O(n)</td>
+    <td>O(n)</td>
+    <td>O(n)</td>
+    <td>O(n^2)</td>
+    <td>CPU и память</td>
+  </tr>
+  <tr>
+    <td><b>Read Сommited</b></td>
+    <td>Пока не существует. Транзакции могут видеть только зафиксированные данные. Любые операции чтения могут выполнятся в 3 раза дольше</td>
+    <td>O(1)</td>
+    <td>O(1)</td>
+    <td>O(1)</td>
+    <td>O(n)</td>
+    <td>IO</td>
+  </tr>
+  <tr>
+    <td><b>Read Uncommited</b></td>
+    <td>Транзакции могут видеть не зафиксированные изменения других транзакций</td>
+    <td>O(1)</td>
+    <td>O(1)</td>
+    <td>O(1)</td>
+    <td>O(n)</td>
+    <td>IO</td>
+  </tr>
+</table>
+
+> [!IMPORTANT]
+> Если паралельно выполняются несколько транзакций с разным уровнем изоляции, то у всей группы будут гарантии минимального уровня изоляции.
