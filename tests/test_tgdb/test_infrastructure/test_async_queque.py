@@ -17,7 +17,9 @@ def queque() -> Queque:
 
 
 async def iterate(
-    queque: Queque, result: list[tuple[int, int]], iter_: AsyncIterable[int],
+    queque: Queque,
+    result: list[tuple[int, int]],
+    iter_: AsyncIterable[int],
 ) -> None:
     iteration_number = 0
 
@@ -102,7 +104,8 @@ async def test_iterations_with_postpushed_values(queque: Queque) -> None:
 
 @mark.parametrize("object_", ["result", "queque"])
 async def test_iterations_with_concurrent_pushes(
-    queque: Queque, object_: str,
+    queque: Queque,
+    object_: str,
 ) -> None:
     result = list[int]()
 

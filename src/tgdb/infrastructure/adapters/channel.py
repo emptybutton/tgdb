@@ -13,7 +13,8 @@ from tgdb.infrastructure.async_map import AsyncMap
 @dataclass(frozen=True)
 class AsyncMapChannel(Channel):
     _async_map: AsyncMap[
-        XID, NoTransactionError | TransactionNotCommittingError | None,
+        XID,
+        NoTransactionError | TransactionNotCommittingError | None,
     ]
     _timeout_seconds: int | float
 

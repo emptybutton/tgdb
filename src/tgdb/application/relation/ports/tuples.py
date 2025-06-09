@@ -30,7 +30,9 @@ class Tuples(ABC):
 
     @abstractmethod
     async def map_idempotently(
-        self, effects: Sequence[TransactionEffect], /,
+        self,
+        effects: Sequence[TransactionEffect],
+        /,
     ) -> None: ...
 
     @abstractmethod

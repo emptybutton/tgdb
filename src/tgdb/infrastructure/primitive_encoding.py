@@ -140,7 +140,8 @@ _decoded_body_func_by_type: dict[type[Any], Callable[[str], Primitive]] = {
 
 
 def decoded_primitive_with_type(
-    encoded_value: str, table: ReversibleTranslationTable,
+    encoded_value: str,
+    table: ReversibleTranslationTable,
 ) -> Primitive:
     encoded_value = encoded_value.translate(table.reversed_map())
     header = encoded_value[0]
@@ -159,7 +160,8 @@ def decoded_primitive_without_type[PrimitiveT: Primitive](
 ) -> PrimitiveT:
     encoded_value = encoded_value.translate(table.reversed_map())
     decoded_body = cast(
-        Callable[[str], PrimitiveT], _decoded_body_func_by_type[type_],
+        Callable[[str], PrimitiveT],
+        _decoded_body_func_by_type[type_],
     )
 
     return decoded_body(encoded_value)

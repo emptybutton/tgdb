@@ -52,7 +52,8 @@ class InMemoryTuples(Tuples):
         await gather(*map(self._map_one, effects))
 
     async def map_idempotently(
-        self, effects: Sequence[TransactionEffect],
+        self,
+        effects: Sequence[TransactionEffect],
     ) -> None:
         await gather(*map(self._map_one_idempotently, effects))
 
@@ -117,11 +118,14 @@ class InTelegramHeapTuples(Tuples):
         attribute_scalar: Scalar,
     ) -> Sequence[Tuple]:
         return await self._heap.tuples_with_attribute(
-            relation_number, attribute_number, attribute_scalar,
+            relation_number,
+            attribute_number,
+            attribute_scalar,
         )
 
     async def map(
-        self, transaction_effects: Sequence[TransactionEffect],
+        self,
+        transaction_effects: Sequence[TransactionEffect],
     ) -> None:
         await gather(
             *(
@@ -132,7 +136,8 @@ class InTelegramHeapTuples(Tuples):
         )
 
     async def map_idempotently(
-        self, transaction_effects: Sequence[TransactionEffect],
+        self,
+        transaction_effects: Sequence[TransactionEffect],
     ) -> None:
         await gather(
             *(

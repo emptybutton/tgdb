@@ -38,7 +38,8 @@ class MutatedTuple:
     tuple: Tuple
 
     def __and__(
-        self, effect: "TupleEffect",
+        self,
+        effect: "TupleEffect",
     ) -> "MutatedTuple | DeletedTuple | MigratedTuple":
         match effect:
             case JustViewedTuple():
@@ -58,7 +59,8 @@ class MigratedTuple:
     tuple: Tuple
 
     def __and__(
-        self, effect: "TupleEffect",
+        self,
+        effect: "TupleEffect",
     ) -> "MutatedTuple | MigratedTuple | DeletedTuple":
         match effect:
             case JustViewedTuple():
@@ -111,7 +113,9 @@ def relation_tuple(tuple_: Tuple, relation: Relation) -> Tuple:
 
     if not tuple_.matches(relation_last_version.schema):
         raise InvalidRelationTupleError(
-            tuple_.tid, tuple_.scalars, relation.number(),
+            tuple_.tid,
+            tuple_.scalars,
+            relation.number(),
         )
 
     return tuple_
@@ -128,7 +132,8 @@ def constructed_relation_tuple(
 
     relation_last_version = relation.last_version()
     relation_last_version_id = RelationSchemaID(
-        relation.number(), relation_last_version.number,
+        relation.number(),
+        relation_last_version.number,
     )
 
     tuple_ = Tuple(tid, relation_last_version_id, scalars)
@@ -177,7 +182,9 @@ def viewed_tuple(tuple_: VersionedTuple, relation: Relation) -> ViewedTuple:
 
     if not last_version.matches(relation.last_version().schema):
         raise InvalidRelationTupleError(
-            last_version.tid, last_version.scalars, relation.number(),
+            last_version.tid,
+            last_version.scalars,
+            relation.number(),
         )
 
     if old_versions:

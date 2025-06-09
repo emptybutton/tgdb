@@ -84,7 +84,9 @@ def test_with_only_commit(
 
     with raises(NoTransactionError):
         horizon.commit_transaction(
-            1, UUID(int=1), [NewTuple(tuple_(tid=UUID(int=0)))],
+            1,
+            UUID(int=1),
+            [NewTuple(tuple_(tid=UUID(int=0)))],
         )
 
     if object_ == "bool":
@@ -303,24 +305,30 @@ def test_with_sequential_transactions(
 
     horizon.start_transaction(1, UUID(int=1), IsolationLevel.serializable)
     commit = horizon.commit_transaction(
-        2, UUID(int=1), [MutatedTuple(tuple_("a", tid=UUID(int=1)))],
+        2,
+        UUID(int=1),
+        [MutatedTuple(tuple_("a", tid=UUID(int=1)))],
     )
     commit1 = horizon.complete_commit(3, commit.xid)
 
     horizon.start_transaction(4, UUID(int=2), IsolationLevel.serializable)
     commit = horizon.commit_transaction(
-        5, UUID(int=2), [MutatedTuple(tuple_("b", tid=UUID(int=1)))],
+        5,
+        UUID(int=2),
+        [MutatedTuple(tuple_("b", tid=UUID(int=1)))],
     )
     commit2 = horizon.complete_commit(6, commit.xid)
 
     if object_ == "commit1":
         assert commit1 == Commit(
-            UUID(int=1), {MutatedTuple(tuple_("a", tid=UUID(int=1)))},
+            UUID(int=1),
+            {MutatedTuple(tuple_("a", tid=UUID(int=1)))},
         )
 
     if object_ == "commit2":
         assert commit2 == Commit(
-            UUID(int=2), {MutatedTuple(tuple_("b", tid=UUID(int=1)))},
+            UUID(int=2),
+            {MutatedTuple(tuple_("b", tid=UUID(int=1)))},
         )
 
 
@@ -342,21 +350,26 @@ def test_conflict_by_id_with_left_transaction(
     horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
 
     commit = horizon.commit_transaction(
-        3, UUID(int=1), [MutatedTuple(tuple_("a", tid=UUID(int=1)))],
+        3,
+        UUID(int=1),
+        [MutatedTuple(tuple_("a", tid=UUID(int=1)))],
     )
     commit1 = horizon.complete_commit(4, commit.xid)
 
     conflict = None
     try:
         horizon.commit_transaction(
-            5, UUID(int=2), [MutatedTuple(tuple_("b", tid=UUID(int=1)))],
+            5,
+            UUID(int=2),
+            [MutatedTuple(tuple_("b", tid=UUID(int=1)))],
         )
     except ConflictError as error:
         conflict = error
 
     if object_ == "commit1":
         assert commit1 == Commit(
-            UUID(int=1), {MutatedTuple(tuple_("a", tid=UUID(int=1)))},
+            UUID(int=1),
+            {MutatedTuple(tuple_("a", tid=UUID(int=1)))},
         )
 
     if object_ == "commit2":
@@ -381,14 +394,18 @@ def test_conflict_by_id_with_subset_transaction(
     horizon.start_transaction(2, UUID(int=2), IsolationLevel.serializable)
 
     commit2 = horizon.commit_transaction(
-        3, UUID(int=2), [MutatedTuple(tuple_("b", tid=UUID(int=1)))],
+        3,
+        UUID(int=2),
+        [MutatedTuple(tuple_("b", tid=UUID(int=1)))],
     )
     commit2 = horizon.complete_commit(4, commit2.xid)
 
     commit1 = None
     try:
         horizon.commit_transaction(
-            5, UUID(int=1), [MutatedTuple(tuple_("a", tid=UUID(int=1)))],
+            5,
+            UUID(int=1),
+            [MutatedTuple(tuple_("a", tid=UUID(int=1)))],
         )
     except ConflictError as error:
         commit1 = error
@@ -398,7 +415,8 @@ def test_conflict_by_id_with_subset_transaction(
 
     if object_ == "commit2":
         assert commit2 == Commit(
-            UUID(int=2), {MutatedTuple(tuple_("b", tid=UUID(int=1)))},
+            UUID(int=2),
+            {MutatedTuple(tuple_("b", tid=UUID(int=1)))},
         )
 
 
@@ -432,31 +450,39 @@ def test_conflict_by_id_with_left_long_distance_transaction(
     horizon.start_transaction(3, UUID(int=3), IsolationLevel.serializable)
 
     commit = horizon.commit_transaction(
-        4, UUID(int=2), [MutatedTuple(tuple_(tid=UUID(int=2)))],
+        4,
+        UUID(int=2),
+        [MutatedTuple(tuple_(tid=UUID(int=2)))],
     )
     commit2 = horizon.complete_commit(5, commit.xid)
 
     commit = horizon.commit_transaction(
-        6, UUID(int=1), [MutatedTuple(tuple_(tid=UUID(int=1)))],
+        6,
+        UUID(int=1),
+        [MutatedTuple(tuple_(tid=UUID(int=1)))],
     )
     commit1 = horizon.complete_commit(7, commit.xid)
 
     commit3 = None
     try:
         horizon.commit_transaction(
-            8, UUID(int=3), [MutatedTuple(tuple_(tid=UUID(int=1)))],
+            8,
+            UUID(int=3),
+            [MutatedTuple(tuple_(tid=UUID(int=1)))],
         )
     except ConflictError as error:
         commit3 = error
 
     if object_ == "commit2":
         assert commit2 == Commit(
-            UUID(int=2), {MutatedTuple(tuple_(tid=UUID(int=2)))},
+            UUID(int=2),
+            {MutatedTuple(tuple_(tid=UUID(int=2)))},
         )
 
     if object_ == "commit1":
         assert commit1 == Commit(
-            UUID(int=1), {MutatedTuple(tuple_(tid=UUID(int=1)))},
+            UUID(int=1),
+            {MutatedTuple(tuple_(tid=UUID(int=1)))},
         )
 
     if object_ == "commit3":
@@ -524,7 +550,9 @@ def test_no_memory_leak(horizon: Horizon) -> None:
         time += 1
 
         horizon.start_transaction(
-            time, UUID(int=xid_int), IsolationLevel.serializable,
+            time,
+            UUID(int=xid_int),
+            IsolationLevel.serializable,
         )
 
     live_transactions = WeakSet(horizon._serializable_transaction_map.values())  # noqa: SLF001
@@ -547,9 +575,12 @@ def test_read_uncommited_commit(horizon: Horizon) -> None:
 
     horizon.start_transaction(1, UUID(int=1), IsolationLevel.read_uncommited)
     commit = horizon.commit_transaction(
-        2, UUID(int=1), [MutatedTuple(tuple_(tid=UUID(int=2)))],
+        2,
+        UUID(int=1),
+        [MutatedTuple(tuple_(tid=UUID(int=2)))],
     )
 
     assert commit == Commit(
-        UUID(int=1), frozenset({MutatedTuple(tuple_(tid=UUID(int=2)))}),
+        UUID(int=1),
+        frozenset({MutatedTuple(tuple_(tid=UUID(int=2)))}),
     )

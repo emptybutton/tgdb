@@ -25,7 +25,8 @@ class EncodableInitialRelationVersion(BaseModel):
 
     @classmethod
     def of(
-        cls, version: InitialRelationVersion,
+        cls,
+        version: InitialRelationVersion,
     ) -> "EncodableInitialRelationVersion":
         return EncodableInitialRelationVersion(
             number=int(version.number),
@@ -47,7 +48,8 @@ class EncodableDerivativeRelationVersion(BaseModel):
 
     @classmethod
     def of(
-        cls, version: DerivativeRelationVersion,
+        cls,
+        version: DerivativeRelationVersion,
     ) -> "EncodableDerivativeRelationVersion":
         return EncodableDerivativeRelationVersion(
             number=int(version.number),

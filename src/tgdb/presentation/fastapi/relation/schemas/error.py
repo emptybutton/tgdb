@@ -28,7 +28,8 @@ class OversizedRelationSchemaSchema(BaseModel):
 
     @classmethod
     def of(
-        cls, error: OversizedRelationSchemaError,
+        cls,
+        error: OversizedRelationSchemaError,
     ) -> "OversizedRelationSchemaSchema":
         return OversizedRelationSchemaSchema(
             schemaSize=error.schema_size,
@@ -44,7 +45,8 @@ class InvalidRelationTupleSchema(BaseModel):
 
     @classmethod
     def of(
-        cls, error: InvalidRelationTupleError,
+        cls,
+        error: InvalidRelationTupleError,
     ) -> "InvalidRelationTupleSchema":
         return InvalidRelationTupleSchema(
             tid=error.tid,

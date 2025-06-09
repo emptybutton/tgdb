@@ -14,7 +14,8 @@ from tgdb.presentation.fastapi.common.tags import tags_metadata
 
 
 FastAPIAppBackground = NewType(
-    "FastAPIAppBackground", tuple[Callable[[], Coroutine[Any, Any, Any]], ...],
+    "FastAPIAppBackground",
+    tuple[Callable[[], Coroutine[Any, Any, Any]], ...],
 )
 FastAPIAppRouters = NewType("FastAPIAppRouters", tuple[APIRouter, ...])
 FastAPIAppVersion = NewType("FastAPIAppVersion", str)
@@ -47,7 +48,8 @@ class LefespanBackground:
         self._create_task(decorated_func())
 
     def _decorator(
-        self, func: Callable[[], Coroutine[Any, Any, Any]],
+        self,
+        func: Callable[[], Coroutine[Any, Any, Any]],
     ) -> Callable[[], Coroutine[Any, Any, Any]]:
         async def decorated_func() -> None:
             try:

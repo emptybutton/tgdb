@@ -9,7 +9,8 @@ class AsyncQueque[ValueT]:
     _values: deque[ValueT] = field(default_factory=deque)
     _is_synced: Event = field(default_factory=Event, init=False)
     _offset_by_iteration_event: dict[Event, int] = field(
-        default_factory=dict, init=False,
+        default_factory=dict,
+        init=False,
     )
 
     def __post_init__(self) -> None:

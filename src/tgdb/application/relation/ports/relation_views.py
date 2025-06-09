@@ -9,5 +9,6 @@ class RelationViews[ViewOfAllRelationsT, ViewOfOneRelationT](ABC):
 
     @abstractmethod
     async def view_of_one_relation(
-        self, relation_number: Number,
+        self,
+        relation_number: Number,
     ) -> ViewOfOneRelationT: ...

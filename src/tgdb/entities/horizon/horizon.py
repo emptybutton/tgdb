@@ -59,7 +59,8 @@ class Horizon:
     _max_transaction_age: LogicTime
     _serializable_transaction_map: OrderedDict[XID, SerializableTransaction]
     _read_uncommited_transaction_map: OrderedDict[
-        XID, ReadUncommitedTransaction,
+        XID,
+        ReadUncommitedTransaction,
     ]
 
     def __post_init__(self) -> None:
@@ -238,7 +239,8 @@ class Horizon:
             ]
 
     def _is_transaction_autorollbackable(
-        self, transaction: Transaction,
+        self,
+        transaction: Transaction,
     ) -> bool:
         return (
             not isinstance(transaction, SerializableTransaction)
@@ -286,7 +288,8 @@ class Horizon:
         return transaction
 
     def _non_serializable_read_transaction(
-        self, xid: XID,
+        self,
+        xid: XID,
     ) -> ReadUncommitedTransaction:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
@@ -320,7 +323,8 @@ class Horizon:
         yield self._read_uncommited_transaction_map
 
     def _transaction_map[TransactionT: Transaction](
-        self, transaction: TransactionT,
+        self,
+        transaction: TransactionT,
     ) -> OrderedDict[XID, TransactionT]:
         match transaction:
             case ReadUncommitedTransaction():
@@ -330,7 +334,9 @@ class Horizon:
 
 
 def horizon(
-    time: LogicTime, max_len: int, max_transaction_age: LogicTime,
+    time: LogicTime,
+    max_len: int,
+    max_transaction_age: LogicTime,
 ) -> Horizon:
     """
     :raises tgdb.entities.horizon.horizon.HorizonAlwaysWithoutTransactionsError:

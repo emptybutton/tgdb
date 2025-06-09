@@ -13,7 +13,9 @@ class CreateRelation:
     tuples: Tuples
 
     async def __call__(
-        self, relation_number: Number, relation_schema: Schema,
+        self,
+        relation_number: Number,
+        relation_schema: Schema,
     ) -> None:
         """
         :raises tgdb.application.relation.ports.relations.OversizedRelationSchemaError:

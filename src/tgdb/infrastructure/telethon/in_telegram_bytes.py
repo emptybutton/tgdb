@@ -22,7 +22,8 @@ class InTelegramBytes(Awaitable[bytes | None]):
 
     async def _get(self) -> bytes | None:
         messages = await self._pool_to_select().get_messages(
-            self._chat_id, min_id=1,
+            self._chat_id,
+            min_id=1,
         )
         messages = cast(TotalList, messages)
 

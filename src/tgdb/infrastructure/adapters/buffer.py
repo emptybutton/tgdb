@@ -34,7 +34,8 @@ class InMemoryBuffer[ValueT](Buffer[ValueT]):
         while True:
             try:
                 await wait_for(
-                    self._is_overflowed.wait(), self._overflow_timeout_seconds,
+                    self._is_overflowed.wait(),
+                    self._overflow_timeout_seconds,
                 )
             except TimeoutError:
                 if not self._values:
@@ -94,7 +95,8 @@ class InTelegramReplicablePreparedCommitBuffer(Buffer[Commit | PreparedCommit]):
             yield commits
 
     def _encodable_commit(
-        self, commit: Commit | PreparedCommit,
+        self,
+        commit: Commit | PreparedCommit,
     ) -> EncodableCommit | EncodablePreparedCommit:
         match commit:
             case Commit():

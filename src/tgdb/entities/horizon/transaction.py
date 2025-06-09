@@ -142,7 +142,8 @@ class SerializableTransaction:
         return Commit(self._xid, self._effect())
 
     def track_concurrent_transaction(
-        self, transaction: "SerializableTransaction",
+        self,
+        transaction: "SerializableTransaction",
     ) -> None:
         self._concurrent_transactions.add(transaction)
 
@@ -150,17 +151,20 @@ class SerializableTransaction:
             self._transactions_with_possible_conflict.add(transaction)
 
     def track_started_transaction(
-        self, started_transaction: "SerializableTransaction",
+        self,
+        started_transaction: "SerializableTransaction",
     ) -> None:
         self._concurrent_transactions.add(started_transaction)
 
     def track_prepared_transaction(
-        self, prepared_transaction: "SerializableTransaction",
+        self,
+        prepared_transaction: "SerializableTransaction",
     ) -> None:
         self._transactions_with_possible_conflict.add(prepared_transaction)
 
     def track_rollbacked_prepared_transaction(
-        self, rollbacked_prepared_transaction: "SerializableTransaction",
+        self,
+        rollbacked_prepared_transaction: "SerializableTransaction",
     ) -> None:
         if self._state is SerializableTransactionState.active:
             self._transactions_with_possible_conflict.remove(
@@ -171,7 +175,8 @@ class SerializableTransaction:
             )
 
     def track_rollbacked_active_transaction(
-        self, rollbacked_active_transaction: "SerializableTransaction",
+        self,
+        rollbacked_active_transaction: "SerializableTransaction",
     ) -> None:
         if self._state is SerializableTransactionState.active:
             self._concurrent_transactions.remove(rollbacked_active_transaction)
@@ -289,7 +294,9 @@ def start_transaction(
     match isolation:
         case IsolationLevel.serializable:
             return SerializableTransaction.start(
-                xid, time, serializable_transactions,
+                xid,
+                time,
+                serializable_transactions,
             )
 
         case IsolationLevel.read_uncommited:

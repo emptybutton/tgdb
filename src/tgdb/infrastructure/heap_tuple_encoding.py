@@ -92,7 +92,9 @@ class HeapTupleEncoding:
         attribute_scalar: Scalar,
     ) -> str:
         return _HeapTupleAttributeEncoding.encoded_attribute(
-            relation_number, attribute_number, attribute_scalar,
+            relation_number,
+            attribute_number,
+            attribute_scalar,
         )
 
     @staticmethod
@@ -106,7 +108,9 @@ type _HeapTupleMetadata = tuple[TID, RelationSchemaID]
 class _HeapTupleMetadataEncoding:
     @staticmethod
     def encoded_metadata(
-        relation_number: int, relation_version_number: int, tid: TID,
+        relation_number: int,
+        relation_version_number: int,
+        tid: TID,
     ) -> str:
         return Separator.top_metadata.value.join((
             encoded_int(relation_version_number),

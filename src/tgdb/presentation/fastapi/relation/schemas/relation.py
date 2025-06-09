@@ -19,7 +19,8 @@ class InitialRelationVersionSchema(BaseModel):
 
     @classmethod
     def of(
-        cls, version: InitialRelationVersion,
+        cls,
+        version: InitialRelationVersion,
     ) -> "InitialRelationVersionSchema":
         return InitialRelationVersionSchema(
             number=int(version.number),
@@ -34,7 +35,8 @@ class DerivativeRelationVersionSchema(BaseModel):
 
     @classmethod
     def of(
-        cls, version: DerivativeRelationVersion,
+        cls,
+        version: DerivativeRelationVersion,
     ) -> "DerivativeRelationVersionSchema":
         return DerivativeRelationVersionSchema(
             number=int(version.number),
