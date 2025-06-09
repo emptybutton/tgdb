@@ -1,7 +1,7 @@
 [project]
 name = "tgdb"
 version = "0.1.0"
-description = "РСУБД поверх телеграмма"
+description = "RDBMS over Telegram"
 authors = [
     {name = "Alexander Smolin", email = "88573504+emptybutton@users.noreply.github.com"}
 ]
