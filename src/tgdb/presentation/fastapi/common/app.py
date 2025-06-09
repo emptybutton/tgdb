@@ -85,7 +85,8 @@ async def app_from(container: AsyncContainer) -> FastAPI:
         summary="RDBMS over Telegram.",
         openapi_tags=tags_metadata,
         contact={
-            "name": "Alexander Smolin", "url": author_url,
+            "name": "Alexander Smolin",
+            "url": author_url,
         },
         license_info={
             "name": "Apache 2.0",

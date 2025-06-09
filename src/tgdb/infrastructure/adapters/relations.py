@@ -91,8 +91,8 @@ class InTelegramReplicableRelations(Relations):
 
         self._cached_relations.insert(relation)
 
-        encodable_relations = (
-            tuple(map(EncodableRelation.of, self._cached_relations))
+        encodable_relations = tuple(
+            map(EncodableRelation.of, self._cached_relations)
         )
         encoded_relations = self._adapter.dump_json(encodable_relations)
         await self._in_tg_encoded_relations.set(encoded_relations)

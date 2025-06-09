@@ -22,7 +22,7 @@ type EncodableTransactionScalarEffect = (
 
 
 def encodable_transaction_scalar_effect(
-    effect: TransactionScalarEffect
+    effect: TransactionScalarEffect,
 ) -> EncodableTransactionScalarEffect:
     match effect:
         case NewTuple():

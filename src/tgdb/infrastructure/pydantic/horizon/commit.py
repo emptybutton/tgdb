@@ -15,10 +15,7 @@ class EncodableCommit(BaseModel):
     effect: tuple[EncodableTransactionScalarEffect, ...]
 
     def entity(self) -> Commit:
-        return Commit(
-            self.xid,
-            frozenset(it.entity() for it in self.effect)
-        )
+        return Commit(self.xid, frozenset(it.entity() for it in self.effect))
 
     @classmethod
     def of(cls, entity: Commit) -> "EncodableCommit":
@@ -36,10 +33,7 @@ class EncodablePreparedCommit(BaseModel):
     effect: tuple[EncodableTransactionScalarEffect, ...]
 
     def entity(self) -> Commit:
-        return Commit(
-            self.xid,
-            frozenset(it.entity() for it in self.effect)
-        )
+        return Commit(self.xid, frozenset(it.entity() for it in self.effect))
 
     @classmethod
     def of(cls, entity: PreparedCommit) -> "EncodablePreparedCommit":
