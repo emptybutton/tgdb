@@ -50,7 +50,7 @@ class ViewedTuplesSchema(BaseModel):
         },
     },
     summary="View tuples",
-    description="View tuples in an active transaction.",
+    description="View tuples, optionally in an active transaction.",
     tags=[Tag.relation],
 )
 @inject

@@ -21,19 +21,6 @@ from tgdb.presentation.fastapi.relation.schemas.error import (
 
 commit_transaction_router = APIRouter()
 
-description = """
-Record all transaction operators and commit them.
-
-A transaction may fail to commit in the following cases:
-1. It is a serializable transaction that conflicts with another serializable transaction.
-2. The server runs out of space for active transactions and rolls back your transaction.
-3. The transaction rolled back due to timeout.
-4. The server crashes.
-
-If the commit fails, all changes in the transaction will not be applied.
-Therefore, for any negative response, retry the entire transaction.
-"""  # noqa: E501
-
 
 class CommitTransactionSchema(BaseModel):
     operators: tuple[OperatorSchema, ...]
@@ -51,7 +38,7 @@ class CommitTransactionSchema(BaseModel):
         status.HTTP_409_CONFLICT: {"model": TransactionConflictSchema},
     },
     summary="Commit transaction",
-    description=description,
+    description="Record all transaction operators and commit them.",
     tags=[Tag.transaction],
 )
 @inject

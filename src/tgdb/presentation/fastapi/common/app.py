@@ -84,7 +84,9 @@ async def app_from(container: AsyncContainer) -> FastAPI:
         version=version,
         summary="RDBMS over Telegram.",
         openapi_tags=tags_metadata,
-        contact={"name": "Alexander Smolin", "url": author_url},
+        contact={
+            "name": "Alexander Smolin", "url": author_url,
+        },
         license_info={
             "name": "Apache 2.0",
             "url": f"{repo_url}/blob/main/LICENSE",
@@ -102,5 +104,11 @@ async def app_from(container: AsyncContainer) -> FastAPI:
 
     setup_dishka(container=container, app=app)
     add_error_handling(app)
+
+    openapi = app.openapi()
+    openapi["externalDocs"] = {
+        "description": "Github",
+        "url": repo_url,
+    }
 
     return app

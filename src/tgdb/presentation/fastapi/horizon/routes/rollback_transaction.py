@@ -13,13 +13,6 @@ from tgdb.presentation.fastapi.horizon.schemas.error import (
 
 rollback_transaction_router = APIRouter()
 
-description = """
-Roll back the transaction as if it had never started.
-
-If the transaction cannot be rolled back, it will be rolled back automatically
-over time.
-"""
-
 
 @rollback_transaction_router.delete(
     "/transactions/{xid}",
@@ -30,7 +23,7 @@ over time.
         status.HTTP_404_NOT_FOUND: {"model": NoTransactionSchema},
     },
     summary="Rollback transaction",
-    description=description,
+    description="Rollback a transaction as if it had never started.",
     tags=[Tag.transaction],
 )
 @inject

@@ -29,7 +29,7 @@ class StartedTransactionSchema(BaseModel):
         status.HTTP_201_CREATED: {"model": StartedTransactionSchema},
     },
     summary="Start transaction",
-    description="Start transaction.",
+    description="Start new transaction.",
     tags=[Tag.transaction],
 )
 @inject
