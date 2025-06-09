@@ -78,33 +78,33 @@ class CommonProvider(Provider):
     @provide(scope=Scope.APP)
     def provide_channel(self, config: TgdbConfig) -> Channel:
         return AsyncMapChannel(
-            AsyncMap(), config.horizon.transaction.max_age_seconds
+            AsyncMap(), config.horizon.transaction.max_age_seconds,
         )
 
     @provide(scope=Scope.APP)
     async def provide_bot_pool(
-        self, config: TgdbConfig
+        self, config: TgdbConfig,
     ) -> AsyncIterator[BotPool]:
         pool = BotPool(
             loaded_client_pool_from_farm_file(
                 config.clients.bots,
                 config.api.id,
                 config.api.hash,
-            )
+            ),
         )
         async with pool:
             yield pool
 
     @provide(scope=Scope.APP)
     async def provide_userbot_pool(
-        self, config: TgdbConfig
+        self, config: TgdbConfig,
     ) -> AsyncIterator[UserBotPool]:
         pool = UserBotPool(
             loaded_client_pool_from_farm_file(
                 config.clients.userbots,
                 config.api.id,
                 config.api.hash,
-            )
+            ),
         )
         async with pool:
             yield pool
@@ -128,7 +128,7 @@ class CommonProvider(Provider):
         config: TgdbConfig,
     ) -> MessageIndexLazyMap:
         return message_index_lazy_map(
-            user_bot_pool, config.message_cache.max_len
+            user_bot_pool, config.message_cache.max_len,
         )
 
     @provide(scope=Scope.APP)
@@ -175,11 +175,11 @@ class CommonProvider(Provider):
         in_memory_buffer: InMemoryBuffer[Commit | PreparedCommit],
     ) -> AsyncIterator[Buffer[Commit | PreparedCommit]]:
         in_tg_bytes = InTelegramBytes(
-            bot_pool, user_bot_pool, config.buffer.chat
+            bot_pool, user_bot_pool, config.buffer.chat,
         )
 
         buffer = InTelegramReplicablePreparedCommitBuffer(
-            in_memory_buffer, in_tg_bytes
+            in_memory_buffer, in_tg_bytes,
         )
 
         async with buffer:
@@ -195,7 +195,7 @@ class CommonProvider(Provider):
         user_bot_pool: UserBotPool,
     ) -> AsyncIterator[AnyOf[Relations, InTelegramReplicableRelations]]:
         in_tg_bytes = InTelegramBytes(
-            bot_pool, user_bot_pool, config.relations.chat
+            bot_pool, user_bot_pool, config.relations.chat,
         )
         relations = InTelegramReplicableRelations(in_tg_bytes, InMemoryDb())
 
@@ -205,7 +205,7 @@ class CommonProvider(Provider):
     provide_commit_transaction = provide(CommitTransaction, scope=Scope.APP)
     provide_output_commits = provide(OutputCommits, scope=Scope.APP)
     provide_output_commits_to_tuples = provide(
-        OutputCommitsToTuples, scope=Scope.APP
+        OutputCommitsToTuples, scope=Scope.APP,
     )
     provide_rollback_transaction = provide(RollbackTransaction, scope=Scope.APP)
     provide_start_transaction = provide(StartTransaction, scope=Scope.APP)

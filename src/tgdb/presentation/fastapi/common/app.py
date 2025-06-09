@@ -14,7 +14,7 @@ from tgdb.presentation.fastapi.common.tags import tags_metadata
 
 
 FastAPIAppBackground = NewType(
-    "FastAPIAppBackground", tuple[Callable[[], Coroutine[Any, Any, Any]], ...]
+    "FastAPIAppBackground", tuple[Callable[[], Coroutine[Any, Any, Any]], ...],
 )
 FastAPIAppRouters = NewType("FastAPIAppRouters", tuple[APIRouter, ...])
 FastAPIAppVersion = NewType("FastAPIAppVersion", str)
@@ -23,7 +23,7 @@ FastAPIAppVersion = NewType("FastAPIAppVersion", str)
 @dataclass(frozen=True, unsafe_hash=False)
 class LefespanBackground:
     _loop: asyncio.AbstractEventLoop = field(
-        default_factory=asyncio.get_running_loop
+        default_factory=asyncio.get_running_loop,
     )
     _tasks: set[asyncio.Task[Any]] = field(init=False, default_factory=set)
 
@@ -47,7 +47,7 @@ class LefespanBackground:
         self._create_task(decorated_func())
 
     def _decorator(
-        self, func: Callable[[], Coroutine[Any, Any, Any]]
+        self, func: Callable[[], Coroutine[Any, Any, Any]],
     ) -> Callable[[], Coroutine[Any, Any, Any]]:
         async def decorated_func() -> None:
             try:

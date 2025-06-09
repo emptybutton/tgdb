@@ -76,7 +76,7 @@ class Relation:
         return RelationSchemaID(self._number, self.last_version().number)
 
     def recent_versions(
-        self, current_version_number: Number
+        self, current_version_number: Number,
     ) -> Sequence[DerivativeRelationVersion]:
         if current_version_number < self._initial_version.number:
             return tuple()
@@ -91,7 +91,7 @@ class Relation:
             return tuple()
 
         current_version_index = int(
-            self._intermediate_versions[0].number
+            self._intermediate_versions[0].number,
         ) - int(current_version_number)
 
         return self._intermediate_versions[current_version_index + 1 :]
@@ -111,7 +111,7 @@ class Relation:
     def remove_old_versions(self, count: int) -> None:
         count_to_remove_intermediate_versions = count - 1
         count_to_remove_intermediate_versions = min(
-            count_to_remove_intermediate_versions, len(self) - 1
+            count_to_remove_intermediate_versions, len(self) - 1,
         )
         del self._intermediate_versions[:count_to_remove_intermediate_versions]
 
@@ -124,9 +124,9 @@ class Relation:
         del self._intermediate_versions[0]
 
     @classmethod
-    def new(cls, id: Number, schema: Schema) -> "Relation":
+    def new(cls, id_: Number, schema: Schema) -> "Relation":
         return Relation(
-            id,
+            id_,
             InitialRelationVersion(Number(0), schema),
             list(),
         )

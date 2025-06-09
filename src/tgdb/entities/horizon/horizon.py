@@ -59,7 +59,7 @@ class Horizon:
     _max_transaction_age: LogicTime
     _serializable_transaction_map: OrderedDict[XID, SerializableTransaction]
     _read_uncommited_transaction_map: OrderedDict[
-        XID, ReadUncommitedTransaction
+        XID, ReadUncommitedTransaction,
     ]
 
     def __post_init__(self) -> None:
@@ -86,7 +86,7 @@ class Horizon:
         """
 
         assert_(
-            all(xid not in map for map in self._transaction_maps()),
+            all(xid not in map_ for map_ in self._transaction_maps()),
             else_=DoubleStartTransactionError,
         )
 
@@ -97,8 +97,8 @@ class Horizon:
             self._serializable_transaction_map.values(),
         )
 
-        map = self._transaction_map(started_transaction)
-        map[started_transaction.xid()] = started_transaction
+        map_ = self._transaction_map(started_transaction)
+        map_[started_transaction.xid()] = started_transaction
         self._limit_len()
         self.move_to_future(time)
 
@@ -131,7 +131,6 @@ class Horizon:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         """
-
         self.move_to_future(time)
 
         transaction = self._transaction(
@@ -154,7 +153,6 @@ class Horizon:
         :raises tgdb.entities.horizon.horizon.TransactionCommittingError:
         :raises tgdb.entities.horizon.transaction.ConflictError:
         """
-
         self.move_to_future(time)
 
         transaction = self._transaction(
@@ -240,7 +238,7 @@ class Horizon:
             ]
 
     def _is_transaction_autorollbackable(
-        self, transaction: Transaction
+        self, transaction: Transaction,
     ) -> bool:
         return (
             not isinstance(transaction, SerializableTransaction)
@@ -249,7 +247,7 @@ class Horizon:
 
     def _oldest_transaction(self) -> Transaction | None:
         first_map_tranactions = (
-            first_map_value(map) for map in self._transaction_maps()
+            first_map_value(map_) for map_ in self._transaction_maps()
         )
         oldest_transactions = tuple(
             first_map_tranaction
@@ -288,7 +286,7 @@ class Horizon:
         return transaction
 
     def _non_serializable_read_transaction(
-        self, xid: XID
+        self, xid: XID,
     ) -> ReadUncommitedTransaction:
         """
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
@@ -312,7 +310,6 @@ class Horizon:
         :raises tgdb.entities.horizon.horizon.NoTransactionError:
         :raises else_:
         """
-
         with suppress(NoTransactionError):
             return self._non_serializable_read_transaction(xid)
 
@@ -323,7 +320,7 @@ class Horizon:
         yield self._read_uncommited_transaction_map
 
     def _transaction_map[TransactionT: Transaction](
-        self, transaction: TransactionT
+        self, transaction: TransactionT,
     ) -> OrderedDict[XID, TransactionT]:
         match transaction:
             case ReadUncommitedTransaction():
@@ -333,12 +330,11 @@ class Horizon:
 
 
 def horizon(
-    time: LogicTime, max_len: int, max_transaction_age: LogicTime
+    time: LogicTime, max_len: int, max_transaction_age: LogicTime,
 ) -> Horizon:
     """
     :raises tgdb.entities.horizon.horizon.HorizonAlwaysWithoutTransactionsError:
     """
-
     return Horizon(
         _time=time,
         _max_len=max_len,

@@ -32,7 +32,7 @@ class UpdateOperatorSchema(BaseModel):
 
     def decoded(self) -> MutatedTupleOperator:
         return MutatedTupleOperator(
-            self.tid, Number(self.relation_number), self.scalars
+            self.tid, Number(self.relation_number), self.scalars,
         )
 
 

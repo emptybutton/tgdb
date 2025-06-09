@@ -17,12 +17,12 @@ class InTelegramBytes(Awaitable[bytes | None]):
     def __await__(self) -> Generator[Any, Any, bytes | None]:
         return self._get().__await__()
 
-    async def set(self, bytes: bytes) -> None:
-        await self._pool_to_insert().send_message(self._chat_id, file=bytes)
+    async def set(self, bytes_: bytes) -> None:
+        await self._pool_to_insert().send_message(self._chat_id, file=bytes_)
 
     async def _get(self) -> bytes | None:
         messages = await self._pool_to_select().get_messages(
-            self._chat_id, min_id=1
+            self._chat_id, min_id=1,
         )
         messages = cast(TotalList, messages)
 

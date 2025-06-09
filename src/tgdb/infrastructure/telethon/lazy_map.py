@@ -17,7 +17,7 @@ type MessageIndexLazyMap = LazyMap[TupleIndex, MessageIndex | None]
 
 
 def message_index_lazy_map(
-    pool: TelegramClientPool, cache_map_max_len: int
+    pool: TelegramClientPool, cache_map_max_len: int,
 ) -> LazyMap[TupleIndex, MessageIndex | None]:
     async def tuple_message(tuple_index: TupleIndex) -> MessageIndex | None:
         chat_id, tid = tuple_index

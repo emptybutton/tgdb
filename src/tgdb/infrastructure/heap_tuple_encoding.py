@@ -73,14 +73,14 @@ class HeapTupleEncoding:
     @staticmethod
     def decoded_tuple(encoded_tuple: str) -> Tuple:
         encoded_metadata, *encoded_attributes = encoded_tuple.split(
-            Separator.top_tuple.value
+            Separator.top_tuple.value,
         )
 
         tid, relation_schema_id = _HeapTupleMetadataEncoding.decoded_metadata(
-            encoded_metadata
+            encoded_metadata,
         )
         scalars = tuple(
-            map(_HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes)
+            map(_HeapTupleAttributeEncoding.decoded_scalar, encoded_attributes),
         )
 
         return Tuple(tid, relation_schema_id, scalars)
@@ -92,7 +92,7 @@ class HeapTupleEncoding:
         attribute_scalar: Scalar,
     ) -> str:
         return _HeapTupleAttributeEncoding.encoded_attribute(
-            relation_number, attribute_number, attribute_scalar
+            relation_number, attribute_number, attribute_scalar,
         )
 
     @staticmethod
@@ -106,7 +106,7 @@ type _HeapTupleMetadata = tuple[TID, RelationSchemaID]
 class _HeapTupleMetadataEncoding:
     @staticmethod
     def encoded_metadata(
-        relation_number: int, relation_version_number: int, tid: TID
+        relation_number: int, relation_version_number: int, tid: TID,
     ) -> str:
         return Separator.top_metadata.value.join((
             encoded_int(relation_version_number),
@@ -153,7 +153,7 @@ class _HeapTupleAttributeEncoding:
     @staticmethod
     def decoded_scalar(encoded_attribute: str) -> Scalar:
         _, _, encoded_scalar = encoded_attribute.split(
-            Separator.top_attribute.value
+            Separator.top_attribute.value,
         )
 
         return decoded_primitive_with_type(encoded_scalar, heap_tuple_table)

@@ -38,7 +38,7 @@ class MutatedTuple:
     tuple: Tuple
 
     def __and__(
-        self, effect: "TupleEffect"
+        self, effect: "TupleEffect",
     ) -> "MutatedTuple | DeletedTuple | MigratedTuple":
         match effect:
             case JustViewedTuple():
@@ -58,7 +58,7 @@ class MigratedTuple:
     tuple: Tuple
 
     def __and__(
-        self, effect: "TupleEffect"
+        self, effect: "TupleEffect",
     ) -> "MutatedTuple | MigratedTuple | DeletedTuple":
         match effect:
             case JustViewedTuple():
@@ -102,19 +102,19 @@ type TupleEffect = (
 )
 
 
-def relation_tuple(tuple: Tuple, relation: Relation) -> Tuple:
+def relation_tuple(tuple_: Tuple, relation: Relation) -> Tuple:
     """
     :raises tgdb.entities.relation.tuple_effect.InvalidRelationTupleError:
     """
 
     relation_last_version = relation.last_version()
 
-    if not tuple.matches(relation_last_version.schema):
+    if not tuple_.matches(relation_last_version.schema):
         raise InvalidRelationTupleError(
-            tuple.tid, tuple.scalars, relation.number()
+            tuple_.tid, tuple_.scalars, relation.number(),
         )
 
-    return tuple
+    return tuple_
 
 
 def constructed_relation_tuple(
@@ -128,12 +128,12 @@ def constructed_relation_tuple(
 
     relation_last_version = relation.last_version()
     relation_last_version_id = RelationSchemaID(
-        relation.number(), relation_last_version.number
+        relation.number(), relation_last_version.number,
     )
 
-    tuple = Tuple(tid, relation_last_version_id, scalars)
+    tuple_ = Tuple(tid, relation_last_version_id, scalars)
 
-    return relation_tuple(tuple, relation)
+    return relation_tuple(tuple_, relation)
 
 
 def new_tuple(
@@ -167,20 +167,20 @@ def deleted_tuple(tid: TID) -> DeletedTuple:
 type ViewedTuple = JustViewedTuple | MigratedTuple
 
 
-def viewed_tuple(tuple: VersionedTuple, relation: Relation) -> ViewedTuple:
+def viewed_tuple(tuple_: VersionedTuple, relation: Relation) -> ViewedTuple:
     """
     :raises tgdb.entities.relation.tuple_effect.InvalidRelationTupleError:
     """
 
-    last_version = relation_tuple(tuple.last_version(), relation)
-    old_versions = tuple.old_versions()
+    last_version = relation_tuple(tuple_.last_version(), relation)
+    old_versions = tuple_.old_versions()
 
     if not last_version.matches(relation.last_version().schema):
         raise InvalidRelationTupleError(
-            last_version.tid, last_version.scalars, relation.number()
+            last_version.tid, last_version.scalars, relation.number(),
         )
 
     if old_versions:
         return MigratedTuple(last_version)
 
-    return JustViewedTuple(tuple.last_version().tid)
+    return JustViewedTuple(tuple_.last_version().tid)

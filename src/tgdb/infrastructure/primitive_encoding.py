@@ -21,7 +21,7 @@ _encoded_primitive_type_map = dict(
         _decoded_primitive_type_map.values(),
         _decoded_primitive_type_map.keys(),
         strict=True,
-    )
+    ),
 )
 
 
@@ -64,16 +64,16 @@ def encoded_primitive_without_type(
             return encoded_uuid(primitive)
 
 
-def encoded_int(int: int) -> str:
-    return str(int)
+def encoded_int(int_: int) -> str:
+    return str(int_)
 
 
-def encoded_bool(bool: bool) -> str:
-    return str(int(bool))
+def encoded_bool(bool_: bool) -> str:  # noqa: FBT001
+    return str(int(bool_))
 
 
-def encoded_str(str: str, table: ReversibleTranslationTable) -> str:
-    return str.translate(table.map())
+def encoded_str(str_: str, table: ReversibleTranslationTable) -> str:
+    return str_.translate(table.map())
 
 
 def encoded_datetime(datetime: datetime) -> str:
@@ -140,7 +140,7 @@ _decoded_body_func_by_type: dict[type[Any], Callable[[str], Primitive]] = {
 
 
 def decoded_primitive_with_type(
-    encoded_value: str, table: ReversibleTranslationTable
+    encoded_value: str, table: ReversibleTranslationTable,
 ) -> Primitive:
     encoded_value = encoded_value.translate(table.reversed_map())
     header = encoded_value[0]
@@ -159,7 +159,7 @@ def decoded_primitive_without_type[PrimitiveT: Primitive](
 ) -> PrimitiveT:
     encoded_value = encoded_value.translate(table.reversed_map())
     decoded_body = cast(
-        Callable[[str], PrimitiveT], _decoded_body_func_by_type[type_]
+        Callable[[str], PrimitiveT], _decoded_body_func_by_type[type_],
     )
 
     return decoded_body(encoded_value)

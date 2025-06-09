@@ -9,48 +9,48 @@ type Map = AsyncMap[int, str]
 
 
 @fixture
-def map() -> Map:
+def map_() -> Map:
     return AsyncMap()
 
 
-@mark.parametrize("object", ["result", "map"])
-async def test_get_after_set(map: Map, object: str) -> None:
-    map[0] = "x"
-    xs = await gather(*(map[0] for _ in range(10)))
+@mark.parametrize("object_", ["result", "map"])
+async def test_get_after_set(map_: Map, object_: str) -> None:
+    map_[0] = "x"
+    xs = await gather(*(map_[0] for _ in range(10)))
 
-    if object == "result":
+    if object_ == "result":
         assert xs == ["x"] * 10
 
-    if object == "map":
-        assert list(map) == [0]
+    if object_ == "map_":
+        assert list(map_) == [0]
 
 
-@mark.parametrize("object", ["result", "map"])
-async def test_get_before_set(map: Map, object: str) -> None:
-    async def set() -> None:
+@mark.parametrize("object_", ["result", "map"])
+async def test_get_before_set(map_: Map, object_: str) -> None:
+    async def set_() -> None:
         await sleep(0.01)
-        map[0] = "x"
+        map_[0] = "x"
 
-    *xs, _ = await gather(*[*(map[0] for _ in range(10)), set()])
+    *xs, _ = await gather(*[*(map_[0] for _ in range(10)), set_()])
 
-    if object == "result":
+    if object_ == "result":
         assert xs == ["x"] * 10
 
-    if object == "map":
-        assert list(map) == [0]
+    if object_ == "map":
+        assert list(map_) == [0]
 
 
-def test_del_without_key(map: Map) -> None:
-    map[0] = "x"
+def test_del_without_key(map_: Map) -> None:
+    map_[0] = "x"
 
     with raises(KeyError):
-        del map[1]
+        del map_[1]
 
 
-def test_del_with_key(map: Map) -> None:
-    map[0] = "x"
-    map[1] = "y"
+def test_del_with_key(map_: Map) -> None:
+    map_[0] = "x"
+    map_[1] = "y"
 
-    del map[0]
+    del map_[0]
 
-    assert list(map) == [1]
+    assert list(map_) == [1]

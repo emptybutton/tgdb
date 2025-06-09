@@ -14,7 +14,7 @@ from tgdb.presentation.fastapi.relation.schemas.relation import (
 
 @dataclass(frozen=True, unsafe_hash=False)
 class RelationsFromInMemoryDbAsRelationViews(
-    RelationViews[Iterable[Relation], Relation | None]
+    RelationViews[Iterable[Relation], Relation | None],
 ):
     _relations: InMemoryDb[Relation]
 
@@ -22,16 +22,16 @@ class RelationsFromInMemoryDbAsRelationViews(
         return iter(self._relations)
 
     async def view_of_one_relation(
-        self, relation_number: Number
+        self, relation_number: Number,
     ) -> Relation | None:
         return self._relations.select_one(
-            lambda it: (it.number() == relation_number)
+            lambda it: (it.number() == relation_number),
         )
 
 
 @dataclass(frozen=True, unsafe_hash=False)
 class RelationSchemasFromInMemoryDbAsRelationViews(
-    RelationViews[RelationListSchema, RelationSchema | None]
+    RelationViews[RelationListSchema, RelationSchema | None],
 ):
     _relations: InMemoryDb[Relation]
 
@@ -39,10 +39,10 @@ class RelationSchemasFromInMemoryDbAsRelationViews(
         return RelationListSchema.of(iter(self._relations))
 
     async def view_of_one_relation(
-        self, relation_number: Number
+        self, relation_number: Number,
     ) -> RelationSchema | None:
         relation = self._relations.select_one(
-            lambda it: (it.number() == relation_number)
+            lambda it: (it.number() == relation_number),
         )
 
         if relation is None:

@@ -24,12 +24,12 @@ class EncodableTuple(BaseModel):
         return Tuple(self.tid, schema_id, self.scalars)
 
     @classmethod
-    def of(cls, tuple: Tuple) -> "EncodableTuple":
+    def of(cls, entity: Tuple) -> "EncodableTuple":
         return EncodableTuple(
-            tid=tuple.tid,
-            relation_number=int(tuple.relation_schema_id.relation_number),
+            tid=entity.tid,
+            relation_number=int(entity.relation_schema_id.relation_number),
             relation_version_number=int(
-                tuple.relation_schema_id.relation_version_number
+                entity.relation_schema_id.relation_version_number,
             ),
-            scalars=tuple.scalars,
+            scalars=entity.scalars,
         )

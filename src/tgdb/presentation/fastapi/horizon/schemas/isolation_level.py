@@ -1,10 +1,6 @@
 from enum import StrEnum
-from typing import Literal
 
 from tgdb.entities.horizon.transaction import IsolationLevel
-
-
-type _EncodedIsolationLevel = Literal["serializable", "readUncommited"]
 
 
 class IsolationLevelSchema(StrEnum):

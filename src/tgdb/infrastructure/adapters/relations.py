@@ -22,7 +22,7 @@ class InMemoryRelations(Relations):
 
     async def relation(self, relation_number: Number) -> Relation:
         relation = self._db.select_one(
-            lambda it: it.number() == relation_number
+            lambda it: it.number() == relation_number,
         )
         if relation is None:
             raise NoRelationError
@@ -31,7 +31,7 @@ class InMemoryRelations(Relations):
 
     async def add(self, relation: Relation) -> None:
         selected_relation = self._db.select_one(
-            lambda it: it.number() == relation.number()
+            lambda it: it.number() == relation.number(),
         )
 
         if selected_relation is not None:
@@ -69,7 +69,7 @@ class InTelegramReplicableRelations(Relations):
         """
 
         relation = self._cached_relations.select_one(
-            lambda it: it.number() == relation_number
+            lambda it: it.number() == relation_number,
         )
 
         if relation is None:
@@ -83,7 +83,7 @@ class InTelegramReplicableRelations(Relations):
         """  # noqa: E501
 
         selected_relation = self._cached_relations.select_one(
-            lambda it: it.number() == relation.number()
+            lambda it: it.number() == relation.number(),
         )
 
         if selected_relation is not None:
@@ -92,7 +92,7 @@ class InTelegramReplicableRelations(Relations):
         self._cached_relations.insert(relation)
 
         encodable_relations = tuple(
-            map(EncodableRelation.of, self._cached_relations)
+            map(EncodableRelation.of, self._cached_relations),
         )
         encoded_relations = self._adapter.dump_json(encodable_relations)
         await self._in_tg_encoded_relations.set(encoded_relations)

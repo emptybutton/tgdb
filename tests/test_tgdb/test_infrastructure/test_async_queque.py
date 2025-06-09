@@ -17,11 +17,11 @@ def queque() -> Queque:
 
 
 async def iterate(
-    queque: Queque, result: list[tuple[int, int]], iter: AsyncIterable[int]
+    queque: Queque, result: list[tuple[int, int]], iter_: AsyncIterable[int],
 ) -> None:
     iteration_number = 0
 
-    async for value in iter:
+    async for value in iter_:
         result.append((value, len(queque)))
         await sleep(0)
 
@@ -60,10 +60,10 @@ async def test_iterations_with_prepushed_values(queque: Queque) -> None:
 async def test_iterations_with_postpushed_values(queque: Queque) -> None:
     result = list[tuple[int, int]]()
 
-    async def iterate(iter: AsyncIterable[int]) -> None:
+    async def iterate(iter_: AsyncIterable[int]) -> None:
         iteration_number = 0
 
-        async for value in iter:
+        async for value in iter_:
             result.append((value, len(queque)))
             await sleep(0)
 
@@ -100,16 +100,16 @@ async def test_iterations_with_postpushed_values(queque: Queque) -> None:
     ]
 
 
-@mark.parametrize("object", ["result", "queque"])
+@mark.parametrize("object_", ["result", "queque"])
 async def test_iterations_with_concurrent_pushes(
-    queque: Queque, object: str
+    queque: Queque, object_: str,
 ) -> None:
     result = list[int]()
 
-    async def iterate(iter: AsyncIterable[int]) -> None:
+    async def iterate(iter_: AsyncIterable[int]) -> None:
         iteration_number = 0
 
-        async for value in iter:
+        async for value in iter_:
             result.append(value)
             await sleep(0)
 
@@ -134,16 +134,16 @@ async def test_iterations_with_concurrent_pushes(
         push(3),
     )
 
-    if object == "result":
+    if object_ == "result":
         assert result == [1, 1, 1, 2, 2, 2, 3, 3, 3]
 
 
-@mark.parametrize("object", ["result", "queque"])
-async def test_infinite_iterations(queque: Queque, object: str) -> None:
+@mark.parametrize("object_", ["result", "queque"])
+async def test_infinite_iterations(queque: Queque, object_: str) -> None:
     result = list[int]()
 
-    async def iterate(iter: AsyncIterable[int]) -> None:
-        async for value in iter:
+    async def iterate(iter_: AsyncIterable[int]) -> None:
+        async for value in iter_:
             result.append(value)
             await sleep(0)
 
@@ -166,20 +166,20 @@ async def test_infinite_iterations(queque: Queque, object: str) -> None:
     with suppress(TimeoutError):
         await wait_for(main, timeout=0.1)
 
-    if object == "result":
+    if object_ == "result":
         assert result == [1, 1, 1, 2, 2, 2, 3, 3, 3]
 
-    if object == "queque":
+    if object_ == "queque":
         assert not queque
 
 
-@mark.parametrize("object", ["result", "queque"])
-async def test_sync(queque: Queque, object: str) -> None:
+@mark.parametrize("object_", ["result", "queque"])
+async def test_sync(queque: Queque, object_: str) -> None:
     result = list[int]()
     is_sync_overcome = False
 
-    async def iterate(iter: AsyncIterable[int]) -> None:
-        async for value in iter:
+    async def iterate(iter_: AsyncIterable[int]) -> None:
+        async for value in iter_:
             result.append(value)
             await sleep(0)
 
@@ -189,10 +189,10 @@ async def test_sync(queque: Queque, object: str) -> None:
     async def assert_(excepted_result: list[int]) -> None:
         await queque.sync()
 
-        if object == "result":
+        if object_ == "result":
             assert result == excepted_result
 
-        if object == "queque":
+        if object_ == "queque":
             assert not queque
 
         nonlocal is_sync_overcome
@@ -218,15 +218,15 @@ async def test_sync(queque: Queque, object: str) -> None:
     assert is_sync_overcome
 
 
-@mark.parametrize("object", ["result", "queque", "iterations_after_sync"])
-async def test_deadlock_on_sync(queque: Queque, object: str) -> None:
+@mark.parametrize("object_", ["result", "queque", "iterations_after_sync"])
+async def test_deadlock_on_sync(queque: Queque, object_: str) -> None:
     result = list[int]()
     iterations_after_sync = 0
 
-    async def iterate(iter: AsyncIterable[int]) -> None:
+    async def iterate(iter_: AsyncIterable[int]) -> None:
         nonlocal iterations_after_sync
 
-        async for value in iter:
+        async for value in iter_:
             result.append(value)
 
             await queque.sync()
@@ -242,11 +242,11 @@ async def test_deadlock_on_sync(queque: Queque, object: str) -> None:
     with suppress(TimeoutError):
         await wait_for(main, timeout=0.1)
 
-    if object == "result":
+    if object_ == "result":
         assert result == [1, 1, 1]
 
-    if object == "queque":
+    if object_ == "queque":
         assert not queque
 
-    if object == "iterations_after_sync":
+    if object_ == "iterations_after_sync":
         assert iterations_after_sync == 0

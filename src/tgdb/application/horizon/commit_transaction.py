@@ -58,7 +58,7 @@ class CommitTransaction:
             raise notification from notification
 
     async def _effect(
-        self, operator: Operator
+        self, operator: Operator,
     ) -> NewTuple | MutatedTuple | DeletedTuple | Claim:
         """
         :raises tgdb.application.relation.ports.relations.NoRelationError:

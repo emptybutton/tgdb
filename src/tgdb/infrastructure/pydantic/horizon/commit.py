@@ -22,7 +22,7 @@ class EncodableCommit(BaseModel):
         return EncodableCommit(
             xid=entity.xid,
             effect=tuple(
-                map(encodable_transaction_scalar_effect, entity.effect)
+                map(encodable_transaction_scalar_effect, entity.effect),
             ),
         )
 
@@ -40,6 +40,6 @@ class EncodablePreparedCommit(BaseModel):
         return EncodablePreparedCommit(
             xid=entity.xid,
             effect=tuple(
-                map(encodable_transaction_scalar_effect, entity.effect)
+                map(encodable_transaction_scalar_effect, entity.effect),
             ),
         )

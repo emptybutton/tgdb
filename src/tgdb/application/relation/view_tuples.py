@@ -34,7 +34,7 @@ class ViewTuples:
         """
 
         tuples = await self.tuples.tuples_with_attribute(
-            relation_number, attribute_number, attribute_scalar
+            relation_number, attribute_number, attribute_scalar,
         )
         versioned_tuples = map(versioned_tuple, tuples)
         relation = await self.relartions.relation(relation_number)

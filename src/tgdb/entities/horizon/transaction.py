@@ -1,4 +1,5 @@
-from collections.abc import Iterable, Sequence, Set
+from collections.abc import Iterable, Sequence
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
 from enum import Enum, auto
 from uuid import UUID
@@ -26,7 +27,7 @@ type ConflictableTransactionEffect = Sequence[
 type TransactionScalarEffect = (
     NewTuple | MutatedTuple | MigratedTuple | DeletedTuple
 )
-type TransactionEffect = Set[TransactionScalarEffect]
+type TransactionEffect = AbstractSet[TransactionScalarEffect]
 
 
 @dataclass(frozen=True)
@@ -119,10 +120,7 @@ class SerializableTransaction:
         self._complete()
 
     def prepare_commit(self) -> PreparedCommit:
-        """
-        :raises tgdb.entities.horizon.transaction.ConflictError:
-        """
-
+        """:raises tgdb.entities.horizon.transaction.ConflictError:"""
         conflict = self._conflict()
 
         if conflict is not None:
@@ -144,7 +142,7 @@ class SerializableTransaction:
         return Commit(self._xid, self._effect())
 
     def track_concurrent_transaction(
-        self, transaction: "SerializableTransaction"
+        self, transaction: "SerializableTransaction",
     ) -> None:
         self._concurrent_transactions.add(transaction)
 
@@ -152,28 +150,28 @@ class SerializableTransaction:
             self._transactions_with_possible_conflict.add(transaction)
 
     def track_started_transaction(
-        self, started_transaction: "SerializableTransaction"
+        self, started_transaction: "SerializableTransaction",
     ) -> None:
         self._concurrent_transactions.add(started_transaction)
 
     def track_prepared_transaction(
-        self, prepared_transaction: "SerializableTransaction"
+        self, prepared_transaction: "SerializableTransaction",
     ) -> None:
         self._transactions_with_possible_conflict.add(prepared_transaction)
 
     def track_rollbacked_prepared_transaction(
-        self, rollbacked_prepared_transaction: "SerializableTransaction"
+        self, rollbacked_prepared_transaction: "SerializableTransaction",
     ) -> None:
         if self._state is SerializableTransactionState.active:
             self._transactions_with_possible_conflict.remove(
-                rollbacked_prepared_transaction
+                rollbacked_prepared_transaction,
             )
             self._concurrent_transactions.remove(
-                rollbacked_prepared_transaction
+                rollbacked_prepared_transaction,
             )
 
     def track_rollbacked_active_transaction(
-        self, rollbacked_active_transaction: "SerializableTransaction"
+        self, rollbacked_active_transaction: "SerializableTransaction",
     ) -> None:
         if self._state is SerializableTransactionState.active:
             self._concurrent_transactions.remove(rollbacked_active_transaction)
@@ -197,10 +195,10 @@ class SerializableTransaction:
 
         for concurrent_transaction in concurrent_transactions:
             concurrent_transaction.track_started_transaction(
-                started_transaction
+                started_transaction,
             )
             started_transaction.track_concurrent_transaction(
-                concurrent_transaction
+                concurrent_transaction,
             )
 
         return started_transaction
@@ -291,7 +289,7 @@ def start_transaction(
     match isolation:
         case IsolationLevel.serializable:
             return SerializableTransaction.start(
-                xid, time, serializable_transactions
+                xid, time, serializable_transactions,
             )
 
         case IsolationLevel.read_uncommited:

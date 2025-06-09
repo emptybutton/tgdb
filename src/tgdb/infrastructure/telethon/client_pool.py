@@ -21,7 +21,7 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
     _clients: deque[TelegramClient]
 
     _client_by_id: dict[int, TelegramClient] = field(
-        init=False, default_factory=dict
+        init=False, default_factory=dict,
     )
 
     async def __aenter__(self) -> Self:
@@ -29,12 +29,12 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
             *(
                 client.__aenter__()  # type: ignore[no-untyped-call]
                 for client in self._clients
-            )
+            ),
         )
 
         for client in self._clients:
             client_info = cast(
-                InputPeerUser, await client.get_me(input_peer=True)
+                InputPeerUser, await client.get_me(input_peer=True),
             )
             client_id = client_info.user_id
 
@@ -52,7 +52,7 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
             *(
                 client.__aexit__(error_type, error, traceback)  # type: ignore[no-untyped-call]
                 for client in self._clients
-            )
+            ),
         )
 
     def __call__(self, client_id: int | None = None) -> TelegramClient:
@@ -75,7 +75,7 @@ class TelegramClientPool(AbstractAsyncContextManager["TelegramClientPool"]):
 
 
 def loaded_client_pool_from_farm_file(
-    farm_file_path: Path, app_api_id: int, app_api_hash: str
+    farm_file_path: Path, app_api_id: int, app_api_hash: str,
 ) -> TelegramClientPool:
     with farm_file_path.open() as farm_file:
         return TelegramClientPool(
@@ -83,12 +83,12 @@ def loaded_client_pool_from_farm_file(
                 pool_client(session_token, app_api_id, app_api_hash)
                 for session_token in map(_clean_line, farm_file)
                 if session_token
-            )
+            ),
         )
 
 
 def pool_client(
-    session_token: str, app_api_id: int, app_api_hash: str
+    session_token: str, app_api_id: int, app_api_hash: str,
 ) -> TelegramClient:
     filterwarnings(
         "ignore",

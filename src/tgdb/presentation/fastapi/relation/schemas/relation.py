@@ -19,7 +19,7 @@ class InitialRelationVersionSchema(BaseModel):
 
     @classmethod
     def of(
-        cls, version: InitialRelationVersion
+        cls, version: InitialRelationVersion,
     ) -> "InitialRelationVersionSchema":
         return InitialRelationVersionSchema(
             number=int(version.number),
@@ -34,7 +34,7 @@ class DerivativeRelationVersionSchema(BaseModel):
 
     @classmethod
     def of(
-        cls, version: DerivativeRelationVersion
+        cls, version: DerivativeRelationVersion,
     ) -> "DerivativeRelationVersionSchema":
         return DerivativeRelationVersionSchema(
             number=int(version.number),
@@ -46,22 +46,22 @@ class DerivativeRelationVersionSchema(BaseModel):
 class RelationSchema(BaseModel):
     number: Annotated[int, Ge(0)]
     initial_version: InitialRelationVersionSchema = Field(
-        alias="initialVersion"
+        alias="initialVersion",
     )
     intermediate_versions: tuple[DerivativeRelationVersionSchema, ...] = Field(
-        alias="intermediateVersions"
+        alias="intermediateVersions",
     )
 
     @classmethod
     def of(cls, relation: Relation) -> "RelationSchema":
         initial_version = InitialRelationVersionSchema.of(
-            relation.initial_version()
+            relation.initial_version(),
         )
         intermediate_versions = tuple(
             map(
                 DerivativeRelationVersionSchema.of,
                 relation.intermediate_versions(),
-            )
+            ),
         )
 
         return RelationSchema(
@@ -73,7 +73,7 @@ class RelationSchema(BaseModel):
 
 class RelationListSchema(BaseModel):
     relation_numbers: tuple[Annotated[int, Ge(0)], ...] = Field(
-        alias="relationNumbers"
+        alias="relationNumbers",
     )
 
     @classmethod

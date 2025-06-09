@@ -9,13 +9,13 @@ from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
 
 
 @mark.parametrize(
-    "tuple",
+    "tuple_",
     [
         tuple_(1, 2, 3, tid=UUID(int=0)),
         tuple_(
             -1,
             "-1",
-            True,
+            True,  # noqa: FBT003
             1,
             None,
             UUID(int=1234567098765432),
@@ -31,9 +31,9 @@ from tgdb.infrastructure.heap_tuple_encoding import HeapTupleEncoding
         ),
     ],
 )
-def test_isomorphism(tuple: Tuple) -> None:
+def test_isomorphism(tuple_: Tuple) -> None:
     decoded_tuple = HeapTupleEncoding.decoded_tuple(
-        HeapTupleEncoding.encoded_tuple(tuple)
+        HeapTupleEncoding.encoded_tuple(tuple_),
     )
 
-    assert decoded_tuple == tuple
+    assert decoded_tuple == tuple_

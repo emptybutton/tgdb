@@ -26,7 +26,7 @@ class LazyMap[KeyT, ValueT]:
     _external_value: Callable[[KeyT], Awaitable[ExternalValue[ValueT]]]
 
     _cache_map: OrderedDict[KeyT, ExternalValue[ValueT]] = field(
-        init=False, default_factory=OrderedDict
+        init=False, default_factory=OrderedDict,
     )
 
     def cache_map(self) -> OrderedDict[KeyT, ExternalValue[ValueT]]:
@@ -51,7 +51,7 @@ class LazyMap[KeyT, ValueT]:
         return value
 
     def _insert_to_cache_map(
-        self, key: KeyT, value: ExternalValue[ValueT]
+        self, key: KeyT, value: ExternalValue[ValueT],
     ) -> None:
         self._cache_map[key] = value
 

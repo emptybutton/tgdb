@@ -28,7 +28,7 @@ from tgdb.presentation.fastapi.relation.schemas.relation import (
 class FastAPIProvider(Provider):
     @provide(scope=Scope.APP)
     def provide_relation_views(
-        self, relations: InTelegramReplicableRelations
+        self, relations: InTelegramReplicableRelations,
     ) -> RelationViews[RelationListSchema, RelationSchema | None]:
         return RelationSchemasFromInMemoryDbAsRelationViews(relations.cache())
 
@@ -62,5 +62,5 @@ class FastAPIProvider(Provider):
 
 
 server_container = make_async_container(
-    MainIOProvider(), CommonProvider(), FastAPIProvider()
+    MainIOProvider(), CommonProvider(), FastAPIProvider(),
 )

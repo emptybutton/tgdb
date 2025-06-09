@@ -46,7 +46,7 @@ class ViewedTuplesSchema(BaseModel):
         status.HTTP_200_OK: {"model": ViewedTuplesSchema},
         status.HTTP_400_BAD_REQUEST: {"model": TransactionCommittingSchema},
         status.HTTP_404_NOT_FOUND: {
-            "model": NoRelationSchema | NoTransactionSchema
+            "model": NoRelationSchema | NoTransactionSchema,
         },
     },
     summary="View tuples",

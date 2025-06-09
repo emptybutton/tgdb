@@ -45,18 +45,18 @@ class InTelegramHeap:
 
     def __post_init__(self) -> None:
         assert_(
-            self._encoded_tuple_max_len <= InTelegramHeap._page_len, ValueError
+            self._encoded_tuple_max_len <= InTelegramHeap._page_len, ValueError,
         )
 
     def tuple_max_len(self) -> int:
         return self._encoded_tuple_max_len
 
-    def assert_can_accept_tuple(self, tuple: Tuple) -> None:
+    def assert_can_accept_tuple(self, tuple_: Tuple) -> None:
         """
         :raises tgdb.infrastructure.telethon.in_telegram_heap.UnacceptableTupleError:
         """  # noqa: E501
 
-        encoded_largest_tuple = HeapTupleEncoding.encoded_tuple(tuple)
+        encoded_largest_tuple = HeapTupleEncoding.encoded_tuple(tuple_)
 
         if len(encoded_largest_tuple) > self._encoded_tuple_max_len:
             raise UnacceptableTupleError(len(encoded_largest_tuple))
@@ -86,7 +86,7 @@ class InTelegramHeap:
         )
 
         messages = await self._pool_to_select().get_messages(
-            self._heap_id, search=search, reverse=True
+            self._heap_id, search=search, reverse=True,
         )
         messages = cast(TotalList, messages)
 
@@ -95,25 +95,25 @@ class InTelegramHeap:
             for message in messages
         )
 
-    async def insert_idempotently(self, tuple: Tuple) -> None:
-        message_index_ = await self._index_map[self._heap_id, tuple.tid]
+    async def insert_idempotently(self, tuple_: Tuple) -> None:
+        message_index_ = await self._index_map[self._heap_id, tuple_.tid]
 
         if message_index_ is not None:
             return
 
         new_message = await self._pool_to_insert().send_message(
-            self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
+            self._heap_id, HeapTupleEncoding.encoded_tuple(tuple_),
         )
-        self._index_map[self._heap_id, tuple.tid] = message_index(new_message)
+        self._index_map[self._heap_id, tuple_.tid] = message_index(new_message)
 
-    async def insert(self, tuple: Tuple) -> None:
+    async def insert(self, tuple_: Tuple) -> None:
         new_message = await self._pool_to_insert().send_message(
-            self._heap_id, HeapTupleEncoding.encoded_tuple(tuple)
+            self._heap_id, HeapTupleEncoding.encoded_tuple(tuple_),
         )
-        self._index_map[self._heap_id, tuple.tid] = message_index(new_message)
+        self._index_map[self._heap_id, tuple_.tid] = message_index(new_message)
 
-    async def update(self, tuple: Tuple) -> None:
-        message_index = await self._index_map[self._heap_id, tuple.tid]
+    async def update(self, tuple_: Tuple) -> None:
+        message_index = await self._index_map[self._heap_id, tuple_.tid]
 
         if message_index is None:
             return
@@ -121,7 +121,7 @@ class InTelegramHeap:
         message_id, sender_id = message_index
 
         await self._pool_to_edit(sender_id).edit_message(
-            self._heap_id, message_id, HeapTupleEncoding.encoded_tuple(tuple)
+            self._heap_id, message_id, HeapTupleEncoding.encoded_tuple(tuple_),
         )
 
     async def delete_tuple_with_tid(self, tid: TID) -> None:
@@ -133,5 +133,5 @@ class InTelegramHeap:
         message_id, _ = message_index
 
         await self._pool_to_delete().delete_messages(
-            self._heap_id, [message_id]
+            self._heap_id, [message_id],
         )

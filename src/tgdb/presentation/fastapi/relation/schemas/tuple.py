@@ -9,5 +9,5 @@ class TupleSchema(BaseModel):
     scalars: tuple[Scalar, ...]
 
     @classmethod
-    def of(cls, tuple: Tuple) -> "TupleSchema":
-        return TupleSchema(tid=tuple.tid, scalars=tuple.scalars)
+    def of(cls, tuple_: Tuple) -> "TupleSchema":
+        return TupleSchema(tid=tuple_.tid, scalars=tuple_.scalars)

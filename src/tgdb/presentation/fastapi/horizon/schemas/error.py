@@ -17,7 +17,7 @@ class TransactionConflictSchema(BaseModel):
     @classmethod
     def of(cls, conflict: ConflictError) -> "TransactionConflictSchema":
         return TransactionConflictSchema(
-            rejectedClaims=tuple(map(ClaimSchema.of, conflict.rejected_claims))
+            rejectedClaims=tuple(map(ClaimSchema.of, conflict.rejected_claims)),
         )
 
 
