@@ -63,7 +63,7 @@ class MainIOProvider(Provider):
 
     @provide(scope=Scope.APP)
     def provide_conf(self, envs: Envs) -> TgdbConfig:
-        return TgdbConfig.load(envs.conf_path)
+        return TgdbConfig.load(envs.config_path)
 
 
 class CommonProvider(Provider):

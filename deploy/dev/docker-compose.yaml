@@ -11,12 +11,18 @@ services:
         - "tgdb:dev"
     volumes:
       - ../..:/app
+      - ../../deploy/common/tgdb/config:/etc/tgdb
       - tgdb-data:/run/app
     environment:
-      CONF_PATH: /app/deploy/dev/tgdb/conf.yaml
+      CONFIG_PATH: /etc/tgdb/config.yaml
     ports:
       - 8000:8000
     command: tgdb-dev
+    healthcheck:
+      test: python3 -c "from urllib.request import urlopen as f; assert f('http://tgdb:8000/health').status == 204"
+      start_period: 2m
+      start_interval: 0.5s
+      interval: 10s
 
 volumes:
   tgdb-data: null

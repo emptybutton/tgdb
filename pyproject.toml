@@ -45,7 +45,7 @@ build-backend = "hatchling.build"
 packages = ["src/tgdb"]
 
 [project.scripts]
-tgdb = "tgdb.main.prod_server.__main__:main"
+tgdb = "tgdb.main.slim_server.__main__:main"
 tgdb-dev = "tgdb.main.dev_server.__main__:main"
 
 [tool.mypy]

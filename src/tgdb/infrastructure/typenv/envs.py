@@ -6,12 +6,12 @@ import typenv
 
 @dataclass(frozen=True)
 class Envs:
-    conf_path: Path
+    config_path: Path
 
     @classmethod
     def load(cls) -> "Envs":
         env = typenv.Env()
 
         return Envs(
-            conf_path=Path(env.str("CONF_PATH")),
+            config_path=Path(env.str("CONFIG_PATH")),
         )

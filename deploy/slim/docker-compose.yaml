@@ -1,0 +1,22 @@
+name: tgdb
+
+services:
+  tgdb:
+    image: tgdb:slim
+    container_name: tgdb
+    build:
+      context: ../../
+      dockerfile: deploy/slim/Dockerfile
+      tags:
+        - "tgdb:slim"
+    volumes:
+      - ../../deploy/common/tgdb/config:/etc/tgdb
+    environment:
+      CONFIG_PATH: /etc/tgdb/config.yaml
+    ports:
+      - 8000:8000
+    healthcheck:
+      test: python3 -c "from urllib.request import urlopen as f; assert f('http://tgdb:8000/health').status == 204"
+      start_period: 2m
+      start_interval: 0.5s
+      interval: 10s

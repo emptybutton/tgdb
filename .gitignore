@@ -175,8 +175,8 @@ cython_debug/
 .ruff_cache
 .uv_cache
 
-deploy/dev/tgdb/clients/*
-!deploy/dev/tgdb/clients/.gitkeep
+deploy/common/tgdb/clients/*
+!deploy/common/tgdb/clients/.gitkeep
 *.session
 
 x.py
