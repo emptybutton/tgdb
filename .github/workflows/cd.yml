@@ -49,6 +49,7 @@ jobs:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
 
   docker-hub-publish:
+    runs-on: ubuntu-latest
     environment:
       name: docker hub
       url: https://hub.docker.com/r/n255/tgdb
